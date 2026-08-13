@@ -1,0 +1,50 @@
+{
+  "name": "@lonlonbenu/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@expo-google-fonts/cormorant-garamond": "^0.4.1",
+    "@expo-google-fonts/manrope": "^0.4.2",
+    "@expo/ui": "~57.0.10",
+    "@expo/vector-icons": "^15.0.2",
+    "@lonlonbenu/shared": "*",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo": "~57.0.12",
+    "expo-constants": "~57.0.9",
+    "expo-crypto": "~57.0.1",
+    "expo-dev-client": "~57.0.11",
+    "expo-font": "~57.0.1",
+    "expo-haptics": "~57.0.1",
+    "expo-linking": "~57.0.5",
+    "expo-local-authentication": "~57.0.2",
+    "expo-notifications": "~57.0.10",
+    "expo-router": "~57.0.12",
+    "expo-secure-store": "~57.0.1",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.8",
+    "react-native": "0.86.2",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@types/react": "~19.2.2",
+    "typescript": "~6.0.3"
+  },
+  "comment:react": "React est aligné sur 19.2.8 (et non 19.2.3 attendu par le SDK) parce que @expo/ui, tiré par expo-router, exige ^19.2.8. Écart de patch assumé : il évite deux copies de React dans le bundle, qui provoqueraient des 'Invalid hook call'. À réévaluer à chaque montée de SDK.",
+  "expo": {
+    "install": {
+      "exclude": [
+        "react"
+      ]
+    }
+  }
+}

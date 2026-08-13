@@ -1,0 +1,1180 @@
+/**
+ * Adaptateur PostgreSQL du port `Depot`.
+ *
+ * Il implémente exactement la même interface que le dépôt en mémoire, et
+ * **aucune logique métier ne vit ici** : pas de décision de visibilité, pas de
+ * comptage d'essais, pas de politique de notification. Ce fichier traduit des
+ * lignes en objets du domaine, rien d'autre. Les invariants restent dans
+ * `@lonlonbenu/shared`, rejoués par les services.
+ *
+ * C'est ce qui rend la substitution vérifiable : la suite de tests de l'API
+ * tourne à l'identique contre l'un ou l'autre adaptateur.
+ */
+
+import pg from 'pg';
+import {
+  PREFERENCES_PAR_DEFAUT,
+  type AxeCroissance,
+  type Consentement,
+  type ContributionAxe,
+  type Confidence,
+  type Couple,
+  type Evenement,
+  type Initiative,
+  type PartageCycle,
+  type Projet,
+  type Partenaire,
+  type Symptome,
+  type PartageReciproque,
+  type PartenaireId,
+  type PreferencesNotifications,
+} from '@lonlonbenu/shared';
+import type {
+  AlerteServeur,
+  Appareil,
+  CoupleServeur,
+  Depot,
+  InvitationServeur,
+  NotificationServeur,
+} from './depot.ts';
+
+const { Pool, types } = pg;
+
+// Une colonne DATE représente un jour civil, pas un instant. Laissée à
+// node-postgres, elle deviendrait un Date à minuit *local*, décalé d'un jour
+// selon le fuseau. On la garde telle quelle, en texte.
+types.setTypeParser(1082, (valeur: string) => valeur);
+
+export interface OptionsPostgres {
+  connectionString: string;
+  /** Schéma dédié, utile pour isoler des exécutions concurrentes. */
+  schema?: string;
+  max?: number;
+}
+
+export function creerPool(options: OptionsPostgres): pg.Pool {
+  return new Pool({
+    connectionString: options.connectionString,
+    max: options.max ?? 4,
+    ...(options.schema ? { options: `-c search_path=${options.schema}` } : {}),
+  });
+}
+
+/** `TIMESTAMPTZ` → chaîne ISO, le format employé partout dans le domaine. */
+function iso(valeur: Date | string | null): string | undefined {
+  if (valeur === null) return undefined;
+  return valeur instanceof Date ? valeur.toISOString() : new Date(valeur).toISOString();
+}
+
+function isoRequis(valeur: Date | string): string {
+  return iso(valeur)!;
+}
+
+export function creerDepotPostgres(pool: pg.Pool): Depot {
+  async function chargerCouple(
+    ligne: {
+      id: string;
+      depuis: string;
+      dissocie_le: Date | null;
+    },
+  ): Promise<CoupleServeur> {
+    const [partenaires, partages] = await Promise.all([
+      pool.query<{ id: string; prenom: string; initiales: string; rang: number }>(
+        'SELECT id, prenom, initiales, rang FROM partenaires WHERE couple_id = $1 ORDER BY rang',
+        [ligne.id],
+      ),
+      pool.query<{
+        module: string;
+        partenaire_id: string;
+        actif: boolean;
+        maj_le: Date;
+      }>(
+        'SELECT module, partenaire_id, actif, maj_le FROM partages WHERE couple_id = $1',
+        [ligne.id],
+      ),
+    ]);
+
+    const membres = partenaires.rows.map(
+      (r): Partenaire => ({
+        id: r.id,
+        prenom: r.prenom,
+        initiales: r.initiales,
+      }),
+    );
+
+    const couple: Couple = {
+      id: ligne.id,
+      depuis: ligne.depuis,
+      partenaires: [membres[0]!, membres[1]!],
+    };
+
+    const parModule = new Map<string, Consentement[]>();
+    for (const r of partages.rows) {
+      const liste = parModule.get(r.module) ?? [];
+      liste.push({
+        partenaireId: r.partenaire_id,
+        actif: r.actif,
+        majLe: isoRequis(r.maj_le),
+      });
+      parModule.set(r.module, liste);
+    }
+
+    const rang = (id: PartenaireId) => membres.findIndex((m) => m.id === id);
+    const complets: Record<string, PartageReciproque> = {};
+
+    for (const [module, liste] of parModule) {
+      // L'ordre suit celui des partenaires du couple, pas celui des lignes.
+      const ordonnes = [...liste].sort(
+        (a, b) => rang(a.partenaireId) - rang(b.partenaireId),
+      );
+      const complet =
+        ordonnes.length === 2 &&
+        new Set(ordonnes.map((c) => c.partenaireId)).size === 2;
+
+      // Un module auquel il manque une ligne est un état corrompu : on le rend
+      // inactif plutôt que de le laisser passer pour consenti.
+      complets[module] = {
+        module: module as PartageReciproque['module'],
+        consentements: complet
+          ? [ordonnes[0]!, ordonnes[1]!]
+          : [
+              { partenaireId: membres[0]!.id, actif: false, majLe: isoRequis(new Date()) },
+              { partenaireId: membres[1]!.id, actif: false, majLe: isoRequis(new Date()) },
+            ],
+      };
+    }
+
+    return {
+      id: ligne.id,
+      couple,
+      partages: complets,
+      dissocieLe: iso(ligne.dissocie_le),
+    };
+  }
+
+  async function chargerAxes(
+    lignes: readonly {
+      id: string;
+      theme: string;
+      titre: string;
+      ouvert_par: string;
+      ouvert_le: Date;
+      cloture_le: Date | null;
+    }[],
+  ): Promise<AxeCroissance[]> {
+    if (lignes.length === 0) return [];
+
+    const contributions = await pool.query<{
+      axe_id: string;
+      partenaire_id: string;
+      ressenti: string;
+      besoin: string;
+      maj_le: Date;
+    }>(
+      `SELECT axe_id, partenaire_id, ressenti, besoin, maj_le
+         FROM contributions_axe
+        WHERE axe_id = ANY($1::text[])
+        ORDER BY maj_le`,
+      [lignes.map((l) => l.id)],
+    );
+
+    const parAxe = new Map<string, ContributionAxe[]>();
+    for (const c of contributions.rows) {
+      const liste = parAxe.get(c.axe_id) ?? [];
+      liste.push({
+        partenaireId: c.partenaire_id,
+        ressenti: c.ressenti,
+        besoin: c.besoin,
+        majLe: isoRequis(c.maj_le),
+      });
+      parAxe.set(c.axe_id, liste);
+    }
+
+    return lignes.map((l) => ({
+      id: l.id,
+      theme: l.theme as AxeCroissance['theme'],
+      titre: l.titre,
+      ouvertPar: l.ouvert_par,
+      ouvertLe: isoRequis(l.ouvert_le),
+      contributions: parAxe.get(l.id) ?? [],
+      clotureLe: iso(l.cloture_le),
+    }));
+  }
+
+  return {
+    couples: {
+      async parId(coupleId) {
+        const { rows } = await pool.query(
+          'SELECT id, depuis::text AS depuis, dissocie_le FROM couples WHERE id = $1',
+          [coupleId],
+        );
+        return rows[0] ? chargerCouple(rows[0]) : undefined;
+      },
+
+      async actifs() {
+        const { rows } = await pool.query(
+          'SELECT id, depuis::text AS depuis, dissocie_le FROM couples WHERE dissocie_le IS NULL',
+        );
+        return Promise.all(rows.map((r) => chargerCouple(r)));
+      },
+
+      async parPartenaire(partenaireId) {
+        const { rows } = await pool.query(
+          `SELECT c.id, c.depuis::text AS depuis, c.dissocie_le
+             FROM couples c
+             JOIN partenaires p ON p.couple_id = c.id
+            WHERE p.id = $1`,
+          [partenaireId],
+        );
+        return rows[0] ? chargerCouple(rows[0]) : undefined;
+      },
+
+      async enregistrer(enregistrement) {
+        const client = await pool.connect();
+        try {
+          await client.query('BEGIN');
+
+          await client.query(
+            `INSERT INTO couples (id, depuis, dissocie_le)
+                  VALUES ($1, $2::date, $3)
+             ON CONFLICT (id) DO UPDATE
+                    SET depuis = EXCLUDED.depuis,
+                        dissocie_le = EXCLUDED.dissocie_le`,
+            [
+              enregistrement.id,
+              enregistrement.couple.depuis,
+              enregistrement.dissocieLe ?? null,
+            ],
+          );
+
+          for (const [rang, partenaire] of enregistrement.couple.partenaires.entries()) {
+            await client.query(
+              `INSERT INTO partenaires (id, couple_id, prenom, initiales, rang)
+                    VALUES ($1, $2, $3, $4, $5)
+               ON CONFLICT (id) DO UPDATE
+                      SET couple_id = EXCLUDED.couple_id,
+                          prenom = EXCLUDED.prenom,
+                          initiales = EXCLUDED.initiales,
+                          rang = EXCLUDED.rang`,
+              [
+                partenaire.id,
+                enregistrement.id,
+                partenaire.prenom,
+                partenaire.initiales,
+                rang,
+              ],
+            );
+          }
+
+          for (const partage of Object.values(enregistrement.partages)) {
+            for (const consentement of partage.consentements) {
+              await client.query(
+                `INSERT INTO partages (couple_id, module, partenaire_id, actif, maj_le)
+                      VALUES ($1, $2, $3, $4, $5)
+                 ON CONFLICT (couple_id, module, partenaire_id) DO UPDATE
+                        SET actif = EXCLUDED.actif,
+                            maj_le = EXCLUDED.maj_le`,
+                [
+                  enregistrement.id,
+                  partage.module,
+                  consentement.partenaireId,
+                  consentement.actif,
+                  consentement.majLe,
+                ],
+              );
+            }
+          }
+
+          await client.query('COMMIT');
+        } catch (erreur) {
+          await client.query('ROLLBACK');
+          throw erreur;
+        } finally {
+          client.release();
+        }
+      },
+    },
+
+    axes: {
+      async parCouple(coupleId) {
+        const { rows } = await pool.query(
+          `SELECT id, theme, titre, ouvert_par, ouvert_le, cloture_le
+             FROM axes WHERE couple_id = $1 ORDER BY ouvert_le`,
+          [coupleId],
+        );
+        return chargerAxes(rows);
+      },
+
+      async parId(coupleId, axeId) {
+        const { rows } = await pool.query(
+          `SELECT id, theme, titre, ouvert_par, ouvert_le, cloture_le
+             FROM axes WHERE couple_id = $1 AND id = $2`,
+          [coupleId, axeId],
+        );
+        return rows[0] ? (await chargerAxes(rows))[0] : undefined;
+      },
+
+      async enregistrer(coupleId, axe) {
+        const client = await pool.connect();
+        try {
+          await client.query('BEGIN');
+          await client.query(
+            `INSERT INTO axes (id, couple_id, theme, titre, ouvert_par, ouvert_le, cloture_le)
+                  VALUES ($1, $2, $3, $4, $5, $6, $7)
+             ON CONFLICT (id) DO UPDATE
+                    SET theme = EXCLUDED.theme,
+                        titre = EXCLUDED.titre,
+                        cloture_le = EXCLUDED.cloture_le`,
+            [
+              axe.id,
+              coupleId,
+              axe.theme,
+              axe.titre,
+              axe.ouvertPar,
+              axe.ouvertLe,
+              axe.clotureLe ?? null,
+            ],
+          );
+
+          for (const contribution of axe.contributions) {
+            await client.query(
+              `INSERT INTO contributions_axe (axe_id, partenaire_id, ressenti, besoin, maj_le)
+                    VALUES ($1, $2, $3, $4, $5)
+               ON CONFLICT (axe_id, partenaire_id) DO UPDATE
+                      SET ressenti = EXCLUDED.ressenti,
+                          besoin = EXCLUDED.besoin,
+                          maj_le = EXCLUDED.maj_le`,
+              [
+                axe.id,
+                contribution.partenaireId,
+                contribution.ressenti,
+                contribution.besoin,
+                contribution.majLe,
+              ],
+            );
+          }
+
+          await client.query('COMMIT');
+        } catch (erreur) {
+          await client.query('ROLLBACK');
+          throw erreur;
+        } finally {
+          client.release();
+        }
+      },
+
+      async effacerPourCouple(coupleId) {
+        // `ON DELETE CASCADE` emporte les contributions.
+        await pool.query('DELETE FROM axes WHERE couple_id = $1', [coupleId]);
+      },
+    },
+
+    invitations: {
+      async parId(id) {
+        const { rows } = await pool.query<{
+          id: string;
+          emise_par: string;
+          verificateur: string;
+          sel: string;
+          emise_le: Date;
+          expire_le: Date;
+          essais: number;
+          consommee_le: Date | null;
+          couple_id: string | null;
+        }>('SELECT * FROM invitations WHERE id = $1', [id]);
+
+        const ligne = rows[0];
+        if (!ligne) return undefined;
+
+        return {
+          id: ligne.id,
+          coupleId: ligne.couple_id ?? undefined,
+          invitation: {
+            verificateur: ligne.verificateur,
+            sel: ligne.sel,
+            emisePar: ligne.emise_par,
+            emiseLe: isoRequis(ligne.emise_le),
+            expireLe: isoRequis(ligne.expire_le),
+            essais: ligne.essais,
+            consommeeLe: iso(ligne.consommee_le),
+          },
+        } satisfies InvitationServeur;
+      },
+
+      async enregistrer(entree) {
+        await pool.query(
+          `INSERT INTO invitations
+             (id, emise_par, verificateur, sel, emise_le, expire_le, essais, consommee_le, couple_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           ON CONFLICT (id) DO UPDATE
+                  SET essais = EXCLUDED.essais,
+                      consommee_le = EXCLUDED.consommee_le,
+                      couple_id = EXCLUDED.couple_id`,
+          [
+            entree.id,
+            entree.invitation.emisePar,
+            entree.invitation.verificateur,
+            entree.invitation.sel,
+            entree.invitation.emiseLe,
+            entree.invitation.expireLe,
+            entree.invitation.essais,
+            entree.invitation.consommeeLe ?? null,
+            entree.coupleId ?? null,
+          ],
+        );
+      },
+    },
+
+    notifications: {
+      async preferences(partenaireId) {
+        const { rows } = await pool.query<{ preferences: PreferencesNotifications }>(
+          'SELECT preferences FROM preferences_notifications WHERE partenaire_id = $1',
+          [partenaireId],
+        );
+        return rows[0]?.preferences ?? PREFERENCES_PAR_DEFAUT;
+      },
+
+      async definirPreferences(partenaireId, preferences) {
+        await pool.query(
+          `INSERT INTO preferences_notifications (partenaire_id, preferences, maj_le)
+                VALUES ($1, $2::jsonb, now())
+           ON CONFLICT (partenaire_id) DO UPDATE
+                  SET preferences = EXCLUDED.preferences, maj_le = now()`,
+          [partenaireId, JSON.stringify(preferences)],
+        );
+      },
+
+      async ajouter(notification) {
+        await pool.query(
+          `INSERT INTO notifications
+             (id, destinataire, categorie, texte, emise_le, remise, raison, expediee_le)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+          [
+            notification.id,
+            notification.destinataireId,
+            notification.categorie,
+            notification.texte,
+            notification.emiseLe,
+            notification.remise,
+            notification.raison,
+            notification.expedieeLe ?? null,
+          ],
+        );
+      },
+
+      async enAttente(partenaireId) {
+        const { rows } = await pool.query(
+          `SELECT * FROM notifications
+            WHERE destinataire = $1
+              AND expediee_le IS NULL
+              AND remise <> 'ignoree'
+            ORDER BY emise_le`,
+          [partenaireId],
+        );
+        return rows.map(versNotification);
+      },
+
+      async marquerExpediees(ids, quand) {
+        if (ids.length === 0) return;
+        await pool.query(
+          'UPDATE notifications SET expediee_le = $2 WHERE id = ANY($1::text[])',
+          [[...ids], quand],
+        );
+      },
+
+      async journal(partenaireId) {
+        const { rows } = await pool.query(
+          'SELECT * FROM notifications WHERE destinataire = $1 ORDER BY emise_le DESC',
+          [partenaireId],
+        );
+        return rows.map(versNotification);
+      },
+    },
+
+    viePratique: {
+      async evenements(coupleId) {
+        const { rows } = await pool.query(
+          `SELECT id, titre, categorie, debut, fin, journee_entiere, lieu, note,
+                  cree_par, cree_le, rappel_heures
+             FROM evenements WHERE couple_id = $1 ORDER BY debut`,
+          [coupleId],
+        );
+        return rows.map(
+          (r): Evenement => ({
+            id: r.id,
+            titre: r.titre,
+            categorie: r.categorie,
+            debut: r.debut,
+            fin: r.fin ?? undefined,
+            journeeEntiere: r.journee_entiere,
+            lieu: r.lieu ?? undefined,
+            note: r.note ?? undefined,
+            creePar: r.cree_par,
+            creeLe: isoRequis(r.cree_le),
+            visibilite: 'couple',
+            rappelHeures: r.rappel_heures ?? undefined,
+          }),
+        );
+      },
+
+      async enregistrerEvenement(coupleId, e) {
+        await pool.query(
+          `INSERT INTO evenements
+             (id, couple_id, titre, categorie, debut, fin, journee_entiere, lieu, note,
+              cree_par, cree_le, rappel_heures)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+           ON CONFLICT (id) DO UPDATE
+                  SET titre = EXCLUDED.titre, categorie = EXCLUDED.categorie,
+                      debut = EXCLUDED.debut, fin = EXCLUDED.fin,
+                      journee_entiere = EXCLUDED.journee_entiere,
+                      lieu = EXCLUDED.lieu, note = EXCLUDED.note,
+                      rappel_heures = EXCLUDED.rappel_heures`,
+          [
+            e.id, coupleId, e.titre, e.categorie, e.debut, e.fin ?? null,
+            e.journeeEntiere, e.lieu ?? null, e.note ?? null, e.creePar, e.creeLe,
+            e.rappelHeures ?? null,
+          ],
+        );
+      },
+
+      async supprimerEvenement(coupleId, id) {
+        await pool.query('DELETE FROM evenements WHERE couple_id = $1 AND id = $2', [
+          coupleId, id,
+        ]);
+      },
+
+      async projets(coupleId) {
+        const { rows } = await pool.query(
+          `SELECT id, titre, intention, echeance::text AS echeance, cree_par, cree_le, archive_le
+             FROM projets WHERE couple_id = $1 ORDER BY cree_le DESC`,
+          [coupleId],
+        );
+        if (rows.length === 0) return [];
+
+        const jalons = await pool.query(
+          `SELECT id, projet_id, titre, echeance::text AS echeance, fait_le, fait_par
+             FROM jalons WHERE projet_id = ANY($1::text[]) ORDER BY rang`,
+          [rows.map((r) => r.id)],
+        );
+
+        return rows.map(
+          (r): Projet => ({
+            id: r.id,
+            titre: r.titre,
+            intention: r.intention ?? undefined,
+            echeance: r.echeance ?? undefined,
+            creePar: r.cree_par,
+            creeLe: isoRequis(r.cree_le),
+            archiveLe: iso(r.archive_le),
+            jalons: jalons.rows
+              .filter((j) => j.projet_id === r.id)
+              .map((j) => ({
+                id: j.id,
+                titre: j.titre,
+                echeance: j.echeance ?? undefined,
+                faitLe: iso(j.fait_le),
+                faitPar: j.fait_par ?? undefined,
+              })),
+          }),
+        );
+      },
+
+      async projetParId(coupleId, id) {
+        return (await this.projets(coupleId)).find((p) => p.id === id);
+      },
+
+      async enregistrerProjet(coupleId, projet) {
+        const client = await pool.connect();
+        try {
+          await client.query('BEGIN');
+          await client.query(
+            `INSERT INTO projets (id, couple_id, titre, intention, echeance, cree_par, cree_le, archive_le)
+                  VALUES ($1,$2,$3,$4,$5::date,$6,$7,$8)
+             ON CONFLICT (id) DO UPDATE
+                    SET titre = EXCLUDED.titre, intention = EXCLUDED.intention,
+                        echeance = EXCLUDED.echeance, archive_le = EXCLUDED.archive_le`,
+            [
+              projet.id, coupleId, projet.titre, projet.intention ?? null,
+              projet.echeance ?? null, projet.creePar, projet.creeLe,
+              projet.archiveLe ?? null,
+            ],
+          );
+          // Remplacement intégral : un jalon retiré doit disparaître.
+          await client.query('DELETE FROM jalons WHERE projet_id = $1', [projet.id]);
+          for (const [rang, j] of projet.jalons.entries()) {
+            await client.query(
+              `INSERT INTO jalons (id, projet_id, titre, echeance, fait_le, fait_par, rang)
+                    VALUES ($1,$2,$3,$4::date,$5,$6,$7)`,
+              [j.id, projet.id, j.titre, j.echeance ?? null, j.faitLe ?? null, j.faitPar ?? null, rang],
+            );
+          }
+          await client.query('COMMIT');
+        } catch (erreur) {
+          await client.query('ROLLBACK');
+          throw erreur;
+        } finally {
+          client.release();
+        }
+      },
+
+      async initiatives(coupleId) {
+        const { rows } = await pool.query(
+          `SELECT id, titre, categorie, etat, proposee_par, proposee_le,
+                  prevue_pour::text AS prevue_pour, vecue_le, souvenir
+             FROM initiatives WHERE couple_id = $1 ORDER BY proposee_le DESC`,
+          [coupleId],
+        );
+        return rows.map(
+          (r): Initiative => ({
+            id: r.id,
+            titre: r.titre,
+            categorie: r.categorie,
+            etat: r.etat,
+            proposeePar: r.proposee_par,
+            proposeeLe: isoRequis(r.proposee_le),
+            prevuePour: r.prevue_pour ?? undefined,
+            vecueLe: iso(r.vecue_le),
+            souvenir: r.souvenir ?? undefined,
+          }),
+        );
+      },
+
+      async initiativeParId(coupleId, id) {
+        return (await this.initiatives(coupleId)).find((i) => i.id === id);
+      },
+
+      async enregistrerInitiative(coupleId, i) {
+        await pool.query(
+          `INSERT INTO initiatives
+             (id, couple_id, titre, categorie, etat, proposee_par, proposee_le, prevue_pour, vecue_le, souvenir)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8::date,$9,$10)
+           ON CONFLICT (id) DO UPDATE
+                  SET etat = EXCLUDED.etat, prevue_pour = EXCLUDED.prevue_pour,
+                      vecue_le = EXCLUDED.vecue_le, souvenir = EXCLUDED.souvenir`,
+          [
+            i.id, coupleId, i.titre, i.categorie, i.etat, i.proposeePar,
+            i.proposeeLe, i.prevuePour ?? null, i.vecueLe ?? null, i.souvenir ?? null,
+          ],
+        );
+      },
+
+      async supprimerInitiative(coupleId, id) {
+        await pool.query('DELETE FROM initiatives WHERE couple_id = $1 AND id = $2', [
+          coupleId, id,
+        ]);
+      },
+
+      async rappelsEmis(coupleId) {
+        const { rows } = await pool.query<{ cle: string }>(
+          'SELECT cle FROM rappels_emis WHERE couple_id = $1',
+          [coupleId],
+        );
+        return rows.map((r) => r.cle);
+      },
+
+      async noterRappelsEmis(coupleId, cles) {
+        for (const cle of cles) {
+          await pool.query(
+            `INSERT INTO rappels_emis (couple_id, cle) VALUES ($1, $2)
+             ON CONFLICT (couple_id, cle) DO NOTHING`,
+            [coupleId, cle],
+          );
+        }
+      },
+
+      async effacerPourCouple(coupleId) {
+        await pool.query('DELETE FROM rappels_emis WHERE couple_id = $1', [coupleId]);
+        await pool.query('DELETE FROM initiatives WHERE couple_id = $1', [coupleId]);
+        await pool.query('DELETE FROM projets WHERE couple_id = $1', [coupleId]);
+        await pool.query('DELETE FROM evenements WHERE couple_id = $1', [coupleId]);
+      },
+    },
+
+    chat: {
+      async clePublique(partenaireId) {
+        const { rows } = await pool.query<{ cle_publique: string }>(
+          'SELECT cle_publique FROM cles_publiques WHERE partenaire_id = $1',
+          [partenaireId],
+        );
+        return rows[0]?.cle_publique;
+      },
+
+      async definirClePublique(partenaireId, cle) {
+        await pool.query(
+          `INSERT INTO cles_publiques (partenaire_id, cle_publique, maj_le)
+                VALUES ($1, $2, now())
+           ON CONFLICT (partenaire_id) DO UPDATE
+                  SET cle_publique = EXCLUDED.cle_publique, maj_le = now()`,
+          [partenaireId, cle],
+        );
+      },
+
+      async messages(coupleId) {
+        const { rows } = await pool.query<{
+          id: string;
+          auteur_id: string;
+          enveloppe: string;
+          envoye_le: Date;
+          lu_le: Date | null;
+        }>(
+          `SELECT id, auteur_id, enveloppe, envoye_le, lu_le
+             FROM messages WHERE couple_id = $1 ORDER BY envoye_le`,
+          [coupleId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          auteurId: r.auteur_id,
+          enveloppe: r.enveloppe,
+          envoyeLe: isoRequis(r.envoye_le),
+          luLe: iso(r.lu_le),
+        }));
+      },
+
+      async ajouter(coupleId, message) {
+        await pool.query(
+          `INSERT INTO messages (id, couple_id, auteur_id, enveloppe, envoye_le, lu_le)
+                VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            message.id,
+            coupleId,
+            message.auteurId,
+            message.enveloppe,
+            message.envoyeLe,
+            message.luLe ?? null,
+          ],
+        );
+      },
+
+      async marquerLus(coupleId, lecteurId, quand) {
+        await pool.query(
+          `UPDATE messages SET lu_le = $3
+            WHERE couple_id = $1 AND auteur_id <> $2 AND lu_le IS NULL`,
+          [coupleId, lecteurId, quand],
+        );
+      },
+
+      async effacerPourCouple(coupleId) {
+        await pool.query('DELETE FROM messages WHERE couple_id = $1', [coupleId]);
+      },
+    },
+
+    presence: {
+      async statuts(coupleId) {
+        const { rows } = await pool.query<{
+          partenaire_id: string;
+          code: string;
+          note_scellee: string | null;
+          maj_le: Date;
+          humeur_code: string | null;
+          mot_humeur_scelle: string | null;
+          humeur_maj_le: Date | null;
+        }>(
+          `SELECT partenaire_id, code, note_scellee, maj_le,
+                  humeur_code, mot_humeur_scelle, humeur_maj_le
+             FROM statuts WHERE couple_id = $1`,
+          [coupleId],
+        );
+        return rows.map((r) => ({
+          partenaireId: r.partenaire_id,
+          code: r.code,
+          noteScellee: r.note_scellee ?? undefined,
+          majLe: isoRequis(r.maj_le),
+          humeurCode: r.humeur_code ?? undefined,
+          motHumeurScelle: r.mot_humeur_scelle ?? undefined,
+          humeurMajLe: iso(r.humeur_maj_le),
+        }));
+      },
+
+      async definirStatut(coupleId, statut) {
+        await pool.query(
+          `INSERT INTO statuts (couple_id, partenaire_id, code, note_scellee, maj_le)
+                VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (couple_id, partenaire_id) DO UPDATE
+                  SET code = EXCLUDED.code,
+                      note_scellee = EXCLUDED.note_scellee,
+                      maj_le = EXCLUDED.maj_le`,
+          [
+            coupleId,
+            statut.partenaireId,
+            statut.code,
+            statut.noteScellee ?? null,
+            statut.majLe,
+          ],
+        );
+      },
+
+      async definirHumeur(coupleId, partenaireId, code, motScelle, quand) {
+        await pool.query(
+          `INSERT INTO statuts
+             (couple_id, partenaire_id, code, maj_le, humeur_code, mot_humeur_scelle, humeur_maj_le)
+                VALUES ($1, $2, 'disponible', $5, $3, $4, $5)
+           ON CONFLICT (couple_id, partenaire_id) DO UPDATE
+                  SET humeur_code = EXCLUDED.humeur_code,
+                      mot_humeur_scelle = EXCLUDED.mot_humeur_scelle,
+                      humeur_maj_le = EXCLUDED.humeur_maj_le`,
+          [coupleId, partenaireId, code, motScelle ?? null, quand],
+        );
+      },
+
+      async checkIns(coupleId) {
+        const { rows } = await pool.query<{
+          id: string;
+          partenaire_id: string;
+          lieu_scelle: string;
+          mot_scelle: string | null;
+          fait_le: Date;
+        }>(
+          `SELECT id, partenaire_id, lieu_scelle, mot_scelle, fait_le
+             FROM check_ins WHERE couple_id = $1 ORDER BY fait_le DESC`,
+          [coupleId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          partenaireId: r.partenaire_id,
+          lieuScelle: r.lieu_scelle,
+          motScelle: r.mot_scelle ?? undefined,
+          faitLe: isoRequis(r.fait_le),
+        }));
+      },
+
+      async ajouterCheckIn(coupleId, checkIn) {
+        await pool.query(
+          `INSERT INTO check_ins (id, couple_id, partenaire_id, lieu_scelle, mot_scelle, fait_le)
+                VALUES ($1, $2, $3, $4, $5, $6)`,
+          [
+            checkIn.id,
+            coupleId,
+            checkIn.partenaireId,
+            checkIn.lieuScelle,
+            checkIn.motScelle ?? null,
+            checkIn.faitLe,
+          ],
+        );
+      },
+
+      async alertes(coupleId) {
+        const { rows } = await pool.query(
+          `SELECT id, partenaire_id, lieu_scelle, message_scelle, etat, emise_le, vue_le, resolue_le
+             FROM alertes_sos WHERE couple_id = $1 ORDER BY emise_le DESC`,
+          [coupleId],
+        );
+        return rows.map(versAlerte);
+      },
+
+      async enregistrerAlerte(coupleId, alerte) {
+        await pool.query(
+          `INSERT INTO alertes_sos
+             (id, couple_id, partenaire_id, lieu_scelle, message_scelle, etat, emise_le, vue_le, resolue_le)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           ON CONFLICT (id) DO UPDATE
+                  SET etat = EXCLUDED.etat,
+                      vue_le = EXCLUDED.vue_le,
+                      resolue_le = EXCLUDED.resolue_le`,
+          [
+            alerte.id,
+            coupleId,
+            alerte.partenaireId,
+            alerte.lieuScelle ?? null,
+            alerte.messageScelle ?? null,
+            alerte.etat,
+            alerte.emiseLe,
+            alerte.vueLe ?? null,
+            alerte.resolueLe ?? null,
+          ],
+        );
+      },
+
+      async alerteParId(coupleId, id) {
+        const { rows } = await pool.query(
+          `SELECT id, partenaire_id, lieu_scelle, message_scelle, etat, emise_le, vue_le, resolue_le
+             FROM alertes_sos WHERE couple_id = $1 AND id = $2`,
+          [coupleId, id],
+        );
+        return rows[0] ? versAlerte(rows[0]) : undefined;
+      },
+
+      async effacerPourCouple(coupleId) {
+        await pool.query('DELETE FROM alertes_sos WHERE couple_id = $1', [coupleId]);
+        await pool.query('DELETE FROM check_ins WHERE couple_id = $1', [coupleId]);
+        await pool.query('DELETE FROM statuts WHERE couple_id = $1', [coupleId]);
+      },
+    },
+
+    confidences: {
+      async parCouple(coupleId) {
+        const { rows } = await pool.query(
+          `SELECT id, auteur_id, type, titre, texte, cree_le, envoyee_le, lu_le
+             FROM confidences WHERE couple_id = $1 ORDER BY envoyee_le DESC`,
+          [coupleId],
+        );
+        return rows.map(versConfidence);
+      },
+
+      async parId(coupleId, id) {
+        const { rows } = await pool.query(
+          `SELECT id, auteur_id, type, titre, texte, cree_le, envoyee_le, lu_le
+             FROM confidences WHERE couple_id = $1 AND id = $2`,
+          [coupleId, id],
+        );
+        return rows[0] ? versConfidence(rows[0]) : undefined;
+      },
+
+      async enregistrer(coupleId, confidence) {
+        // La colonne `visibilite` est contrainte à `couple` : un brouillon ne
+        // peut littéralement pas être écrit ici.
+        await pool.query(
+          `INSERT INTO confidences
+             (id, couple_id, auteur_id, type, titre, texte, cree_le, envoyee_le, lu_le)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+           ON CONFLICT (id) DO UPDATE SET lu_le = EXCLUDED.lu_le`,
+          [
+            confidence.id,
+            coupleId,
+            confidence.auteurId,
+            confidence.type,
+            confidence.titre ?? null,
+            confidence.texte,
+            confidence.creeLe,
+            confidence.envoyeeLe,
+            confidence.luLe ?? null,
+          ],
+        );
+      },
+
+      async effacerPourCouple(coupleId) {
+        await pool.query('DELETE FROM confidences WHERE couple_id = $1', [coupleId]);
+      },
+    },
+
+    cycle: {
+      async partage(coupleId) {
+        const { rows } = await pool.query<{
+          porteuse_id: string;
+          niveau: string;
+          maj_le: Date;
+        }>(
+          'SELECT porteuse_id, niveau, maj_le FROM cycle_partage WHERE couple_id = $1',
+          [coupleId],
+        );
+        const ligne = rows[0];
+        return ligne
+          ? {
+              porteuseId: ligne.porteuse_id,
+              niveau: ligne.niveau as PartageCycle['niveau'],
+              majLe: isoRequis(ligne.maj_le),
+            }
+          : undefined;
+      },
+
+      async definirPartage(coupleId, partage) {
+        await pool.query(
+          `INSERT INTO cycle_partage (couple_id, porteuse_id, niveau, maj_le)
+                VALUES ($1, $2, $3, $4)
+           ON CONFLICT (couple_id) DO UPDATE
+                  SET porteuse_id = EXCLUDED.porteuse_id,
+                      niveau = EXCLUDED.niveau,
+                      maj_le = EXCLUDED.maj_le`,
+          [coupleId, partage.porteuseId, partage.niveau, partage.majLe],
+        );
+      },
+
+      async regles(coupleId) {
+        const { rows } = await pool.query<{
+          id: string;
+          debut_le: string;
+          fin_le: string | null;
+          saisi_le: Date;
+        }>(
+          `SELECT id, debut_le::text AS debut_le, fin_le::text AS fin_le, saisi_le
+             FROM cycle_regles WHERE couple_id = $1 ORDER BY debut_le DESC`,
+          [coupleId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          debutLe: r.debut_le,
+          finLe: r.fin_le ?? undefined,
+          saisiLe: isoRequis(r.saisi_le),
+        }));
+      },
+
+      async ajouterRegles(coupleId, entree) {
+        await pool.query(
+          `INSERT INTO cycle_regles (id, couple_id, debut_le, fin_le, saisi_le)
+                VALUES ($1, $2, $3::date, $4::date, $5)
+           ON CONFLICT (couple_id, debut_le) DO UPDATE
+                  SET fin_le = EXCLUDED.fin_le`,
+          [entree.id, coupleId, entree.debutLe, entree.finLe ?? null, entree.saisiLe],
+        );
+      },
+
+      async supprimerRegles(coupleId, id) {
+        await pool.query('DELETE FROM cycle_regles WHERE couple_id = $1 AND id = $2', [
+          coupleId,
+          id,
+        ]);
+      },
+
+      async symptomes(coupleId) {
+        const { rows } = await pool.query<{
+          id: string;
+          date_jour: string;
+          type: string;
+          intensite: number;
+          note: string | null;
+        }>(
+          `SELECT id, date_jour::text AS date_jour, type, intensite, note
+             FROM cycle_symptomes WHERE couple_id = $1 ORDER BY date_jour DESC`,
+          [coupleId],
+        );
+        return rows.map((r) => ({
+          id: r.id,
+          date: r.date_jour,
+          type: r.type as Symptome['type'],
+          intensite: r.intensite as Symptome['intensite'],
+          note: r.note ?? undefined,
+        }));
+      },
+
+      async noterSymptome(coupleId, symptome) {
+        await pool.query(
+          `INSERT INTO cycle_symptomes (id, couple_id, date_jour, type, intensite, note)
+                VALUES ($1, $2, $3::date, $4, $5, $6)
+           ON CONFLICT (couple_id, date_jour, type) DO UPDATE
+                  SET intensite = EXCLUDED.intensite, note = EXCLUDED.note`,
+          [
+            symptome.id,
+            coupleId,
+            symptome.date,
+            symptome.type,
+            symptome.intensite,
+            symptome.note ?? null,
+          ],
+        );
+      },
+
+      async retirerSymptome(coupleId, id) {
+        await pool.query(
+          'DELETE FROM cycle_symptomes WHERE couple_id = $1 AND id = $2',
+          [coupleId, id],
+        );
+      },
+
+      async effacerPourCouple(coupleId) {
+        await pool.query('DELETE FROM cycle_symptomes WHERE couple_id = $1', [coupleId]);
+        await pool.query('DELETE FROM cycle_regles WHERE couple_id = $1', [coupleId]);
+        await pool.query('DELETE FROM cycle_partage WHERE couple_id = $1', [coupleId]);
+      },
+    },
+
+    appareils: {
+      async parPartenaire(partenaireId) {
+        const { rows } = await pool.query<{
+          partenaire_id: string;
+          jeton_push: string;
+          plateforme: 'ios' | 'android';
+        }>(
+          'SELECT partenaire_id, jeton_push, plateforme FROM appareils WHERE partenaire_id = $1 ORDER BY enregistre_le',
+          [partenaireId],
+        );
+        return rows.map(
+          (r): Appareil => ({
+            partenaireId: r.partenaire_id,
+            jetonPush: r.jeton_push,
+            plateforme: r.plateforme,
+          }),
+        );
+      },
+
+      async enregistrer(appareil) {
+        await pool.query(
+          `INSERT INTO appareils (jeton_push, partenaire_id, plateforme)
+                VALUES ($1, $2, $3)
+           ON CONFLICT (jeton_push) DO UPDATE
+                  SET partenaire_id = EXCLUDED.partenaire_id,
+                      plateforme = EXCLUDED.plateforme`,
+          [appareil.jetonPush, appareil.partenaireId, appareil.plateforme],
+        );
+      },
+
+      async supprimerParJeton(jetonPush: string) {
+        await pool.query('DELETE FROM appareils WHERE jeton_push = $1', [
+          jetonPush,
+        ]);
+      },
+
+      async effacerPourPartenaire(partenaireId: PartenaireId) {
+        await pool.query('DELETE FROM appareils WHERE partenaire_id = $1', [
+          partenaireId,
+        ]);
+      },
+    },
+  };
+}
+
+function versAlerte(ligne: {
+  id: string;
+  partenaire_id: string;
+  lieu_scelle: string | null;
+  message_scelle: string | null;
+  etat: string;
+  emise_le: Date;
+  vue_le: Date | null;
+  resolue_le: Date | null;
+}): AlerteServeur {
+  return {
+    id: ligne.id,
+    partenaireId: ligne.partenaire_id,
+    lieuScelle: ligne.lieu_scelle ?? undefined,
+    messageScelle: ligne.message_scelle ?? undefined,
+    etat: ligne.etat as AlerteServeur['etat'],
+    emiseLe: isoRequis(ligne.emise_le),
+    vueLe: iso(ligne.vue_le),
+    resolueLe: iso(ligne.resolue_le),
+  };
+}
+
+function versConfidence(ligne: {
+  id: string;
+  auteur_id: string;
+  type: string;
+  titre: string | null;
+  texte: string;
+  cree_le: Date;
+  envoyee_le: Date;
+  lu_le: Date | null;
+}): Confidence {
+  return {
+    id: ligne.id,
+    auteurId: ligne.auteur_id,
+    type: ligne.type as Confidence['type'],
+    titre: ligne.titre ?? undefined,
+    texte: ligne.texte,
+    creeLe: isoRequis(ligne.cree_le),
+    envoyeeLe: isoRequis(ligne.envoyee_le),
+    luLe: iso(ligne.lu_le),
+    // Le dépôt ne contient que des confidences envoyées.
+    visibilite: 'couple',
+  };
+}
+
+function versNotification(ligne: {
+  id: string;
+  destinataire: string;
+  categorie: string;
+  texte: string;
+  emise_le: Date;
+  remise: string;
+  raison: string;
+  expediee_le: Date | null;
+}): NotificationServeur {
+  return {
+    id: ligne.id,
+    destinataireId: ligne.destinataire,
+    categorie: ligne.categorie as NotificationServeur['categorie'],
+    texte: ligne.texte,
+    emiseLe: isoRequis(ligne.emise_le),
+    remise: ligne.remise as NotificationServeur['remise'],
+    raison: ligne.raison,
+    expedieeLe: iso(ligne.expediee_le),
+  };
+}

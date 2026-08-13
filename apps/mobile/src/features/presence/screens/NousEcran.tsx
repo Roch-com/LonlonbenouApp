@@ -1,0 +1,156 @@
+import { StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Avatar, Bouton, Carte, Ecran, EnTete, Texte } from '@/components/ui';
+import { colors, espacements } from '@/design/theme';
+import { ilYA } from '@/lib/temps';
+import { ReglagePartage } from '@/features/reglages/components/ReglagePartage';
+import {
+  useAutre,
+  useMoi,
+  useSession,
+} from '@/features/reglages/stores/sessionStore';
+import { useNotifications } from '@/features/reglages/stores/notificationsStore';
+import { ConsentementServeur } from '@/features/reglages/components/ConsentementServeur';
+import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
+import { CompteurCarte } from '../components/CompteurCarte';
+
+/**
+ * Pôle ① — Compteur, plus le strict minimum du pôle ⑥ nécessaire pour que le
+ * partage de position soit gouvernable dès le P0.
+ */
+export function NousEcran() {
+  const router = useRouter();
+  const moi = useMoi();
+  const autre = useAutre();
+  const couple = useSession((e) => e.couple);
+  const changerDePartenaire = useSession((e) => e.changerDePartenaire);
+  const nomEspace = useSession((e) => e.nomEspace);
+  const coupleId = useSessionServeur((e) => e.coupleId);
+  const journal = useNotifications((e) => e.journal);
+  const marquerLues = useNotifications((e) => e.marquerLues);
+
+  const mesNotifications = journal.filter((n) => n.destinataireId === moi.id);
+
+  return (
+    <Ecran>
+      <EnTete surtitre="Nous" titre={nomEspace} />
+
+      <Carte>
+        <View style={styles.duo}>
+          {couple.partenaires.map((p) => (
+            <View key={p.id} style={styles.membre}>
+              <Avatar partenaire={p} taille={56} />
+              <Texte variante="corps">{p.prenom}</Texte>
+              {p.id === moi.id ? (
+                <Texte variante="meta">connecté·e ici</Texte>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      </Carte>
+
+      <CompteurCarte />
+
+      <Carte>
+        <Texte variante="surtitre">Ce que vous partagez</Texte>
+        <View style={styles.partages}>
+          <ReglagePartage module="position" sansTitre={false} />
+          <View style={styles.separateur} />
+          {/* La croissance vit sur le serveur dès qu'un compte est relié : on
+              affiche l'état qui fait autorité, pas une copie locale qui
+              divergerait sans prévenir. */}
+          {coupleId ? (
+            <ConsentementServeur
+              coupleId={coupleId}
+              module="croissance"
+              prenomAutre={autre.prenom}
+            />
+          ) : (
+            <ReglagePartage module="croissance" sansTitre={false} />
+          )}
+          <View style={styles.separateur} />
+          <ReglagePartage module="score" sansTitre={false} />
+        </View>
+        <Texte variante="meta" style={styles.mention}>
+          Un partage n’est actif que si vous l’activez tous les deux, et chacun
+          peut le suspendre quand il veut. Toute modification est annoncée aux
+          deux — jamais en silence.
+        </Texte>
+      </Carte>
+
+      <Carte>
+        <Texte variante="surtitre">Ce qui a changé</Texte>
+        {mesNotifications.length === 0 ? (
+          <Texte variante="corpsDoux" style={styles.vide}>
+            Rien de neuf.
+          </Texte>
+        ) : (
+          <View style={styles.notifications}>
+            {mesNotifications.slice(0, 8).map((n) => (
+              <View key={n.id} style={styles.notification}>
+                <Texte variante="corps">{n.texte}</Texte>
+                <Texte variante="meta">
+                  {ilYA(n.emiseLe)}
+                  {n.remise !== 'envoyee' ? ` · ${n.raison}` : ''}
+                </Texte>
+              </View>
+            ))}
+          </View>
+        )}
+        {mesNotifications.length > 0 ? (
+          <View style={styles.action}>
+            <Bouton
+              libelle="Marquer comme lu"
+              ton="discret"
+              onPress={() => marquerLues(moi.id)}
+            />
+          </View>
+        ) : null}
+      </Carte>
+
+      <Carte>
+        <Texte variante="surtitre">Sécurité</Texte>
+        <Texte variante="corpsDoux" style={styles.vide}>
+          Verrou de l’application, code de secours, et séparation des comptes.
+        </Texte>
+        <View style={styles.action}>
+          <Bouton
+            libelle="Ouvrir les réglages de sécurité"
+            ton="secondaire"
+            onPress={() => router.push('/reglages')}
+          />
+        </View>
+      </Carte>
+
+      <Carte discrete>
+        <Texte variante="surtitre">Test — couple pilote</Texte>
+        <Texte variante="petit" style={styles.vide}>
+          Bascule d’un partenaire à l’autre pour vérifier que chaque écran est
+          bien symétrique. À retirer avant la mise en production.
+        </Texte>
+        <View style={styles.action}>
+          <Bouton
+            libelle={`Passer sur ${autre.prenom}`}
+            ton="secondaire"
+            onPress={changerDePartenaire}
+          />
+        </View>
+      </Carte>
+    </Ecran>
+  );
+}
+
+const styles = StyleSheet.create({
+  duo: { flexDirection: 'row', justifyContent: 'space-around' },
+  membre: { alignItems: 'center', gap: espacements.xs },
+  partages: { marginTop: espacements.md, gap: espacements.lg },
+  separateur: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.bordure,
+  },
+  mention: { marginTop: espacements.md },
+  vide: { marginTop: espacements.sm },
+  notifications: { marginTop: espacements.md, gap: espacements.md },
+  notification: { gap: espacements.xxs },
+  action: { marginTop: espacements.md },
+});

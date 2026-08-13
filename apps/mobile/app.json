@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "LONLONBENU",
+    "slug": "lonlonbenu",
+    "owner": "rochambeau",
+    "scheme": "lonlonbenu",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#FBF6EC",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.lonlonbenu.app"
+    },
+    "android": {
+      "package": "com.lonlonbenu.app",
+      "googleServicesFile": "./google-services.json",
+      "usesCleartextTraffic": true,
+      "adaptiveIcon": {
+        "backgroundColor": "#FBF6EC",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/android-icon-monochrome.png",
+          "color": "#9C7A3C"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2704cc3a-ae4d-471f-94be-3c06f27de701"
+      }
+    }
+  }
+}

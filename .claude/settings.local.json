@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"const m=require\\('@noble/ciphers/chacha.js'\\); console.log\\(Object.keys\\(m\\).join\\(' '\\)\\)\")",
+      "Bash(node -e \"const u=require\\('@noble/ciphers/utils.js'\\); console.log\\(Object.keys\\(u\\).join\\(' '\\)\\)\")",
+      "Bash(npx vitest *)",
+      "Bash(npx --yes expo install expo-local-authentication)"
+    ]
+  }
+}

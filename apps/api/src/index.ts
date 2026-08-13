@@ -1,0 +1,80 @@
+import { Pool } from 'pg';
+import { creerServeur } from './serveur.ts';
+import { chargerPaire } from './securite/oauth/cles.ts';
+import { creerDepotPostgres, creerPool } from './domaine/depotPostgres.ts';
+import { creerDepotOAuthPostgres } from './securite/oauth/depotOAuthPostgres.ts';
+import { appliquerLeSchema } from './db/migrations.ts';
+import { demarrerLePlanificateur } from './modules/rappels/planificateur.ts';
+import { creerTransportDepuisEnv } from './modules/notifications/transportDepuisEnv.ts';
+
+function requis(nom: string): string {
+  const valeur = process.env[nom];
+  if (!valeur) {
+    console.error(
+      `${nom} est requis. Aucune valeur par défaut n’est fournie : ` +
+        'un secret de développement finit toujours par se retrouver en production.',
+    );
+    process.exit(1);
+  }
+  return valeur;
+}
+
+const urlBase = requis('DATABASE_URL');
+const clePriveePem = requis('LONLONBENU_CLE_PRIVEE_PEM');
+const emetteur = requis('LONLONBENU_OAUTH_EMETTEUR');
+const audience = process.env['LONLONBENU_OAUTH_AUDIENCE'] ?? 'lonlonbenu-api';
+const clients = (process.env['LONLONBENU_OAUTH_CLIENTS'] ?? 'lonlonbenu-mobile')
+  .split(',')
+  .map((c) => c.trim())
+  .filter(Boolean);
+
+const pool: Pool = creerPool({ connectionString: urlBase });
+await appliquerLeSchema(pool);
+
+const { clePrivee, clePublique } = chargerPaire(clePriveePem);
+
+const secretTaches = process.env['LONLONBENU_SECRET_TACHES'];
+
+const { transport, plateformes } = creerTransportDepuisEnv();
+if (plateformes.length === 0) {
+  console.warn(
+    'Aucun transport push configuré : les notifications resteront dans le journal ' +
+      'de l’app, sans jamais atteindre un écran verrouillé. ' +
+      'Voir apps/api/README.md, section « Notifications push ».',
+  );
+} else {
+  console.log(`Transport push gréé pour : ${plateformes.join(', ')}`);
+}
+
+const { app, depot, expediteur } = creerServeur({
+  depot: creerDepotPostgres(pool),
+  depotOAuth: creerDepotOAuthPostgres(pool),
+  oauth: { emetteur, audience, clientsAutorises: clients, clePrivee, clePublique },
+  transport,
+  ...(secretTaches ? { secretTaches } : {}),
+});
+
+/**
+ * Balayage des rappels. Il tourne dans le processus du serveur, ce qui suffit
+ * à une seule instance ; à plusieurs, il faudra le confier à une tâche
+ * planifiée externe qui appelle `/taches/rappels` — d'où l'existence de cette
+ * route. Deux instances qui balaient en parallèle ne dupliqueraient rien (les
+ * clés d'idempotence sont en base), mais autant ne pas travailler pour rien.
+ */
+const arreterLePlanificateur = demarrerLePlanificateur(depot, expediteur);
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    arreterLePlanificateur();
+    void app.close().then(() => process.exit(0));
+  });
+}
+
+const port = Number(process.env['PORT'] ?? 3000);
+
+try {
+  await app.listen({ port, host: '0.0.0.0' });
+  console.log(`API LONLONBENU à l’écoute sur :${port}`);
+} catch (erreur) {
+  console.error(erreur);
+  process.exit(1);
+}

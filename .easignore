@@ -1,0 +1,41 @@
+# Ce qui est envoyé aux serveurs de build d'Expo.
+#
+# Quand ce fichier existe, il **remplace** `.gitignore` pour EAS. Il faut donc
+# le tenir à jour des deux côtés : un secret retiré de `.gitignore` mais oublié
+# ici partirait dans le cloud.
+#
+# La différence voulue avec `.gitignore` : `google-services.json` doit monter,
+# sinon le build natif ne saurait pas à quel projet Firebase s'enregistrer et
+# les notifications ne fonctionneraient sur aucun téléphone. Ce fichier n'est
+# pas un secret — il est présent en clair dans chaque APK distribué — il est
+# seulement hors du dépôt parce qu'il est propre à une installation.
+
+node_modules/
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+
+# Natifs générés : EAS les régénère à partir de app.json.
+/apps/mobile/ios/
+/apps/mobile/android/
+
+# Secrets réels — ne doivent jamais quitter cette machine.
+.env
+.env.*
+!.env.example
+*-firebase-adminsdk-*.json
+*.p8
+.eas-token
+
+# Lourd et inutile à un build mobile.
+/docs/
+.claude/
+
+# `apps/api/` reste, malgré son inutilité ici : c'est un espace de travail npm
+# déclaré dans `package-lock.json`, et `npm ci` échouerait sur le serveur de
+# build s'il manquait à l'appel.
+
+# OS
+.DS_Store
+Thumbs.db

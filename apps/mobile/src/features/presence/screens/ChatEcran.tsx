@@ -1,0 +1,261 @@
+import { useEffect, useRef, useState } from 'react';
+import {
+  FlatList,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Bouton, Carte, Texte } from '@/components/ui';
+import {
+  colors,
+  espacements,
+  polices,
+  rayons,
+  typography,
+} from '@/design/theme';
+import {
+  useSessionServeur,
+  useServeurFaitAutorite,
+} from '@/features/reglages/stores/sessionServeurStore';
+import { useAutre } from '@/features/reglages/stores/sessionStore';
+import { BulleMessage } from '../components/BulleMessage';
+import { SelecteurHumeur } from '../components/SelecteurHumeur';
+import { useFilLisible } from '../hooks/useLecturesDechiffrees';
+import { useChat, useNombreDeVerification } from '../stores/chatStore';
+import { usePresence } from '../stores/presenceStore';
+
+/**
+ * Pôle ① — Chat du couple, chiffré de bout en bout.
+ *
+ * Le serveur achemine des enveloppes qu'il ne peut pas ouvrir. Le clair
+ * n'apparaît qu'ici, après déchiffrement local.
+ */
+export function ChatEcran() {
+  const marges = useSafeAreaInsets();
+  const router = useRouter();
+  const autre = useAutre();
+
+  const etat = useSessionServeur((e) => e.etat);
+  const coupleId = useSessionServeur((e) => e.coupleId);
+  const partenaireId = useSessionServeur((e) => e.partenaireId);
+  const connecte = useServeurFaitAutorite();
+
+  const cles = useChat((e) => e.cles);
+  const horsLigne = useChat((e) => e.horsLigne);
+  const erreur = useChat((e) => e.erreur);
+  const preparerLesCles = useChat((e) => e.preparerLesCles);
+  const charger = useChat((e) => e.charger);
+  const envoyer = useChat((e) => e.envoyer);
+  const marquerLus = useChat((e) => e.marquerLus);
+  const chargerPresence = usePresence((e) => e.charger);
+
+  const fil = useFilLisible();
+  const nombre = useNombreDeVerification();
+
+  const [brouillon, setBrouillon] = useState('');
+  const [verificationOuverte, setVerificationOuverte] = useState(false);
+  const liste = useRef<FlatList>(null);
+
+  useEffect(() => {
+    if (!connecte || !coupleId || !partenaireId) return;
+    void (async () => {
+      await preparerLesCles(coupleId);
+      await charger(coupleId, partenaireId);
+      await chargerPresence(coupleId, partenaireId);
+      await marquerLus(coupleId);
+    })();
+  }, [connecte, coupleId, partenaireId, preparerLesCles, charger, chargerPresence, marquerLus]);
+
+  if (etat === 'anonyme' || (etat === 'connecte' && !coupleId)) {
+    return (
+      <View style={[styles.fond, styles.centre, { paddingTop: marges.top }]}>
+        <Carte>
+          <Texte variante="titre">Une conversation a besoin de deux appareils</Texte>
+          <Texte variante="corpsDoux" style={styles.intro}>
+            Les messages sont chiffrés de bout en bout : il faut un compte de
+            chaque côté pour que les clés puissent s’échanger.
+          </Texte>
+          <View style={styles.action}>
+            <Bouton
+              libelle={etat === 'anonyme' ? 'Se connecter' : 'Relier nos comptes'}
+              onPress={() =>
+                router.push(etat === 'anonyme' ? '/connexion' : '/appairage')
+              }
+            />
+          </View>
+        </Carte>
+      </View>
+    );
+  }
+
+  const envoyerLe = async (type: 'texte' | 'note_douce' = 'texte') => {
+    if (!brouillon.trim() || !coupleId || !partenaireId) return;
+    if (await envoyer(coupleId, partenaireId, brouillon, type)) setBrouillon('');
+  };
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.fond}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={marges.top}
+    >
+      <FlatList
+        ref={liste}
+        data={fil}
+        keyExtractor={(m) => m.id}
+        contentContainerStyle={[
+          styles.contenu,
+          { paddingTop: marges.top + espacements.md },
+        ]}
+        ListHeaderComponent={
+          <View style={styles.entete}>
+            <Carte>
+              <SelecteurHumeur />
+            </Carte>
+
+            {!cles?.echangePret ? (
+              <Carte discrete>
+                <Texte variante="petit">
+                  {cles?.mienne
+                    ? `${autre.prenom} n’a pas encore ouvert la conversation sur son appareil. Tant que sa clé n’est pas publiée, rien ne peut être chiffré pour lui.`
+                    : 'Préparation de vos clés de chiffrement…'}
+                </Texte>
+              </Carte>
+            ) : null}
+
+            {horsLigne ? (
+              <Carte discrete>
+                <Texte variante="petit">
+                  Sans connexion. Vous voyez la conversation telle qu’elle était ;
+                  rien ne peut partir pour l’instant.
+                </Texte>
+              </Carte>
+            ) : null}
+
+            {erreur ? (
+              <Carte discrete>
+                <Texte variante="petit" style={styles.erreur}>
+                  {erreur}
+                </Texte>
+              </Carte>
+            ) : null}
+
+            {nombre ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => setVerificationOuverte((v) => !v)}
+              >
+                <Carte discrete>
+                  <Texte variante="meta">
+                    Chiffré de bout en bout · toucher pour vérifier
+                  </Texte>
+                  {verificationOuverte ? (
+                    <>
+                      <Texte variante="sousTitre" style={styles.nombre}>
+                        {nombre}
+                      </Texte>
+                      <Texte variante="meta">
+                        Comparez ce nombre à voix haute avec {autre.prenom}. S’il
+                        diffère, quelqu’un s’est interposé — et le serveur ne
+                        pourrait pas vous le dire lui-même.
+                      </Texte>
+                    </>
+                  ) : null}
+                </Carte>
+              </Pressable>
+            ) : null}
+          </View>
+        }
+        ListEmptyComponent={
+          <Texte variante="corpsDoux" style={styles.vide}>
+            Rien encore. Le premier mot est souvent le plus simple.
+          </Texte>
+        }
+        renderItem={({ item }) => (
+          <BulleMessage message={item} deMoi={item.auteurId === partenaireId} />
+        )}
+        onContentSizeChange={() => liste.current?.scrollToEnd({ animated: true })}
+      />
+
+      <View style={[styles.barre, { paddingBottom: marges.bottom + espacements.sm }]}>
+        <TextInput
+          style={styles.saisie}
+          placeholder="Écrire à deux…"
+          placeholderTextColor={colors.texteDoux}
+          value={brouillon}
+          onChangeText={setBrouillon}
+          multiline
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Envoyer"
+          onPress={() => void envoyerLe()}
+          disabled={!brouillon.trim() || !cles?.echangePret}
+          style={({ pressed }) => [
+            styles.envoi,
+            (!brouillon.trim() || !cles?.echangePret) && styles.envoiInactif,
+            pressed && styles.envoiPresse,
+          ]}
+        >
+          <Texte variante="sousTitre" style={styles.envoiTexte}>
+            ↑
+          </Texte>
+        </Pressable>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  fond: { flex: 1, backgroundColor: colors.fond },
+  centre: { justifyContent: 'center', paddingHorizontal: espacements.lg },
+  intro: { marginTop: espacements.xs },
+  action: { marginTop: espacements.lg },
+  entete: { gap: espacements.md, marginBottom: espacements.md },
+  contenu: {
+    paddingHorizontal: espacements.lg,
+    paddingBottom: espacements.md,
+    gap: espacements.sm,
+  },
+  nombre: { marginTop: espacements.xs, letterSpacing: 2 },
+  vide: { textAlign: 'center', marginTop: espacements.xl },
+  erreur: { color: colors.tendresse },
+  barre: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: espacements.xs,
+    paddingHorizontal: espacements.lg,
+    paddingTop: espacements.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.bordure,
+    backgroundColor: colors.fondEleve,
+  },
+  saisie: {
+    flex: 1,
+    maxHeight: 120,
+    minHeight: 48,
+    paddingHorizontal: espacements.md,
+    paddingVertical: espacements.sm,
+    borderRadius: rayons.lg,
+    backgroundColor: colors.fond,
+    fontFamily: polices.corps,
+    fontSize: typography.tailles.corps,
+    color: colors.texte,
+  },
+  envoi: {
+    width: 48,
+    height: 48,
+    borderRadius: rayons.rond,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  envoiInactif: { opacity: 0.4 },
+  envoiPresse: { opacity: 0.85 },
+  envoiTexte: { color: colors.texteInverse },
+});

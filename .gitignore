@@ -1,0 +1,31 @@
+node_modules/
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+
+# natifs générés par expo prebuild
+/apps/mobile/ios/
+/apps/mobile/android/
+
+# secrets — jamais commités
+.env
+.env.*
+!.env.example
+
+# identifiants push. google-services.json n'est pas un secret au sens strict
+# (il part dans chaque APK), mais la clé de compte de service en est un vrai :
+# elle autorise à pousser vers tous les appareils du projet.
+/apps/mobile/google-services.json
+/apps/mobile/GoogleService-Info.plist
+*-firebase-adminsdk-*.json
+*.p8
+
+# Jeton d'accès Expo. Dans un fichier plutôt qu'une variable d'environnement :
+# sous Windows, une variable définie après le lancement d'un terminal n'atteint
+# pas les processus déjà démarrés, et on cherche longtemps pourquoi.
+.eas-token
+
+# OS
+.DS_Store
+Thumbs.db
