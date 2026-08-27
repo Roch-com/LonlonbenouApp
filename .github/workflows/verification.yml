@@ -48,8 +48,11 @@ jobs:
           node-version: '24'
           cache: npm
 
+      # `npm install` : le verrou est produit sous Windows et n'y inscrit pas
+      # les binaires Linux d'esbuild, rollup et lightningcss. `npm ci` échouerait
+      # ici pour la même raison que chez l'hébergeur.
       - name: Installer
-        run: npm ci
+        run: npm install
 
       - name: Types
         run: npm run typecheck

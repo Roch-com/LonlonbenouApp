@@ -16,7 +16,17 @@ services:
     # Le dépôt est un monorepo npm : l'installation se fait à la racine, sinon
     # `@lonlonbenu/shared` reste introuvable.
     rootDir: .
-    buildCommand: npm ci
+    # `npm install` et non `npm ci`, à contrecœur.
+    #
+    # Le fichier de verrouillage est produit sous Windows, et npm n'y inscrit
+    # que les binaires optionnels de la plateforme courante — esbuild, rollup,
+    # lightningcss. Sous Linux, `npm ci` cherche leurs équivalents, ne les
+    # trouve pas dans le verrou, et refuse d'installer quoi que ce soit.
+    #
+    # `npm install` résout pour la plateforme d'exécution. On perd la garantie
+    # de reproductibilité stricte de `npm ci` ; on la retrouvera le jour où le
+    # verrou sera produit sous Linux, en CI.
+    buildCommand: npm install
     startCommand: npm run start --workspace=@lonlonbenu/api
     healthCheckPath: /sante
     envVars:

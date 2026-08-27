@@ -29,3 +29,9 @@ web-build/
 # OS
 .DS_Store
 Thumbs.db
+
+# Clé de signature de production. Générée localement, jamais versionnée.
+cle-production.pem
+
+# Clé Firebase extraite pour recopie. Jamais versionnée.
+cle-firebase.pem

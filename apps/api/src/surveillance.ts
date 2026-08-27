@@ -28,8 +28,14 @@ import type { FastifyInstance } from 'fastify';
  * C'est exactement ce qu'il faut pour corriger, et rien de plus.
  */
 export function demarrerLaSurveillance(): boolean {
-  const dsn = process.env['SENTRY_DSN'];
-  if (!dsn) return false;
+  const dsn = process.env['SENTRY_DSN']?.trim();
+
+  // Un DSN absent, vide, ou qui n'est pas une URL : on n'initialise rien. Les
+  // formulaires d'hébergeur imposent parfois une valeur pour une variable
+  // déclarée, et un espace ou un `-` suffirait à faire lever Sentry au
+  // démarrage — soit exactement le contraire de ce qu'on attend d'un outil de
+  // surveillance.
+  if (!dsn || !dsn.startsWith('http')) return false;
 
   Sentry.init({
     dsn,
@@ -74,6 +80,6 @@ export function demarrerLaSurveillance(): boolean {
  * route serait journalisée localement mais jamais remontée.
  */
 export function surveillerLeServeur(app: FastifyInstance): void {
-  if (!process.env['SENTRY_DSN']) return;
+  if (!Sentry.isInitialized()) return;
   Sentry.setupFastifyErrorHandler(app);
 }
