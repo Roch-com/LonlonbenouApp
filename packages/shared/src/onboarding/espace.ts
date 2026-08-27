@@ -74,10 +74,7 @@ function melanger(debut: string, fin: string): string | undefined {
  * Propositions de noms d'espace à partir des deux prénoms.
  * Toujours au moins une proposition, même sur des prénoms courts ou exotiques.
  */
-export function propositionsNomEspace(
-  prenomA: string,
-  prenomB: string,
-): string[] {
+export function propositionsNomEspace(prenomA: string, prenomB: string): string[] {
   const a = prenomA.trim();
   const b = prenomB.trim();
   if (!a || !b) return [];

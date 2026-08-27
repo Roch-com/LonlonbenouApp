@@ -67,9 +67,6 @@ export function marquerVecue(
   };
 }
 
-export function programmer(
-  initiative: Initiative,
-  prevuePour: string,
-): Initiative {
+export function programmer(initiative: Initiative, prevuePour: string): Initiative {
   return { ...initiative, etat: 'prevue', prevuePour };
 }

@@ -47,10 +47,7 @@ export interface ResultatAppairage {
 }
 
 export interface ServiceAppairage {
-  emettre(emetteur: {
-    id: PartenaireId;
-    prenom: string;
-  }): Promise<InvitationEmise>;
+  emettre(emetteur: { id: PartenaireId; prenom: string }): Promise<InvitationEmise>;
   accepter(
     invitationId: string,
     code: string,

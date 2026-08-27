@@ -1,8 +1,13 @@
 /** Adaptateur APNs : charge utile, jeton fournisseur, classement des refus. */
 import { beforeAll, describe, expect, it } from 'vitest';
-import { exportPKCS8, generateKeyPair, jwtVerify, decodeProtectedHeader } from 'jose';
+import {
+  exportPKCS8,
+  generateKeyPair,
+  jwtVerify,
+  decodeProtectedHeader,
+} from 'jose';
 import type { Appareil } from '../../domaine/depot.ts';
-import { ErreurPush, type MessagePousse } from './transport.ts';
+import { type ErreurPush, type MessagePousse } from './transport.ts';
 import { creerTransportApns, type SessionPush } from './transportApns.ts';
 
 const IPHONE: Appareil = {
@@ -113,9 +118,7 @@ describe('jeton fournisseur', () => {
 
     for (let i = 0; i < 4; i++) await transport.pousser(message());
 
-    const jetons = new Set(
-      double.appels.map((a) => a.entetes['authorization']),
-    );
+    const jetons = new Set(double.appels.map((a) => a.entetes['authorization']));
     expect(jetons.size).toBe(1);
     // Et une seule connexion pour les quatre envois.
     expect(double.ouvertures).toBe(1);

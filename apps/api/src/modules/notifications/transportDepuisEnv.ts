@@ -7,6 +7,7 @@
  * façon visible plutôt que de disparaître.
  */
 
+import { normaliserPem } from '../../securite/pem.ts';
 import { creerTransportParPlateforme, type Transport } from './transport.ts';
 import { creerTransportFcm } from './transportFcm.ts';
 import { creerTransportApns } from './transportApns.ts';
@@ -15,14 +16,6 @@ export interface RapportTransport {
   transport: Transport;
   /** Plateformes réellement gréées, pour le journal de démarrage. */
   plateformes: ('ios' | 'android')[];
-}
-
-/**
- * Les clés PEM passent mal dans un `.env` : on accepte les `\n` littéraux
- * autant que les vrais sauts de ligne.
- */
-function pem(valeur: string): string {
-  return valeur.includes('\\n') ? valeur.replace(/\\n/g, '\n') : valeur;
 }
 
 export function creerTransportDepuisEnv(
@@ -38,7 +31,7 @@ export function creerTransportDepuisEnv(
     adaptateurs.android = creerTransportFcm({
       projetId,
       courrielCompteService: courriel,
-      clePriveePem: pem(cleFcm),
+      clePriveePem: normaliserPem(cleFcm),
     });
     plateformes.push('android');
   }
@@ -49,7 +42,7 @@ export function creerTransportDepuisEnv(
   const sujet = env['LONLONBENU_APNS_SUJET'];
   if (cleP8 && idCle && idEquipe && sujet) {
     adaptateurs.ios = creerTransportApns({
-      cleP8: pem(cleP8),
+      cleP8: normaliserPem(cleP8),
       idCle,
       idEquipe,
       sujet,

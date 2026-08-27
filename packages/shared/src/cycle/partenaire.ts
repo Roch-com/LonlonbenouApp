@@ -44,8 +44,7 @@ export type VuePartenaire =
 
 const LECTURE_DISCRETE_ATTENTIONNEE =
   'Ces jours-ci méritent sans doute un peu plus d’attention que d’habitude.';
-const LECTURE_DISCRETE_ORDINAIRE =
-  'Rien de particulier à signaler ces jours-ci.';
+const LECTURE_DISCRETE_ORDINAIRE = 'Rien de particulier à signaler ces jours-ci.';
 
 /** Phases sur lesquelles le niveau discret allume son unique signal. */
 const PHASES_ATTENTIONNEES: readonly CodePhase[] = ['menstruelle', 'spm'];

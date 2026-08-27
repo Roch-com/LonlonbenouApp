@@ -3,11 +3,7 @@
 import type { PartenaireId } from './couple';
 
 export type CodeStatut =
-  | 'disponible'
-  | 'occupe'
-  | 'en_route'
-  | 'au_calme'
-  | 'je_pense_a_toi';
+  'disponible' | 'occupe' | 'en_route' | 'au_calme' | 'je_pense_a_toi';
 
 export interface DefinitionStatut {
   code: CodeStatut;

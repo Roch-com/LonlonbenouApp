@@ -40,9 +40,7 @@ export function evenementsAVenir(
   maintenant: string = new Date().toISOString(),
   limite?: number,
 ): Evenement[] {
-  const aVenir = trierParDebut(
-    evenements.filter((e) => !estPasse(e, maintenant)),
-  );
+  const aVenir = trierParDebut(evenements.filter((e) => !estPasse(e, maintenant)));
   return limite === undefined ? aVenir : aVenir.slice(0, limite);
 }
 
@@ -60,9 +58,7 @@ export interface JourneeAgenda {
 }
 
 /** Regroupe par jour civil, jours vides exclus, dans l'ordre chronologique. */
-export function grouperParJour(
-  evenements: readonly Evenement[],
-): JourneeAgenda[] {
+export function grouperParJour(evenements: readonly Evenement[]): JourneeAgenda[] {
   const parJour = new Map<string, Evenement[]>();
 
   for (const evenement of trierParDebut(evenements)) {

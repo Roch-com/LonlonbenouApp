@@ -125,7 +125,8 @@ export function scoreDuCouple(
   );
   const plusActif = Math.max(joursA, joursB);
   // Équilibre entre les deux rythmes, sans jamais dire lequel est lequel.
-  const elanPartage = plusActif === 0 ? 0 : (Math.min(joursA, joursB) / plusActif) * 100;
+  const elanPartage =
+    plusActif === 0 ? 0 : (Math.min(joursA, joursB) / plusActif) * 100;
 
   const typesUtilises = new Set(fenetreGestes.map((g) => g.type)).size;
   const variete = Math.min(typesUtilises / SEUIL_VARIETE, 1) * 100;

@@ -69,7 +69,7 @@ const encodeur = (texte: string): Uint8Array => {
   if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(texte);
   const octets: number[] = [];
   for (const point of texte) {
-    let code = point.codePointAt(0)!;
+    const code = point.codePointAt(0)!;
     if (code < 0x80) octets.push(code);
     else if (code < 0x800) octets.push(0xc0 | (code >> 6), 0x80 | (code & 0x3f));
     else if (code < 0x10000)
@@ -92,7 +92,7 @@ const encodeur = (texte: string): Uint8Array => {
 const decodeur = (octets: Uint8Array): string => {
   if (typeof TextDecoder !== 'undefined') return new TextDecoder().decode(octets);
   let sortie = '';
-  for (let i = 0; i < octets.length; ) {
+  for (let i = 0; i < octets.length;) {
     const a = octets[i]!;
     if (a < 0x80) {
       sortie += String.fromCodePoint(a);
@@ -102,7 +102,9 @@ const decodeur = (octets: Uint8Array): string => {
       i += 2;
     } else if (a < 0xf0) {
       sortie += String.fromCodePoint(
-        ((a & 0x0f) << 12) | ((octets[i + 1]! & 0x3f) << 6) | (octets[i + 2]! & 0x3f),
+        ((a & 0x0f) << 12) |
+          ((octets[i + 1]! & 0x3f) << 6) |
+          (octets[i + 2]! & 0x3f),
       );
       i += 3;
     } else {

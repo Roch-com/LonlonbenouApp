@@ -23,14 +23,18 @@ import { creerDepotOAuthPostgres } from '../securite/oauth/depotOAuthPostgres.ts
  * Tables vidées avant chaque test.
  *
  * Cette liste est déduite du schéma au lieu d'être tenue à la main : une table
- * ajoutée à `schema.sql` et oubliée ici survivrait d'un test à l'autre, et une
+ * ajoutée aux migrations et oubliée ici survivrait d'un test à l'autre, et une
  * contamination de ce genre masque exactement les échecs qu'on cherche à voir.
  * C'est arrivé une fois — les clés publiques de chat restaient en place et
  * faisaient croire à un échange déjà prêt.
  */
 async function tablesDuSchema(pool: pg.Pool, schema: string): Promise<string[]> {
   const { rows } = await pool.query<{ tablename: string }>(
-    'SELECT tablename FROM pg_tables WHERE schemaname = $1',
+    // `schema_versions` est exclue : elle n'appartient pas au domaine mais au
+    // mécanisme de migration. La vider ferait rejouer tout le schéma entre deux
+    // cas de test, pour rien.
+    `SELECT tablename FROM pg_tables
+      WHERE schemaname = $1 AND tablename <> 'schema_versions'`,
     [schema],
   );
   return rows.map((r) => `"${r.tablename}"`);

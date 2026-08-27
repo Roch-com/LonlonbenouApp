@@ -64,8 +64,13 @@ describe('réciprocité stricte', () => {
             'Rochambeau',
             T0,
           ).partage;
-          partage = basculerConsentement(partage, GAELLE, bActif, 'Gaëlle', T0)
-            .partage;
+          partage = basculerConsentement(
+            partage,
+            GAELLE,
+            bActif,
+            'Gaëlle',
+            T0,
+          ).partage;
 
           expect(() => verifierReciprocite(partage)).not.toThrow();
           expect(accesDe(partage, ROCHAMBEAU).peutVoir).toBe(aActif && bActif);

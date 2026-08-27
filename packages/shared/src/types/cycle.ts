@@ -53,8 +53,7 @@ export const NIVEAUX_CYCLE: readonly DefinitionNiveauCycle[] = [
     code: 'complet',
     rang: 3,
     libelle: 'Complet',
-    ceQueLautreVoit:
-      'Le cycle détaillé, la fertilité et les symptômes partagés.',
+    ceQueLautreVoit: 'Le cycle détaillé, la fertilité et les symptômes partagés.',
     aVenir: true,
   },
 ] as const;
@@ -138,11 +137,7 @@ export interface Symptome {
 // -------------------------------------------------------------------- phases
 
 export type CodePhase =
-  | 'menstruelle'
-  | 'folliculaire'
-  | 'ovulatoire'
-  | 'luteale'
-  | 'spm';
+  'menstruelle' | 'folliculaire' | 'ovulatoire' | 'luteale' | 'spm';
 
 export interface DefinitionPhase {
   code: CodePhase;
@@ -240,7 +235,11 @@ export function estLaPorteuse(
   partage: PartageCycle | undefined,
   auteurId: PartenaireId | undefined,
 ): boolean {
-  return partage !== undefined && auteurId !== undefined && partage.porteuseId === auteurId;
+  return (
+    partage !== undefined &&
+    auteurId !== undefined &&
+    partage.porteuseId === auteurId
+  );
 }
 
 /**

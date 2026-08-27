@@ -74,9 +74,7 @@ export function deriverCleDeMessages(
   const partage = x25519.getSharedSecret(privee, publiqueAutre);
 
   const mienne = encoderBase64(x25519.getPublicKey(privee));
-  const sel = new TextEncoder().encode(
-    [mienne, clePubliqueAutre].sort().join('|'),
-  );
+  const sel = new TextEncoder().encode([mienne, clePubliqueAutre].sort().join('|'));
 
   return hkdf(sha256, partage, sel, new TextEncoder().encode(INFO_HKDF), 32);
 }

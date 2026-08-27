@@ -32,7 +32,9 @@ export function enregistrerRoutesCycle(
       const { coupleId } = requete.params as { coupleId: string };
       const resultat = await cycle.lire(coupleId, requete.identite!.partenaireId);
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return resultat.vue;
     },
@@ -55,7 +57,9 @@ export function enregistrerRoutesCycle(
         corps.porteuseId,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return { partage: resultat.partage };
     },
@@ -77,7 +81,9 @@ export function enregistrerRoutesCycle(
         corps.niveau,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return { partage: resultat.partage };
     },
@@ -100,7 +106,9 @@ export function enregistrerRoutesCycle(
         corps.finLe,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(201).send({ enregistre: true });
     },
@@ -117,7 +125,9 @@ export function enregistrerRoutesCycle(
         id,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(204).send();
     },
@@ -147,7 +157,9 @@ export function enregistrerRoutesCycle(
         corps.note,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(201).send({ enregistre: true });
     },
@@ -164,7 +176,9 @@ export function enregistrerRoutesCycle(
         id,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(204).send();
     },

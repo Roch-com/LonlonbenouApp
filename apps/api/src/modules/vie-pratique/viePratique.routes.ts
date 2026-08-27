@@ -1,8 +1,5 @@
 import type { FastifyInstance, preHandlerHookHandler } from 'fastify';
-import type {
-  CategorieEvenement,
-  CategorieSortie,
-} from '@lonlonbenu/shared';
+import type { CategorieEvenement, CategorieSortie } from '@lonlonbenu/shared';
 import type { ServiceViePratique } from './viePratique.service.ts';
 
 const CODES: Record<string, number> = {
@@ -28,7 +25,9 @@ export function enregistrerRoutesViePratique(
       const { coupleId } = requete.params as { coupleId: string };
       const resultat = await service.lire(coupleId, requete.identite!.partenaireId);
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return resultat.valeur;
     },
@@ -70,7 +69,9 @@ export function enregistrerRoutesViePratique(
         },
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(201).send({ evenement: resultat.valeur });
     },
@@ -87,7 +88,9 @@ export function enregistrerRoutesViePratique(
         id,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(204).send();
     },
@@ -112,7 +115,9 @@ export function enregistrerRoutesViePratique(
         corps.intention,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(201).send({ projet: resultat.valeur });
     },
@@ -139,7 +144,9 @@ export function enregistrerRoutesViePratique(
         corps.echeance,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(201).send({ projet: resultat.valeur });
     },
@@ -161,7 +168,9 @@ export function enregistrerRoutesViePratique(
         jalonId,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return { projet: resultat.valeur };
     },
@@ -187,7 +196,9 @@ export function enregistrerRoutesViePratique(
         corps.archive,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return { projet: resultat.valeur };
     },
@@ -215,7 +226,9 @@ export function enregistrerRoutesViePratique(
         corps.categorie,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(201).send({ initiative: resultat.valeur });
     },
@@ -246,7 +259,9 @@ export function enregistrerRoutesViePratique(
             : { ok: false, motif: 'donnees_invalides' as const };
 
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return { initiative: (resultat as { valeur?: unknown }).valeur };
     },
@@ -263,7 +278,9 @@ export function enregistrerRoutesViePratique(
         id,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(204).send();
     },

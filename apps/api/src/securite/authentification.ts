@@ -31,7 +31,9 @@ export function creerAuthentification(
     reponse: FastifyReply,
   ): Promise<void> {
     const entete = requete.headers.authorization;
-    const jeton = entete?.startsWith('Bearer ') ? entete.slice(7).trim() : undefined;
+    const jeton = entete?.startsWith('Bearer ')
+      ? entete.slice(7).trim()
+      : undefined;
     if (!jeton) {
       await reponse.code(401).send({ motif: 'non_authentifie' });
       return;

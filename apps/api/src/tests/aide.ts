@@ -3,7 +3,13 @@ import { creerDepotDeTest } from './depotDeTest.ts';
 import { MODULES_SENSIBLES } from '../domaine/depot.ts';
 import { creerServeur } from '../serveur.ts';
 import { creerTransportFactice } from '../modules/notifications/transport.ts';
-import { AUDIENCE, CLES, CLIENT_MOBILE, EMETTEUR, jetonDeTest } from './clesDeTest.ts';
+import {
+  AUDIENCE,
+  CLES,
+  CLIENT_MOBILE,
+  EMETTEUR,
+  jetonDeTest,
+} from './clesDeTest.ts';
 
 export const ROCHAMBEAU = 'rochambeau';
 export const GAELLE = 'gaelle';
@@ -70,7 +76,12 @@ export async function monterServeur(
     partages: Object.fromEntries(
       MODULES_SENSIBLES.map((module) => [
         module,
-        creerPartage(module, ROCHAMBEAU, GAELLE, module === 'croissance' ? actif : false),
+        creerPartage(
+          module,
+          ROCHAMBEAU,
+          GAELLE,
+          module === 'croissance' ? actif : false,
+        ),
       ]),
     ),
   });

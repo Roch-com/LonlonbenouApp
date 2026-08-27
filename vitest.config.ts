@@ -2,6 +2,10 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
+    // Le serveur coupe son journal et sa limitation de débit en test :
+    // des centaines de requêtes injectées noieraient la sortie et
+    // déclencheraient la limite.
+    env: { NODE_ENV: 'test' },
     environment: 'node',
     include: [
       'packages/**/*.test.ts',

@@ -3,12 +3,7 @@
 import type { PartenaireId } from './couple';
 
 export type CategorieSortie =
-  | 'restaurant'
-  | 'nature'
-  | 'culture'
-  | 'sport'
-  | 'maison'
-  | 'voyage';
+  'restaurant' | 'nature' | 'culture' | 'sport' | 'maison' | 'voyage';
 
 export interface DefinitionCategorieSortie {
   code: CategorieSortie;

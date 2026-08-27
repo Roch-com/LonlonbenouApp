@@ -41,10 +41,7 @@ export interface VerificateurPin {
   empreinte: string;
 }
 
-export type MotifPinRefuse =
-  | 'longueur'
-  | 'chiffres_seulement'
-  | 'trop_previsible';
+export type MotifPinRefuse = 'longueur' | 'chiffres_seulement' | 'trop_previsible';
 
 export interface ControlePin {
   valide: boolean;

@@ -17,12 +17,7 @@ export interface Message {
 }
 
 export type CodeHumeur =
-  | 'rayonnant'
-  | 'serein'
-  | 'fatigue'
-  | 'tendu'
-  | 'triste'
-  | 'amoureux';
+  'rayonnant' | 'serein' | 'fatigue' | 'tendu' | 'triste' | 'amoureux';
 
 export interface DefinitionHumeur {
   code: CodeHumeur;

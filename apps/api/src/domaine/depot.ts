@@ -171,7 +171,11 @@ export interface Depot {
     /** Messages scellés, du plus ancien au plus récent. */
     messages(coupleId: string): Promise<MessageScelle[]>;
     ajouter(coupleId: string, message: MessageScelle): Promise<void>;
-    marquerLus(coupleId: string, lecteurId: PartenaireId, quand: string): Promise<void>;
+    marquerLus(
+      coupleId: string,
+      lecteurId: PartenaireId,
+      quand: string,
+    ): Promise<void>;
     effacerPourCouple(coupleId: string): Promise<void>;
   };
   presence: {

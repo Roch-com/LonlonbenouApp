@@ -16,7 +16,5 @@ export function joursEntre(depuis: string, jusqua: string): number {
 
 /** Date ISO courte obtenue en décalant `depuis` de `jours`. */
 export function ajouterJours(depuis: string, jours: number): string {
-  return new Date(jourUtc(depuis) + jours * MS_PAR_JOUR)
-    .toISOString()
-    .slice(0, 10);
+  return new Date(jourUtc(depuis) + jours * MS_PAR_JOUR).toISOString().slice(0, 10);
 }

@@ -30,9 +30,43 @@ export interface FournisseurDeJeton {
   rafraichir(): Promise<string | undefined>;
 }
 
+/** Délai d'une requête vers un serveur déjà éveillé. */
 const DELAI_MS = 15_000;
 
+/**
+ * Délai accordé à une seconde tentative, quand la première a expiré.
+ *
+ * L'API est hébergée sur un palier gratuit qui met le serveur en veille après
+ * un quart d'heure sans trafic ; le réveil prend jusqu'à une minute. Sans cette
+ * patience, la toute première action de la journée échouerait
+ * systématiquement, et l'app passerait pour cassée alors qu'elle attend.
+ */
+const DELAI_REVEIL_MS = 70_000;
+
 let fournisseur: FournisseurDeJeton | undefined;
+
+/**
+ * Vrai tant qu'une requête est en cours de seconde tentative. L'interface peut
+ * s'en servir pour dire « le serveur se réveille » plutôt que de laisser un
+ * écran figé sans explication.
+ */
+let reveilEnCours = false;
+const observateurs = new Set<(enCours: boolean) => void>();
+
+export function serveurSeReveille(): boolean {
+  return reveilEnCours;
+}
+
+export function observerLeReveil(ecouter: (enCours: boolean) => void): () => void {
+  observateurs.add(ecouter);
+  return () => observateurs.delete(ecouter);
+}
+
+function signalerReveil(enCours: boolean): void {
+  if (reveilEnCours === enCours) return;
+  reveilEnCours = enCours;
+  for (const ecouter of observateurs) ecouter(enCours);
+}
 
 /** Branché une fois au démarrage par le store de session. */
 export function brancherFournisseurDeJeton(nouveau: FournisseurDeJeton): void {
@@ -43,9 +77,14 @@ async function envoyer(
   chemin: string,
   options: OptionsRequete,
   jeton: string | undefined,
+  delaiMs: number = DELAI_MS,
 ): Promise<Response> {
   const controleur = new AbortController();
-  const minuterie = setTimeout(() => controleur.abort(), DELAI_MS);
+  let expire = false;
+  const minuterie = setTimeout(() => {
+    expire = true;
+    controleur.abort();
+  }, delaiMs);
 
   // Un signal fourni par l'appelant doit aussi pouvoir annuler.
   options.signal?.addEventListener('abort', () => controleur.abort());
@@ -65,12 +104,40 @@ async function envoyer(
       signal: controleur.signal,
     });
   } catch (cause) {
+    // Un délai dépassé n'est pas une absence de réseau : c'est peut-être un
+    // serveur qui se réveille. L'appelant a besoin de la nuance pour décider
+    // s'il attend davantage.
     throw new ErreurApi(
-      'hors_ligne',
+      expire ? 'reveil_trop_long' : 'hors_ligne',
       cause instanceof Error ? cause.message : 'Serveur injoignable',
     );
   } finally {
     clearTimeout(minuterie);
+  }
+}
+
+/**
+ * Une tentative normale, puis une seconde beaucoup plus patiente si la
+ * première a expiré. On ne réessaie que sur expiration : une absence de réseau
+ * ne s'arrangera pas en attendant plus longtemps.
+ */
+async function envoyerAvecPatience(
+  chemin: string,
+  options: OptionsRequete,
+  jeton: string | undefined,
+): Promise<Response> {
+  try {
+    return await envoyer(chemin, options, jeton);
+  } catch (erreur) {
+    if (!(erreur instanceof ErreurApi) || erreur.genre !== 'reveil_trop_long') {
+      throw erreur;
+    }
+    signalerReveil(true);
+    try {
+      return await envoyer(chemin, options, jeton, DELAI_REVEIL_MS);
+    } finally {
+      signalerReveil(false);
+    }
   }
 }
 
@@ -90,14 +157,14 @@ export async function appeler<T>(
   options: OptionsRequete = {},
 ): Promise<T> {
   const jeton = options.sansJeton ? undefined : fournisseur?.jetonActuel();
-  let reponse = await envoyer(chemin, options, jeton);
+  let reponse = await envoyerAvecPatience(chemin, options, jeton);
 
   if (reponse.status === 401 && !options.sansJeton && fournisseur) {
     const renouvele = await fournisseur.rafraichir();
     if (!renouvele) {
       throw new ErreurApi('non_authentifie', 'Session expirée', 401);
     }
-    reponse = await envoyer(chemin, options, renouvele);
+    reponse = await envoyerAvecPatience(chemin, options, renouvele);
   }
 
   if (!reponse.ok) {

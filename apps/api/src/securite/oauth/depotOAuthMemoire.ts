@@ -48,7 +48,8 @@ export function creerDepotOAuthMemoire(): DepotOAuth {
       },
       async revoquerLaFamille(famille, quand) {
         for (const jeton of rafraichissements.values()) {
-          if (jeton.famille === famille && !jeton.revoqueLe) jeton.revoqueLe = quand;
+          if (jeton.famille === famille && !jeton.revoqueLe)
+            jeton.revoqueLe = quand;
         }
       },
     },

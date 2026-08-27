@@ -88,9 +88,9 @@ describe('fenêtre de rappel des événements', () => {
   });
 
   it('ignore un événement sans rappel demandé', () => {
-    expect(rappels({ evenements: [evenement({ rappelHeures: undefined })] })).toEqual(
-      [],
-    );
+    expect(
+      rappels({ evenements: [evenement({ rappelHeures: undefined })] }),
+    ).toEqual([]);
   });
 
   it('omet l’heure pour une journée entière', () => {
@@ -130,7 +130,9 @@ describe('sorties prévues', () => {
 
   it('ignore une simple idée', () => {
     expect(
-      rappels({ initiatives: [initiative({ etat: 'idee', prevuePour: undefined })] }),
+      rappels({
+        initiatives: [initiative({ etat: 'idee', prevuePour: undefined })],
+      }),
     ).toEqual([]);
   });
 });
@@ -152,8 +154,12 @@ describe('idempotence', () => {
     const cles = tous.map((r) => r.cle);
 
     expect(new Set(cles).size).toBe(cles.length);
-    expect(rappels(
-      { evenements: [evenement()], projets: [projet('2026-03-15')], initiatives: [initiative()] },
-    ).map((r) => r.cle)).toEqual(cles);
+    expect(
+      rappels({
+        evenements: [evenement()],
+        projets: [projet('2026-03-15')],
+        initiatives: [initiative()],
+      }).map((r) => r.cle),
+    ).toEqual(cles);
   });
 });

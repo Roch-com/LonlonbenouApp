@@ -216,7 +216,8 @@ export function creerServiceCycle(depot: Depot): ServiceCycle {
       const acces = await autoriserEcriture(depot, coupleId, auteurId);
       if ('motif' in acces) return { ok: false, motif: acces.motif };
 
-      if (!FORMAT_JOUR.test(debutLe)) return { ok: false, motif: 'donnees_invalides' };
+      if (!FORMAT_JOUR.test(debutLe))
+        return { ok: false, motif: 'donnees_invalides' };
       if (finLe !== undefined && (!FORMAT_JOUR.test(finLe) || finLe < debutLe)) {
         return { ok: false, motif: 'donnees_invalides' };
       }

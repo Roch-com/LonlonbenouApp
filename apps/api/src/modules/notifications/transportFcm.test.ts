@@ -78,10 +78,7 @@ function fauxFetch(
   };
 }
 
-function creer(
-  double: ReturnType<typeof fauxFetch>,
-  maintenant?: () => number,
-) {
+function creer(double: ReturnType<typeof fauxFetch>, maintenant?: () => number) {
   return creerTransportFcm({
     projetId: 'lonlonbenu-test',
     courrielCompteService: 'push@lonlonbenu.iam.gserviceaccount.com',
@@ -161,9 +158,11 @@ describe('ce qui part chez Google', () => {
     await transport.pousser(message());
 
     const priorite = (i: number) =>
-      (JSON.parse(double.envois()[i]!.corps) as {
-        message: { android: { priority: string } };
-      }).message.android.priority;
+      (
+        JSON.parse(double.envois()[i]!.corps) as {
+          message: { android: { priority: string } };
+        }
+      ).message.android.priority;
 
     expect(priorite(0)).toBe('high');
     expect(priorite(1)).toBe('normal');

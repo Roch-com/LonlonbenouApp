@@ -5,23 +5,28 @@
   "type": "module",
   "main": "src/index.ts",
   "scripts": {
-    "dev": "tsx watch --env-file=.env src/index.ts",
-    "start": "tsx --env-file=.env src/index.ts",
+    "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
+    "start": "tsx --env-file-if-exists=.env src/index.ts",
     "typecheck": "tsc --noEmit",
-    "verifier:fcm": "tsx --env-file=.env scripts/verifier-fcm.ts",
-    "verifier:base": "tsx --env-file=.env scripts/verifier-base.ts",
-    "base:creer": "tsx --env-file=.env scripts/creer-base.ts"
+    "verifier:fcm": "tsx --env-file-if-exists=.env scripts/verifier-fcm.ts",
+    "verifier:base": "tsx --env-file-if-exists=.env scripts/verifier-base.ts",
+    "base:creer": "tsx --env-file-if-exists=.env scripts/creer-base.ts",
+    "verifier:migrations": "tsx --env-file-if-exists=.env scripts/verifier-migrations.ts",
+    "verifier:surveillance": "tsx --env-file-if-exists=.env scripts/verifier-surveillance.ts"
   },
   "dependencies": {
+    "@fastify/helmet": "^13.1.1",
+    "@fastify/rate-limit": "^11.2.0",
     "@lonlonbenu/shared": "*",
+    "@sentry/node": "^10.71.0",
     "fastify": "^5.2.1",
     "jose": "^6.2.8",
-    "pg": "^8.23.0"
+    "pg": "^8.23.0",
+    "tsx": "^4.23.12"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
     "@types/pg": "^8.21.0",
-    "tsx": "^4.23.12",
     "typescript": "~6.0.3"
   }
 }

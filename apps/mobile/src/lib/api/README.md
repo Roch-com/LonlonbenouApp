@@ -19,10 +19,10 @@ avait tort.
 
 ### Où vivent les jetons
 
-| Jeton | Emplacement | Pourquoi |
-| --- | --- | --- |
-| Accès (10 min) | **mémoire seule** | l'écrire l'exposerait dix minutes pour ne rien gagner : il se regagne en une requête |
-| Rafraîchissement | **trousseau système** (`expo-secure-store`) | c'est lui qui vaut session ; il rejoint la clé du coffre et le code de verrouillage |
+| Jeton            | Emplacement                                 | Pourquoi                                                                             |
+| ---------------- | ------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Accès (10 min)   | **mémoire seule**                           | l'écrire l'exposerait dix minutes pour ne rien gagner : il se regagne en une requête |
+| Rafraîchissement | **trousseau système** (`expo-secure-store`) | c'est lui qui vaut session ; il rejoint la clé du coffre et le code de verrouillage  |
 
 Rien n'est écrit dans AsyncStorage, et le store de session n'est pas persisté.
 L'état est reconstruit au démarrage par `restaurer()`.

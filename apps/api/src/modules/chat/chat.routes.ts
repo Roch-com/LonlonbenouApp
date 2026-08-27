@@ -39,7 +39,9 @@ export function enregistrerRoutesChat(
         corps.clePublique,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return { cles: resultat.cles };
     },
@@ -52,7 +54,9 @@ export function enregistrerRoutesChat(
       const { coupleId } = requete.params as { coupleId: string };
       const resultat = await chat.cles(coupleId, requete.identite!.partenaireId);
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return { cles: resultat.cles };
     },
@@ -65,7 +69,9 @@ export function enregistrerRoutesChat(
       const { coupleId } = requete.params as { coupleId: string };
       const resultat = await chat.lister(coupleId, requete.identite!.partenaireId);
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return { messages: resultat.messages };
     },
@@ -91,7 +97,9 @@ export function enregistrerRoutesChat(
         corps.enveloppe,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(201).send({ message: resultat.message });
     },
@@ -107,7 +115,9 @@ export function enregistrerRoutesChat(
         requete.identite!.partenaireId,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(204).send();
     },
@@ -124,9 +134,14 @@ export function enregistrerRoutesPresence(
     { preHandler: authentifier },
     async (requete, reponse) => {
       const { coupleId } = requete.params as { coupleId: string };
-      const resultat = await presence.lire(coupleId, requete.identite!.partenaireId);
+      const resultat = await presence.lire(
+        coupleId,
+        requete.identite!.partenaireId,
+      );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return resultat.vue;
     },
@@ -149,7 +164,9 @@ export function enregistrerRoutesPresence(
         corps.noteScellee,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(204).send();
     },
@@ -172,7 +189,9 @@ export function enregistrerRoutesPresence(
         corps.motScelle,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(204).send();
     },
@@ -195,7 +214,9 @@ export function enregistrerRoutesPresence(
         corps.motScelle,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(201).send({ enregistre: true });
     },
@@ -218,7 +239,9 @@ export function enregistrerRoutesPresence(
         corps?.messageScelle,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(201).send({ alerte: resultat.alerte });
     },
@@ -241,7 +264,9 @@ export function enregistrerRoutesPresence(
         corps.action,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return { alerte: resultat.alerte };
     },

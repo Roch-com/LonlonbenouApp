@@ -138,10 +138,7 @@ describe('élan personnel : je me compare à moi, jamais à l’autre', () => {
   });
 
   it('reste stable quand rien ne change vraiment', () => {
-    const constant = [
-      geste(GAELLE, 'message', 1),
-      geste(GAELLE, 'message', 15),
-    ];
+    const constant = [geste(GAELLE, 'message', 1), geste(GAELLE, 'message', 15)];
     expect(monElan(constant, GAELLE, MAINTENANT).tendance).toBe('stable');
   });
 });
@@ -192,7 +189,10 @@ describe('suggestions privées', () => {
 
     const gaelleAbsente = suggestionsPrivees(monRetrait, ROCHAMBEAU, MAINTENANT);
     const gaelleDebordante = suggestionsPrivees(
-      [...monRetrait, ...Array.from({ length: 14 }, (_, i) => geste(GAELLE, 'gratitude', i))],
+      [
+        ...monRetrait,
+        ...Array.from({ length: 14 }, (_, i) => geste(GAELLE, 'gratitude', i)),
+      ],
       ROCHAMBEAU,
       MAINTENANT,
     );
@@ -211,7 +211,9 @@ describe('suggestions privées', () => {
     ];
 
     expect(suggestionsPrivees(gestes, GAELLE, MAINTENANT)).toEqual([]);
-    expect(suggestionsPrivees(gestes, ROCHAMBEAU, MAINTENANT).length).toBeGreaterThan(0);
+    expect(
+      suggestionsPrivees(gestes, ROCHAMBEAU, MAINTENANT).length,
+    ).toBeGreaterThan(0);
   });
 });
 

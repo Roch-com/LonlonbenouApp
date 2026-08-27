@@ -109,9 +109,8 @@ describe('lecture des axes', () => {
     const vuParElle = await cote(GAELLE);
 
     // Le contenu est rigoureusement le même des deux côtés…
-    const contenu = (
-      liste: Awaited<ReturnType<typeof cote>>,
-    ) => liste.map(({ estLaMienne: _, ...reste }) => reste);
+    const contenu = (liste: Awaited<ReturnType<typeof cote>>) =>
+      liste.map(({ estLaMienne: _, ...reste }) => reste);
     expect(contenu(vuParLui)).toEqual(contenu(vuParElle));
 
     // …seul le marquage « c'est la mienne » est personnel, et il désigne bien

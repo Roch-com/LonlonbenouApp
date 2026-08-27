@@ -9,7 +9,11 @@ import {
 } from './transport.ts';
 
 const message = (plateforme: Appareil['plateforme']): MessagePousse => ({
-  appareil: { partenaireId: 'gaelle', jetonPush: `jeton-${plateforme}`, plateforme },
+  appareil: {
+    partenaireId: 'gaelle',
+    jetonPush: `jeton-${plateforme}`,
+    plateforme,
+  },
   titre: 'LONLONBENU',
   corps: 'Quelque chose vous attend.',
   regroupees: 1,

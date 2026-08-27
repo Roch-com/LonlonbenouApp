@@ -62,7 +62,9 @@ describe('scellement des messages', () => {
   it('détecte l’altération d’un seul caractère', () => {
     const enveloppe = scellerMessage(cle, NONCE, 'un secret');
     const altere =
-      enveloppe.slice(0, -2) + (enveloppe.at(-2) === 'A' ? 'B' : 'A') + enveloppe.at(-1);
+      enveloppe.slice(0, -2) +
+      (enveloppe.at(-2) === 'A' ? 'B' : 'A') +
+      enveloppe.at(-1);
 
     expect(() => ouvrirMessage(cle, altere)).toThrow();
   });

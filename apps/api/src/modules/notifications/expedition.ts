@@ -44,7 +44,10 @@ function corpsPour(categorie: CategorieNotification, nombre: number): string {
 }
 
 export interface Expediteur {
-  publier(entrees: readonly ANotifier[], maintenant?: Date): Promise<NotificationServeur[]>;
+  publier(
+    entrees: readonly ANotifier[],
+    maintenant?: Date,
+  ): Promise<NotificationServeur[]>;
   viderLaFile(partenaireId: PartenaireId, maintenant?: Date): Promise<number>;
 }
 

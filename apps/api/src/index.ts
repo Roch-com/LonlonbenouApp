@@ -1,6 +1,14 @@
-import { Pool } from 'pg';
+import { demarrerLaSurveillance } from './surveillance.ts';
+
+// En premier, avant tout autre import applicatif : une erreur survenue pendant
+// le montage du serveur est la plus difficile à diagnostiquer à distance, et
+// c'est précisément celle qu'on perdrait en initialisant plus tard.
+const surveille = demarrerLaSurveillance();
+
+import { type Pool } from 'pg';
 import { creerServeur } from './serveur.ts';
 import { chargerPaire } from './securite/oauth/cles.ts';
+import { normaliserPem } from './securite/pem.ts';
 import { creerDepotPostgres, creerPool } from './domaine/depotPostgres.ts';
 import { creerDepotOAuthPostgres } from './securite/oauth/depotOAuthPostgres.ts';
 import { appliquerLeSchema } from './db/migrations.ts';
@@ -28,12 +36,26 @@ const clients = (process.env['LONLONBENU_OAUTH_CLIENTS'] ?? 'lonlonbenu-mobile')
   .map((c) => c.trim())
   .filter(Boolean);
 
-const pool: Pool = creerPool({ connectionString: urlBase });
+/**
+ * `auto` suffit dans les deux cas courants : pas de TLS vers une base locale,
+ * TLS dès que l'hôte est distant. `LONLONBENU_DB_SSL` permet de forcer l'un ou
+ * l'autre si un hébergeur sort de ce cadre.
+ */
+const modeSsl = (process.env['LONLONBENU_DB_SSL'] ?? 'auto') as
+  'auto' | 'requis' | 'aucun';
+
+const pool: Pool = creerPool({ connectionString: urlBase, ssl: modeSsl });
 await appliquerLeSchema(pool);
 
-const { clePrivee, clePublique } = chargerPaire(clePriveePem);
+const { clePrivee, clePublique } = chargerPaire(normaliserPem(clePriveePem));
 
 const secretTaches = process.env['LONLONBENU_SECRET_TACHES'];
+
+console.log(
+  surveille
+    ? 'Suivi des erreurs actif.'
+    : 'Suivi des erreurs inactif (SENTRY_DSN absente).',
+);
 
 const { transport, plateformes } = creerTransportDepuisEnv();
 if (plateformes.length === 0) {
@@ -69,6 +91,8 @@ for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   });
 }
 
+// Les hébergeurs imposent le port par l'environnement : le coder en dur ferait
+// échouer le contrôle de santé et le déploiement serait déclaré mort-né.
 const port = Number(process.env['PORT'] ?? 3000);
 
 try {

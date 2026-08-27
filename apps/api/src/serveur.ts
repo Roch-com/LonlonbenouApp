@@ -1,4 +1,6 @@
 import Fastify, { type FastifyInstance } from 'fastify';
+import helmet from '@fastify/helmet';
+import limiteDebit from '@fastify/rate-limit';
 import type { KeyObject } from 'node:crypto';
 import type { CategorieNotification, ThemeAxe } from '@lonlonbenu/shared';
 import { creerDepotMemoire } from './domaine/depotMemoire.ts';
@@ -21,9 +23,14 @@ import { creerServiceViePratique } from './modules/vie-pratique/viePratique.serv
 import { enregistrerRoutesViePratique } from './modules/vie-pratique/viePratique.routes.ts';
 import { executerLesRappels } from './modules/rappels/planificateur.ts';
 import { creerExpediteur } from './modules/notifications/expedition.ts';
-import { creerTransportFactice, type Transport } from './modules/notifications/transport.ts';
+import {
+  creerTransportFactice,
+  type Transport,
+} from './modules/notifications/transport.ts';
 import { enregistrerRoutesOAuth } from './modules/oauth/oauth.routes.ts';
 import { creerAuthentification } from './securite/authentification.ts';
+import { optionsJournal } from './observabilite.ts';
+import { surveillerLeServeur } from './surveillance.ts';
 import { genererPaire } from './securite/oauth/cles.ts';
 import { creerDepotOAuthMemoire } from './securite/oauth/depotOAuthMemoire.ts';
 import type { DepotOAuth } from './securite/oauth/depotOAuth.ts';
@@ -86,7 +93,41 @@ export function creerServeur(options: OptionsServeur = {}) {
   const viePratique = creerServiceViePratique(depot);
   const authentifier = creerAuthentification(autorisation, depot);
 
-  const app: FastifyInstance = Fastify({ logger: false });
+  const app: FastifyInstance = Fastify(optionsJournal());
+
+  /**
+   * En-têtes de sécurité. L'API ne sert pas de pages, mais elle répond à un
+   * navigateur si on l'y invite : ces en-têtes évitent qu'une réponse JSON soit
+   * interprétée comme du contenu exécutable.
+   *
+   * `contentSecurityPolicy` est désactivée : elle ne régit que du HTML, et sa
+   * valeur par défaut ajouterait un en-tête inutile à chaque réponse.
+   */
+  void app.register(helmet, { contentSecurityPolicy: false });
+
+  /**
+   * Limitation de débit.
+   *
+   * Le point sensible est l'appairage : un code à six caractères se devine par
+   * force brute si rien ne freine les tentatives. Le service compte déjà les
+   * essais et brûle le code au cinquième — mais ce compteur est par invitation,
+   * et n'empêche pas d'essayer en masse sur des invitations différentes.
+   *
+   * La limite porte sur l'adresse d'origine, et laisse passer largement de quoi
+   * couvrir un usage normal : personne n'envoie cent requêtes par minute en
+   * consultant son agenda.
+   */
+  void app.register(limiteDebit, {
+    max: Number(process.env['LONLONBENU_LIMITE_REQUETES'] ?? 120),
+    timeWindow: '1 minute',
+    // Les tests injectent des centaines de requêtes depuis la même origine.
+    enableDraftSpec: true,
+    allowList: () => process.env['NODE_ENV'] === 'test',
+    errorResponseBuilder: () => ({
+      motif: 'trop_de_requetes',
+      message: 'Trop de tentatives. Réessayez dans une minute.',
+    }),
+  });
 
   /**
    * Un POST sans corps est légitime — une dissociation, une révocation n'ont
@@ -108,6 +149,10 @@ export function creerServeur(options: OptionsServeur = {}) {
     },
   );
 
+  // Après les plugins, avant les routes : le gestionnaire doit être en place
+  // quand la première d'entre elles lève.
+  surveillerLeServeur(app);
+
   enregistrerRoutesOAuth(app, autorisation, depot);
   enregistrerRoutesCycle(app, cycle, authentifier);
   enregistrerRoutesConfidences(app, confidences, authentifier);
@@ -117,20 +162,24 @@ export function creerServeur(options: OptionsServeur = {}) {
 
   // ------------------------------------------------------- exigence 3 : appairage
 
-  app.post('/appairages', { preHandler: authentifier }, async (requete, reponse) => {
-    const corps = requete.body as { prenom?: string };
-    if (!corps?.prenom) {
-      return reponse.code(400).send({ motif: 'champs_manquants' });
-    }
+  app.post(
+    '/appairages',
+    { preHandler: authentifier },
+    async (requete, reponse) => {
+      const corps = requete.body as { prenom?: string };
+      if (!corps?.prenom) {
+        return reponse.code(400).send({ motif: 'champs_manquants' });
+      }
 
-    // L'émetteur est celui du jeton, jamais celui du corps de la requête.
-    const emise = await appairage.emettre({
-      id: requete.identite!.partenaireId,
-      prenom: corps.prenom,
-    });
-    // Le code n'est rendu qu'ici, une seule fois.
-    return reponse.code(201).send(emise);
-  });
+      // L'émetteur est celui du jeton, jamais celui du corps de la requête.
+      const emise = await appairage.emettre({
+        id: requete.identite!.partenaireId,
+        prenom: corps.prenom,
+      });
+      // Le code n'est rendu qu'ici, une seule fois.
+      return reponse.code(201).send(emise);
+    },
+  );
 
   app.post(
     '/appairages/:invitationId/acceptation',
@@ -168,7 +217,9 @@ export function creerServeur(options: OptionsServeur = {}) {
       const resultat = await axes.lister(coupleId, requete.identite!.partenaireId);
 
       if (!resultat.ok) {
-        return reponse.code(CODES[resultat.motif ?? ''] ?? 400).send({ motif: resultat.motif });
+        return reponse
+          .code(CODES[resultat.motif ?? ''] ?? 400)
+          .send({ motif: resultat.motif });
       }
       return { axes: resultat.axes };
     },
@@ -191,7 +242,9 @@ export function creerServeur(options: OptionsServeur = {}) {
         corps.titre,
       );
       if (!resultat.ok) {
-        return reponse.code(CODES[resultat.motif ?? ''] ?? 400).send({ motif: resultat.motif });
+        return reponse
+          .code(CODES[resultat.motif ?? ''] ?? 400)
+          .send({ motif: resultat.motif });
       }
       return reponse.code(201).send({ axe: resultat.axe });
     },
@@ -215,7 +268,9 @@ export function creerServeur(options: OptionsServeur = {}) {
         corps?.besoin ?? '',
       );
       if (!resultat.ok) {
-        return reponse.code(CODES[resultat.motif ?? ''] ?? 400).send({ motif: resultat.motif });
+        return reponse
+          .code(CODES[resultat.motif ?? ''] ?? 400)
+          .send({ motif: resultat.motif });
       }
       return { axe: resultat.axe };
     },
@@ -241,7 +296,9 @@ export function creerServeur(options: OptionsServeur = {}) {
         corps.cloture,
       );
       if (!resultat.ok) {
-        return reponse.code(CODES[resultat.motif ?? ''] ?? 400).send({ motif: resultat.motif });
+        return reponse
+          .code(CODES[resultat.motif ?? ''] ?? 400)
+          .send({ motif: resultat.motif });
       }
       return { axe: resultat.axe };
     },
@@ -254,9 +311,14 @@ export function creerServeur(options: OptionsServeur = {}) {
     { preHandler: authentifier },
     async (requete, reponse) => {
       const { coupleId } = requete.params as { coupleId: string };
-      const resultat = await partages.lister(coupleId, requete.identite!.partenaireId);
+      const resultat = await partages.lister(
+        coupleId,
+        requete.identite!.partenaireId,
+      );
       if (!resultat.ok) {
-        return reponse.code(CODES[resultat.motif ?? ''] ?? 400).send({ motif: resultat.motif });
+        return reponse
+          .code(CODES[resultat.motif ?? ''] ?? 400)
+          .send({ motif: resultat.motif });
       }
       return { partages: resultat.partages };
     },
@@ -283,7 +345,9 @@ export function creerServeur(options: OptionsServeur = {}) {
         corps.actif,
       );
       if (!resultat.ok) {
-        return reponse.code(CODES[resultat.motif ?? ''] ?? 400).send({ motif: resultat.motif });
+        return reponse
+          .code(CODES[resultat.motif ?? ''] ?? 400)
+          .send({ motif: resultat.motif });
       }
       return { partage: resultat.partage };
     },
@@ -302,7 +366,9 @@ export function creerServeur(options: OptionsServeur = {}) {
       );
 
       if (!resultat.ok) {
-        return reponse.code(CODES[resultat.motif ?? ''] ?? 400).send({ motif: resultat.motif });
+        return reponse
+          .code(CODES[resultat.motif ?? ''] ?? 400)
+          .send({ motif: resultat.motif });
       }
       return { dissocieLe: resultat.dissocieLe, notifies: resultat.notifies };
     },
@@ -327,40 +393,52 @@ export function creerServeur(options: OptionsServeur = {}) {
     return reponse.code(201).send({ enregistre: true });
   });
 
-  app.post('/notifications', { preHandler: authentifier }, async (requete, reponse) => {
-    const corps = requete.body as {
-      destinataireId?: string;
-      categorie?: CategorieNotification;
-      texte?: string;
-    };
-    if (!corps?.destinataireId || !corps.categorie || !corps.texte) {
-      return reponse.code(400).send({ motif: 'champs_manquants' });
-    }
+  app.post(
+    '/notifications',
+    { preHandler: authentifier },
+    async (requete, reponse) => {
+      const corps = requete.body as {
+        destinataireId?: string;
+        categorie?: CategorieNotification;
+        texte?: string;
+      };
+      if (!corps?.destinataireId || !corps.categorie || !corps.texte) {
+        return reponse.code(400).send({ motif: 'champs_manquants' });
+      }
 
-    const couple = await depot.couples.parPartenaire(requete.identite!.partenaireId);
-    if (!couple || couple.dissocieLe) {
-      return reponse.code(410).send({ motif: 'couple_dissocie' });
-    }
-    if (!couple.couple.partenaires.some((p) => p.id === corps.destinataireId)) {
-      return reponse.code(403).send({ motif: 'non_membre' });
-    }
+      const couple = await depot.couples.parPartenaire(
+        requete.identite!.partenaireId,
+      );
+      if (!couple || couple.dissocieLe) {
+        return reponse.code(410).send({ motif: 'couple_dissocie' });
+      }
+      if (!couple.couple.partenaires.some((p) => p.id === corps.destinataireId)) {
+        return reponse.code(403).send({ motif: 'non_membre' });
+      }
 
-    const [notification] = await expediteur.publier([
-      {
-        destinataireId: corps.destinataireId,
-        categorie: corps.categorie,
-        texte: corps.texte,
-      },
-    ]);
-    return reponse
-      .code(202)
-      .send({ remise: notification!.remise, raison: notification!.raison });
-  });
+      const [notification] = await expediteur.publier([
+        {
+          destinataireId: corps.destinataireId,
+          categorie: corps.categorie,
+          texte: corps.texte,
+        },
+      ]);
+      return reponse
+        .code(202)
+        .send({ remise: notification!.remise, raison: notification!.raison });
+    },
+  );
 
-  app.post('/notifications/vidage', { preHandler: authentifier }, async (requete) => {
-    const expediees = await expediteur.viderLaFile(requete.identite!.partenaireId);
-    return { expediees };
-  });
+  app.post(
+    '/notifications/vidage',
+    { preHandler: authentifier },
+    async (requete) => {
+      const expediees = await expediteur.viderLaFile(
+        requete.identite!.partenaireId,
+      );
+      return { expediees };
+    },
+  );
 
   /**
    * Déclenchement du balayage des rappels, pour une tâche planifiée externe.
@@ -372,7 +450,9 @@ export function creerServeur(options: OptionsServeur = {}) {
   if (options.secretTaches) {
     app.post('/taches/rappels', async (requete, reponse) => {
       const entete = requete.headers.authorization;
-      const fourni = entete?.startsWith('Bearer ') ? entete.slice(7).trim() : undefined;
+      const fourni = entete?.startsWith('Bearer ')
+        ? entete.slice(7).trim()
+        : undefined;
       if (fourni !== options.secretTaches) {
         return reponse.code(401).send({ motif: 'non_authentifie' });
       }

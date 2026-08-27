@@ -78,13 +78,13 @@ applications mobiles : un client public ne peut garder aucun secret, donc
 l'échange du code est lié à un vérificateur que seul l'appareil demandeur
 connaît.
 
-| Élément | Choix |
-| --- | --- |
-| Jeton d'accès | JWT **RS256**, 10 minutes, `iss` / `aud` / `sub` / `exp` / `jti` |
-| Vérification | signature, émetteur, audience, expiration **et** liste de révocation |
-| Rafraîchissement | opaque, stocké **haché**, usage unique, **rotatif** |
-| Mots de passe | scrypt (N=2¹⁴), jamais stockés en clair |
-| Clé publique | `GET /.well-known/jwks.json` |
+| Élément          | Choix                                                                |
+| ---------------- | -------------------------------------------------------------------- |
+| Jeton d'accès    | JWT **RS256**, 10 minutes, `iss` / `aud` / `sub` / `exp` / `jti`     |
+| Vérification     | signature, émetteur, audience, expiration **et** liste de révocation |
+| Rafraîchissement | opaque, stocké **haché**, usage unique, **rotatif**                  |
+| Mots de passe    | scrypt (N=2¹⁴), jamais stockés en clair                              |
+| Clé publique     | `GET /.well-known/jwks.json`                                         |
 
 **Rotation et détection de vol.** Rejouer un jeton de rafraîchissement déjà
 tourné révoque **toute la famille**. Mieux vaut reconnecter les deux partenaires
@@ -231,7 +231,7 @@ appartenance au couple, et couple non dissocié.
 réclame `prive` obtient quand même `couple`. Le projet surprise (P1) sera la
 seule exception, bornée et consentie à la création.
 
-Rien n'est agrégé par personne : `faitPar` sert à afficher qui a coché *un*
+Rien n'est agrégé par personne : `faitPar` sert à afficher qui a coché _un_
 jalon donné, jamais à compter.
 
 ## Rappels : le planificateur serveur
@@ -293,7 +293,7 @@ XChaCha20-Poly1305 (`shared/chiffrement/boutEnBout.ts`).
 - **Pas de sécurité post-compromission** : aucun renouvellement de clé.
 - **Le serveur pourrait substituer une clé publique.** Parade : le nombre de
   vérification (`empreinteDeVerification`), à comparer de vive voix — le même
-  principe que les *safety numbers* de Signal. Tant qu'il n'est pas comparé, la
+  principe que les _safety numbers_ de Signal. Tant qu'il n'est pas comparé, la
   confidentialité repose sur l'honnêteté du serveur.
 - **Perdre l'appareil, c'est perdre l'historique** : la clé privée n'est ni
   dérivée du mot de passe, ni sauvegardée.
@@ -352,10 +352,10 @@ relecture.
 La réponse de `GET /couples/:id/cycle` a **deux formes**, décidées par le
 serveur selon qui demande :
 
-| Qui demande | Ce qu'il reçoit |
-| --- | --- |
+| Qui demande           | Ce qu'il reçoit                                    |
+| --------------------- | -------------------------------------------------- |
 | La personne concernée | ses règles, ses symptômes, l'état calculé du cycle |
-| Le partenaire | la projection de `vuePartenaire`, et rien d'autre |
+| Le partenaire         | la projection de `vuePartenaire`, et rien d'autre  |
 
 **Ne franchissent jamais la frontière** vers le partenaire, quel que soit le
 niveau : les dates, les symptômes, les notes personnelles, et même le numéro du
@@ -431,7 +431,7 @@ Si rien n'est parti, `expedieeLe` reste vide : la notification n'est pas
 déclarée expédiée et `enAttente` la ressort, pour que `viderLaFile` la retente
 (immédiatement pour un envoi qui devait être immédiat, à sa fenêtre pour une
 groupée). Marquer « expédiée » un message que personne n'a reçu ferait mentir le
-journal *et* perdrait l'information pour de bon.
+journal _et_ perdrait l'information pour de bon.
 
 Un partenaire sans appareil inscrit n'est pas un échec : il n'a rien à recevoir
 en push, la notification reste au journal comme les autres.

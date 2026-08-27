@@ -87,10 +87,10 @@ export function creerTransportFcm(config: ConfigurationFcm): Transport {
     });
 
     if (!reponse.ok) {
-      throw new ErreurPush(
-        `Jeton d’accès FCM refusé (${reponse.status})`,
-        { reessayable: reponse.status >= 500, statut: reponse.status },
-      );
+      throw new ErreurPush(`Jeton d’accès FCM refusé (${reponse.status})`, {
+        reessayable: reponse.status >= 500,
+        statut: reponse.status,
+      });
     }
 
     const charge = (await reponse.json()) as {
@@ -157,12 +157,16 @@ export function creerTransportFcm(config: ConfigurationFcm): Transport {
       const texte = await reponse.text().catch(() => '');
       const code = extraireCode(texte);
 
-      throw new ErreurPush(`Envoi FCM refusé (${reponse.status}${code ? ` ${code}` : ''})`, {
-        jetonInvalide:
-          reponse.status === 404 || (code !== undefined && CODES_JETON_MORT.has(code)),
-        reessayable: reponse.status === 429 || reponse.status >= 500,
-        statut: reponse.status,
-      });
+      throw new ErreurPush(
+        `Envoi FCM refusé (${reponse.status}${code ? ` ${code}` : ''})`,
+        {
+          jetonInvalide:
+            reponse.status === 404 ||
+            (code !== undefined && CODES_JETON_MORT.has(code)),
+          reessayable: reponse.status === 429 || reponse.status >= 500,
+          statut: reponse.status,
+        },
+      );
     },
   };
 }

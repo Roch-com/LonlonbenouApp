@@ -53,7 +53,8 @@ export const GESTES: readonly DefinitionGeste[] = [
   {
     code: 'note_douce',
     libelle: 'laisser une note douce',
-    invitation: 'Une note douce se glisse en un geste, sans ouvrir la conversation.',
+    invitation:
+      'Une note douce se glisse en un geste, sans ouvrir la conversation.',
   },
   {
     code: 'humeur',

@@ -32,7 +32,9 @@ describe('coffre', () => {
   it('gère la chaîne vide et les charges longues', () => {
     const longue = 'a'.repeat(10_000);
     expect(ouvrir(CLE, sceller(CLE, NONCE, '', CONTEXTE), CONTEXTE)).toBe('');
-    expect(ouvrir(CLE, sceller(CLE, NONCE, longue, CONTEXTE), CONTEXTE)).toBe(longue);
+    expect(ouvrir(CLE, sceller(CLE, NONCE, longue, CONTEXTE), CONTEXTE)).toBe(
+      longue,
+    );
   });
 
   it('refuse une autre clé', () => {
@@ -47,12 +49,15 @@ describe('coffre', () => {
 
   it('détecte l’altération d’un seul caractère', () => {
     const scelle = sceller(CLE, NONCE, 'secret', CONTEXTE);
-    const altere = scelle.slice(0, -2) + (scelle.at(-2) === 'A' ? 'B' : 'A') + scelle.at(-1);
+    const altere =
+      scelle.slice(0, -2) + (scelle.at(-2) === 'A' ? 'B' : 'A') + scelle.at(-1);
     expect(() => ouvrir(CLE, altere, CONTEXTE)).toThrow();
   });
 
   it('refuse une enveloppe malformée', () => {
-    expect(() => ouvrir(CLE, 'nimporte quoi', CONTEXTE)).toThrow('Enveloppe illisible');
+    expect(() => ouvrir(CLE, 'nimporte quoi', CONTEXTE)).toThrow(
+      'Enveloppe illisible',
+    );
     expect(() => ouvrir(CLE, 'lb1.abc', CONTEXTE)).toThrow('Enveloppe illisible');
   });
 

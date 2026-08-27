@@ -48,10 +48,7 @@ export interface Invitation {
 }
 
 export type MotifRefus =
-  | 'expiree'
-  | 'deja_utilisee'
-  | 'trop_d_essais'
-  | 'code_incorrect';
+  'expiree' | 'deja_utilisee' | 'trop_d_essais' | 'code_incorrect';
 
 export interface ResultatInvitation {
   ok: boolean;
@@ -109,7 +106,9 @@ export function creerInvitation(
     sel: encoderBase64(sel),
     emisePar,
     emiseLe: maintenant,
-    expireLe: new Date(Date.parse(maintenant) + dureeMinutes * 60_000).toISOString(),
+    expireLe: new Date(
+      Date.parse(maintenant) + dureeMinutes * 60_000,
+    ).toISOString(),
     essais: 0,
   };
 }

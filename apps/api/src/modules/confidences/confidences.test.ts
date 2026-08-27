@@ -11,11 +11,7 @@ import {
 
 type App = Awaited<ReturnType<typeof monterServeur>>['app'];
 
-const envoyer = (
-  app: App,
-  qui: string,
-  corps: Record<string, unknown>,
-) =>
+const envoyer = (app: App, qui: string, corps: Record<string, unknown>) =>
   app.inject({
     method: 'POST',
     url: `/couples/${COUPLE_ID}/confidences`,
@@ -100,8 +96,12 @@ describe('l’envoi est irréversible et partagé', () => {
     await envoyer(app, GAELLE, { type: 'gratitude', texte: 'Merci' });
     await envoyer(app, ROCHAMBEAU, { type: 'lettre', texte: 'Une lettre' });
 
-    expect((await lister(app, GAELLE, 'lettre')).json().confidences).toHaveLength(1);
-    expect((await lister(app, GAELLE, 'gratitude')).json().confidences).toHaveLength(1);
+    expect((await lister(app, GAELLE, 'lettre')).json().confidences).toHaveLength(
+      1,
+    );
+    expect(
+      (await lister(app, GAELLE, 'gratitude')).json().confidences,
+    ).toHaveLength(1);
     expect((await lister(app, GAELLE)).json().confidences).toHaveLength(2);
   });
 });
@@ -167,7 +167,8 @@ describe('contrôles d’accès', () => {
     const { app } = await monterServeur();
     expect((await lister(app, INTRUS)).statusCode).toBe(403);
     expect(
-      (await envoyer(app, INTRUS, { type: 'gratitude', texte: 'Bonjour' })).statusCode,
+      (await envoyer(app, INTRUS, { type: 'gratitude', texte: 'Bonjour' }))
+        .statusCode,
     ).toBe(403);
   });
 

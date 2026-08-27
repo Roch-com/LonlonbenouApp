@@ -59,9 +59,9 @@ describe('mode ne pas déranger', () => {
   });
 
   it('ne s’applique pas quand il est désactivé', () => {
-    expect(dansLaPlage({ actif: false, debut: '00:00', fin: '23:59' }, a('03:00'))).toBe(
-      false,
-    );
+    expect(
+      dansLaPlage({ actif: false, debut: '00:00', fin: '23:59' }, a('03:00')),
+    ).toBe(false);
   });
 
   it('diffère au lieu de supprimer', () => {
@@ -109,7 +109,11 @@ describe('pause manuelle', () => {
 
   it('reprend d’elle-même une fois l’échéance passée', () => {
     const finie = prefs({ pauseJusqua: '2026-03-15T10:00:00.000Z' });
-    const decision = deciderRemise('message', finie, new Date('2026-03-15T12:00:00Z'));
+    const decision = deciderRemise(
+      'message',
+      finie,
+      new Date('2026-03-15T12:00:00Z'),
+    );
     expect(decision.remise).not.toBe('differee');
   });
 });

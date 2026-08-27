@@ -4,12 +4,7 @@ import type { PartenaireId } from './couple';
 import type { Visibilite } from '../privacy/visibilite';
 
 export type CategorieEvenement =
-  | 'a_deux'
-  | 'rendez_vous'
-  | 'famille'
-  | 'sante'
-  | 'travail'
-  | 'autre';
+  'a_deux' | 'rendez_vous' | 'famille' | 'sante' | 'travail' | 'autre';
 
 export interface DefinitionCategorieEvenement {
   code: CategorieEvenement;

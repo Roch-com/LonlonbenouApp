@@ -50,12 +50,44 @@ export interface OptionsPostgres {
   /** Schéma dédié, utile pour isoler des exécutions concurrentes. */
   schema?: string;
   max?: number;
+  /**
+   * Chiffrement du lien vers la base. `auto` l'active dès que l'hôte n'est pas
+   * local — c'est le cas de toute base hébergée.
+   */
+  ssl?: 'auto' | 'requis' | 'aucun';
+}
+
+/**
+ * Un hébergeur de base managée impose TLS, et présente le plus souvent un
+ * certificat signé par sa propre autorité interne. `rejectUnauthorized: false`
+ * accepte ce certificat.
+ *
+ * Ce que cela concède, et ce que cela ne concède pas : le lien reste chiffré —
+ * personne ne lit les requêtes au passage — mais on ne vérifie plus l'identité
+ * du serveur, donc on ne détecte pas un interlocuteur substitué. Le risque est
+ * borné au réseau interne de l'hébergeur, entre l'API et sa base. Pour le
+ * lever, fournir la chaîne de certification de l'hébergeur.
+ */
+function reglageSsl(options: OptionsPostgres): pg.PoolConfig['ssl'] {
+  const mode = options.ssl ?? 'auto';
+  if (mode === 'aucun') return undefined;
+
+  if (mode === 'auto') {
+    const local = /@(localhost|127\.0\.0\.1|\[::1\])[:/]/.test(
+      options.connectionString,
+    );
+    if (local || /sslmode=disable/.test(options.connectionString)) return undefined;
+  }
+
+  return { rejectUnauthorized: false };
 }
 
 export function creerPool(options: OptionsPostgres): pg.Pool {
+  const ssl = reglageSsl(options);
   return new Pool({
     connectionString: options.connectionString,
     max: options.max ?? 4,
+    ...(ssl ? { ssl } : {}),
     ...(options.schema ? { options: `-c search_path=${options.schema}` } : {}),
   });
 }
@@ -63,7 +95,9 @@ export function creerPool(options: OptionsPostgres): pg.Pool {
 /** `TIMESTAMPTZ` → chaîne ISO, le format employé partout dans le domaine. */
 function iso(valeur: Date | string | null): string | undefined {
   if (valeur === null) return undefined;
-  return valeur instanceof Date ? valeur.toISOString() : new Date(valeur).toISOString();
+  return valeur instanceof Date
+    ? valeur.toISOString()
+    : new Date(valeur).toISOString();
 }
 
 function isoRequis(valeur: Date | string): string {
@@ -71,13 +105,11 @@ function isoRequis(valeur: Date | string): string {
 }
 
 export function creerDepotPostgres(pool: pg.Pool): Depot {
-  async function chargerCouple(
-    ligne: {
-      id: string;
-      depuis: string;
-      dissocie_le: Date | null;
-    },
-  ): Promise<CoupleServeur> {
+  async function chargerCouple(ligne: {
+    id: string;
+    depuis: string;
+    dissocie_le: Date | null;
+  }): Promise<CoupleServeur> {
     const [partenaires, partages] = await Promise.all([
       pool.query<{ id: string; prenom: string; initiales: string; rang: number }>(
         'SELECT id, prenom, initiales, rang FROM partenaires WHERE couple_id = $1 ORDER BY rang',
@@ -94,13 +126,11 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
       ),
     ]);
 
-    const membres = partenaires.rows.map(
-      (r): Partenaire => ({
-        id: r.id,
-        prenom: r.prenom,
-        initiales: r.initiales,
-      }),
-    );
+    const membres = partenaires.rows.map((r): Partenaire => ({
+      id: r.id,
+      prenom: r.prenom,
+      initiales: r.initiales,
+    }));
 
     const couple: Couple = {
       id: ligne.id,
@@ -138,8 +168,16 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
         consentements: complet
           ? [ordonnes[0]!, ordonnes[1]!]
           : [
-              { partenaireId: membres[0]!.id, actif: false, majLe: isoRequis(new Date()) },
-              { partenaireId: membres[1]!.id, actif: false, majLe: isoRequis(new Date()) },
+              {
+                partenaireId: membres[0]!.id,
+                actif: false,
+                majLe: isoRequis(new Date()),
+              },
+              {
+                partenaireId: membres[1]!.id,
+                actif: false,
+                majLe: isoRequis(new Date()),
+              },
             ],
       };
     }
@@ -247,7 +285,10 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
             ],
           );
 
-          for (const [rang, partenaire] of enregistrement.couple.partenaires.entries()) {
+          for (const [
+            rang,
+            partenaire,
+          ] of enregistrement.couple.partenaires.entries()) {
             await client.query(
               `INSERT INTO partenaires (id, couple_id, prenom, initiales, rang)
                     VALUES ($1, $2, $3, $4, $5)
@@ -427,7 +468,9 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
 
     notifications: {
       async preferences(partenaireId) {
-        const { rows } = await pool.query<{ preferences: PreferencesNotifications }>(
+        const { rows } = await pool.query<{
+          preferences: PreferencesNotifications;
+        }>(
           'SELECT preferences FROM preferences_notifications WHERE partenaire_id = $1',
           [partenaireId],
         );
@@ -499,22 +542,20 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
              FROM evenements WHERE couple_id = $1 ORDER BY debut`,
           [coupleId],
         );
-        return rows.map(
-          (r): Evenement => ({
-            id: r.id,
-            titre: r.titre,
-            categorie: r.categorie,
-            debut: r.debut,
-            fin: r.fin ?? undefined,
-            journeeEntiere: r.journee_entiere,
-            lieu: r.lieu ?? undefined,
-            note: r.note ?? undefined,
-            creePar: r.cree_par,
-            creeLe: isoRequis(r.cree_le),
-            visibilite: 'couple',
-            rappelHeures: r.rappel_heures ?? undefined,
-          }),
-        );
+        return rows.map((r): Evenement => ({
+          id: r.id,
+          titre: r.titre,
+          categorie: r.categorie,
+          debut: r.debut,
+          fin: r.fin ?? undefined,
+          journeeEntiere: r.journee_entiere,
+          lieu: r.lieu ?? undefined,
+          note: r.note ?? undefined,
+          creePar: r.cree_par,
+          creeLe: isoRequis(r.cree_le),
+          visibilite: 'couple',
+          rappelHeures: r.rappel_heures ?? undefined,
+        }));
       },
 
       async enregistrerEvenement(coupleId, e) {
@@ -530,17 +571,27 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
                       lieu = EXCLUDED.lieu, note = EXCLUDED.note,
                       rappel_heures = EXCLUDED.rappel_heures`,
           [
-            e.id, coupleId, e.titre, e.categorie, e.debut, e.fin ?? null,
-            e.journeeEntiere, e.lieu ?? null, e.note ?? null, e.creePar, e.creeLe,
+            e.id,
+            coupleId,
+            e.titre,
+            e.categorie,
+            e.debut,
+            e.fin ?? null,
+            e.journeeEntiere,
+            e.lieu ?? null,
+            e.note ?? null,
+            e.creePar,
+            e.creeLe,
             e.rappelHeures ?? null,
           ],
         );
       },
 
       async supprimerEvenement(coupleId, id) {
-        await pool.query('DELETE FROM evenements WHERE couple_id = $1 AND id = $2', [
-          coupleId, id,
-        ]);
+        await pool.query(
+          'DELETE FROM evenements WHERE couple_id = $1 AND id = $2',
+          [coupleId, id],
+        );
       },
 
       async projets(coupleId) {
@@ -557,26 +608,24 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
           [rows.map((r) => r.id)],
         );
 
-        return rows.map(
-          (r): Projet => ({
-            id: r.id,
-            titre: r.titre,
-            intention: r.intention ?? undefined,
-            echeance: r.echeance ?? undefined,
-            creePar: r.cree_par,
-            creeLe: isoRequis(r.cree_le),
-            archiveLe: iso(r.archive_le),
-            jalons: jalons.rows
-              .filter((j) => j.projet_id === r.id)
-              .map((j) => ({
-                id: j.id,
-                titre: j.titre,
-                echeance: j.echeance ?? undefined,
-                faitLe: iso(j.fait_le),
-                faitPar: j.fait_par ?? undefined,
-              })),
-          }),
-        );
+        return rows.map((r): Projet => ({
+          id: r.id,
+          titre: r.titre,
+          intention: r.intention ?? undefined,
+          echeance: r.echeance ?? undefined,
+          creePar: r.cree_par,
+          creeLe: isoRequis(r.cree_le),
+          archiveLe: iso(r.archive_le),
+          jalons: jalons.rows
+            .filter((j) => j.projet_id === r.id)
+            .map((j) => ({
+              id: j.id,
+              titre: j.titre,
+              echeance: j.echeance ?? undefined,
+              faitLe: iso(j.fait_le),
+              faitPar: j.fait_par ?? undefined,
+            })),
+        }));
       },
 
       async projetParId(coupleId, id) {
@@ -594,18 +643,33 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
                     SET titre = EXCLUDED.titre, intention = EXCLUDED.intention,
                         echeance = EXCLUDED.echeance, archive_le = EXCLUDED.archive_le`,
             [
-              projet.id, coupleId, projet.titre, projet.intention ?? null,
-              projet.echeance ?? null, projet.creePar, projet.creeLe,
+              projet.id,
+              coupleId,
+              projet.titre,
+              projet.intention ?? null,
+              projet.echeance ?? null,
+              projet.creePar,
+              projet.creeLe,
               projet.archiveLe ?? null,
             ],
           );
           // Remplacement intégral : un jalon retiré doit disparaître.
-          await client.query('DELETE FROM jalons WHERE projet_id = $1', [projet.id]);
+          await client.query('DELETE FROM jalons WHERE projet_id = $1', [
+            projet.id,
+          ]);
           for (const [rang, j] of projet.jalons.entries()) {
             await client.query(
               `INSERT INTO jalons (id, projet_id, titre, echeance, fait_le, fait_par, rang)
                     VALUES ($1,$2,$3,$4::date,$5,$6,$7)`,
-              [j.id, projet.id, j.titre, j.echeance ?? null, j.faitLe ?? null, j.faitPar ?? null, rang],
+              [
+                j.id,
+                projet.id,
+                j.titre,
+                j.echeance ?? null,
+                j.faitLe ?? null,
+                j.faitPar ?? null,
+                rang,
+              ],
             );
           }
           await client.query('COMMIT');
@@ -624,19 +688,17 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
              FROM initiatives WHERE couple_id = $1 ORDER BY proposee_le DESC`,
           [coupleId],
         );
-        return rows.map(
-          (r): Initiative => ({
-            id: r.id,
-            titre: r.titre,
-            categorie: r.categorie,
-            etat: r.etat,
-            proposeePar: r.proposee_par,
-            proposeeLe: isoRequis(r.proposee_le),
-            prevuePour: r.prevue_pour ?? undefined,
-            vecueLe: iso(r.vecue_le),
-            souvenir: r.souvenir ?? undefined,
-          }),
-        );
+        return rows.map((r): Initiative => ({
+          id: r.id,
+          titre: r.titre,
+          categorie: r.categorie,
+          etat: r.etat,
+          proposeePar: r.proposee_par,
+          proposeeLe: isoRequis(r.proposee_le),
+          prevuePour: r.prevue_pour ?? undefined,
+          vecueLe: iso(r.vecue_le),
+          souvenir: r.souvenir ?? undefined,
+        }));
       },
 
       async initiativeParId(coupleId, id) {
@@ -652,16 +714,25 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
                   SET etat = EXCLUDED.etat, prevue_pour = EXCLUDED.prevue_pour,
                       vecue_le = EXCLUDED.vecue_le, souvenir = EXCLUDED.souvenir`,
           [
-            i.id, coupleId, i.titre, i.categorie, i.etat, i.proposeePar,
-            i.proposeeLe, i.prevuePour ?? null, i.vecueLe ?? null, i.souvenir ?? null,
+            i.id,
+            coupleId,
+            i.titre,
+            i.categorie,
+            i.etat,
+            i.proposeePar,
+            i.proposeeLe,
+            i.prevuePour ?? null,
+            i.vecueLe ?? null,
+            i.souvenir ?? null,
           ],
         );
       },
 
       async supprimerInitiative(coupleId, id) {
-        await pool.query('DELETE FROM initiatives WHERE couple_id = $1 AND id = $2', [
-          coupleId, id,
-        ]);
+        await pool.query(
+          'DELETE FROM initiatives WHERE couple_id = $1 AND id = $2',
+          [coupleId, id],
+        );
       },
 
       async rappelsEmis(coupleId) {
@@ -683,8 +754,12 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
       },
 
       async effacerPourCouple(coupleId) {
-        await pool.query('DELETE FROM rappels_emis WHERE couple_id = $1', [coupleId]);
-        await pool.query('DELETE FROM initiatives WHERE couple_id = $1', [coupleId]);
+        await pool.query('DELETE FROM rappels_emis WHERE couple_id = $1', [
+          coupleId,
+        ]);
+        await pool.query('DELETE FROM initiatives WHERE couple_id = $1', [
+          coupleId,
+        ]);
         await pool.query('DELETE FROM projets WHERE couple_id = $1', [coupleId]);
         await pool.query('DELETE FROM evenements WHERE couple_id = $1', [coupleId]);
       },
@@ -894,7 +969,9 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
       },
 
       async effacerPourCouple(coupleId) {
-        await pool.query('DELETE FROM alertes_sos WHERE couple_id = $1', [coupleId]);
+        await pool.query('DELETE FROM alertes_sos WHERE couple_id = $1', [
+          coupleId,
+        ]);
         await pool.query('DELETE FROM check_ins WHERE couple_id = $1', [coupleId]);
         await pool.query('DELETE FROM statuts WHERE couple_id = $1', [coupleId]);
       },
@@ -942,7 +1019,9 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
       },
 
       async effacerPourCouple(coupleId) {
-        await pool.query('DELETE FROM confidences WHERE couple_id = $1', [coupleId]);
+        await pool.query('DELETE FROM confidences WHERE couple_id = $1', [
+          coupleId,
+        ]);
       },
     },
 
@@ -1003,15 +1082,21 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
                 VALUES ($1, $2, $3::date, $4::date, $5)
            ON CONFLICT (couple_id, debut_le) DO UPDATE
                   SET fin_le = EXCLUDED.fin_le`,
-          [entree.id, coupleId, entree.debutLe, entree.finLe ?? null, entree.saisiLe],
+          [
+            entree.id,
+            coupleId,
+            entree.debutLe,
+            entree.finLe ?? null,
+            entree.saisiLe,
+          ],
         );
       },
 
       async supprimerRegles(coupleId, id) {
-        await pool.query('DELETE FROM cycle_regles WHERE couple_id = $1 AND id = $2', [
-          coupleId,
-          id,
-        ]);
+        await pool.query(
+          'DELETE FROM cycle_regles WHERE couple_id = $1 AND id = $2',
+          [coupleId, id],
+        );
       },
 
       async symptomes(coupleId) {
@@ -1060,9 +1145,15 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
       },
 
       async effacerPourCouple(coupleId) {
-        await pool.query('DELETE FROM cycle_symptomes WHERE couple_id = $1', [coupleId]);
-        await pool.query('DELETE FROM cycle_regles WHERE couple_id = $1', [coupleId]);
-        await pool.query('DELETE FROM cycle_partage WHERE couple_id = $1', [coupleId]);
+        await pool.query('DELETE FROM cycle_symptomes WHERE couple_id = $1', [
+          coupleId,
+        ]);
+        await pool.query('DELETE FROM cycle_regles WHERE couple_id = $1', [
+          coupleId,
+        ]);
+        await pool.query('DELETE FROM cycle_partage WHERE couple_id = $1', [
+          coupleId,
+        ]);
       },
     },
 
@@ -1076,13 +1167,11 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
           'SELECT partenaire_id, jeton_push, plateforme FROM appareils WHERE partenaire_id = $1 ORDER BY enregistre_le',
           [partenaireId],
         );
-        return rows.map(
-          (r): Appareil => ({
-            partenaireId: r.partenaire_id,
-            jetonPush: r.jeton_push,
-            plateforme: r.plateforme,
-          }),
-        );
+        return rows.map((r): Appareil => ({
+          partenaireId: r.partenaire_id,
+          jetonPush: r.jeton_push,
+          plateforme: r.plateforme,
+        }));
       },
 
       async enregistrer(appareil) {

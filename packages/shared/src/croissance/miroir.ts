@@ -43,10 +43,7 @@ export function miroirComplet(axe: AxeCroissance): boolean {
   return axe.contributions.length >= 2;
 }
 
-export function etatMiroir(
-  axe: AxeCroissance,
-  moiId: PartenaireId,
-): EtatMiroir {
+export function etatMiroir(axe: AxeCroissance, moiId: PartenaireId): EtatMiroir {
   const jaiEcrit = !!contributionDe(axe, moiId);
   const lautreAEcrit = axe.contributions.some((c) => c.partenaireId !== moiId);
 
@@ -105,9 +102,7 @@ export function axeVisiblePar(
       .filter((c) => peutLireContribution(axe, lecteurId, c.partenaireId))
       .map((c) => ({ ...c, estLaMienne: c.partenaireId === lecteurId })),
     etat: etatMiroir(axe, lecteurId),
-    lautreAContribue: axe.contributions.some(
-      (c) => c.partenaireId !== lecteurId,
-    ),
+    lautreAContribue: axe.contributions.some((c) => c.partenaireId !== lecteurId),
   };
 }
 

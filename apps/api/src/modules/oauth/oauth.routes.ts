@@ -44,7 +44,9 @@ export function enregistrerRoutesOAuth(
     }
 
     const compte = await autorisation.creerCompte(corps.courriel, corps.motDePasse);
-    return reponse.code(201).send({ partenaireId: compte.id, courriel: compte.courriel });
+    return reponse
+      .code(201)
+      .send({ partenaireId: compte.id, courriel: compte.courriel });
   });
 
   /**
@@ -62,7 +64,12 @@ export function enregistrerRoutesOAuth(
       scope?: string;
     };
 
-    if (!corps?.courriel || !corps.motDePasse || !corps.client_id || !corps.code_challenge) {
+    if (
+      !corps?.courriel ||
+      !corps.motDePasse ||
+      !corps.client_id ||
+      !corps.code_challenge
+    ) {
       return reponse.code(400).send({ erreur: 'invalid_request' });
     }
     if ((corps.code_challenge_method ?? 'S256') !== 'S256') {
@@ -136,7 +143,9 @@ export function enregistrerRoutesOAuth(
   /** Déconnexion : le jeton d'accès courant et toute la famille de rotation. */
   app.post('/oauth/revoke', async (requete, reponse) => {
     const entete = requete.headers.authorization;
-    const jeton = entete?.startsWith('Bearer ') ? entete.slice(7).trim() : undefined;
+    const jeton = entete?.startsWith('Bearer ')
+      ? entete.slice(7).trim()
+      : undefined;
     const charge = jeton ? await autorisation.verifierAcces(jeton) : undefined;
     if (!charge) return reponse.code(401).send({ erreur: 'invalid_token' });
 
@@ -148,7 +157,9 @@ export function enregistrerRoutesOAuth(
   /** Qui suis-je, et de quel couple — utile au démarrage de l'app mobile. */
   app.get('/moi', async (requete, reponse) => {
     const entete = requete.headers.authorization;
-    const jeton = entete?.startsWith('Bearer ') ? entete.slice(7).trim() : undefined;
+    const jeton = entete?.startsWith('Bearer ')
+      ? entete.slice(7).trim()
+      : undefined;
     const charge = jeton ? await autorisation.verifierAcces(jeton) : undefined;
     if (!charge) return reponse.code(401).send({ motif: 'non_authentifie' });
 

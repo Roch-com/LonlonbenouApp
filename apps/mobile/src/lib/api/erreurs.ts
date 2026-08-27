@@ -3,6 +3,12 @@
 export type GenreErreur =
   /** Pas de réseau, serveur injoignable, délai dépassé. */
   | 'hors_ligne'
+  /**
+   * Le serveur était en veille et n'a pas répondu à temps, même après une
+   * seconde tentative patiente. Distinct de `hors_ligne` : le téléphone a bien
+   * du réseau, et rien n'est perdu — il faut simplement réessayer.
+   */
+  | 'reveil_trop_long'
   /** Jeton absent, invalide ou expiré, et le rafraîchissement a échoué. */
   | 'non_authentifie'
   /** Authentifié, mais pas le droit — non-membre, partage inactif. */
@@ -16,7 +22,12 @@ export class ErreurApi extends Error {
   readonly statut?: number;
   readonly motif?: string;
 
-  constructor(genre: GenreErreur, message: string, statut?: number, motif?: string) {
+  constructor(
+    genre: GenreErreur,
+    message: string,
+    statut?: number,
+    motif?: string,
+  ) {
     super(message);
     this.name = 'ErreurApi';
     this.genre = genre;
@@ -41,6 +52,8 @@ export function messageLisible(erreur: unknown): string {
   switch (erreur.genre) {
     case 'hors_ligne':
       return 'Pas de connexion. Ce que vous voyez date de la dernière synchronisation.';
+    case 'reveil_trop_long':
+      return 'Le serveur met du temps à se réveiller. Réessayez dans un instant, rien n’est perdu.';
     case 'non_authentifie':
       return 'Votre session a expiré. Reconnectez-vous.';
     case 'interdit':

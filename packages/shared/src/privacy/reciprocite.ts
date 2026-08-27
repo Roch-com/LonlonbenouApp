@@ -19,11 +19,7 @@ import type { PartenaireId } from '../types/couple';
 
 /** Modules soumis au partage réciproque. */
 export type ModuleSensible =
-  | 'position'
-  | 'cycle'
-  | 'croissance'
-  | 'score'
-  | 'confidences';
+  'position' | 'cycle' | 'croissance' | 'score' | 'confidences';
 
 export interface Consentement {
   partenaireId: PartenaireId;

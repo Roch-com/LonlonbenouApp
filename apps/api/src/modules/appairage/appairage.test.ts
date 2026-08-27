@@ -88,7 +88,9 @@ describe('vérification', () => {
     const emise = await emettre(app);
     const brouille = ` ${emise.code.slice(0, 4).toLowerCase()}-${emise.code.slice(4)} `;
 
-    expect((await accepter(app, emise.invitationId, brouille)).statusCode).toBe(201);
+    expect((await accepter(app, emise.invitationId, brouille)).statusCode).toBe(
+      201,
+    );
   });
 
   it('persiste chaque tentative ratée', async () => {
@@ -122,7 +124,9 @@ describe('vérification', () => {
     const { app } = await monter();
     const emise = await emettre(app);
 
-    expect((await accepter(app, emise.invitationId, emise.code)).statusCode).toBe(201);
+    expect((await accepter(app, emise.invitationId, emise.code)).statusCode).toBe(
+      201,
+    );
 
     const rejeu = await accepter(app, emise.invitationId, emise.code, ROCHAMBEAU);
     expect(rejeu.statusCode).toBe(410);
@@ -139,12 +143,7 @@ describe('vérification', () => {
     const { app } = await monter();
     const emise = await emettre(app);
 
-    const reponse = await accepter(
-      app,
-      emise.invitationId,
-      emise.code,
-      ROCHAMBEAU,
-    );
+    const reponse = await accepter(app, emise.invitationId, emise.code, ROCHAMBEAU);
     expect(reponse.statusCode).toBe(409);
   });
 });
@@ -153,7 +152,9 @@ describe('couple créé', () => {
   it('naît sans aucun partage actif', async () => {
     const { app, depot } = await monter();
     const emise = await emettre(app);
-    const { coupleId } = (await accepter(app, emise.invitationId, emise.code)).json();
+    const { coupleId } = (
+      await accepter(app, emise.invitationId, emise.code)
+    ).json();
 
     const enregistrement = await depot.couples.parId(coupleId);
     for (const partage of Object.values(enregistrement!.partages)) {

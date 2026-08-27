@@ -9,7 +9,12 @@ import {
   creerDepotOAuthDeTest,
 } from '../../tests/depotDeTest.ts';
 import { CONFIG_OAUTH, COUPLE_ID, entete, ROCHAMBEAU } from '../../tests/aide.ts';
-import { AUDIENCE, CLIENT_MOBILE, EMETTEUR, jetonDeTest } from '../../tests/clesDeTest.ts';
+import {
+  AUDIENCE,
+  CLIENT_MOBILE,
+  EMETTEUR,
+  jetonDeTest,
+} from '../../tests/clesDeTest.ts';
 
 const COURRIEL = 'rochambeau@exemple.test';
 const MOT_DE_PASSE = 'un-mot-de-passe-assez-long';
@@ -109,7 +114,11 @@ describe('flux authorization code + PKCE', () => {
     const autre = pkce();
     const autorisation = await obtenirCode(app, defi);
 
-    const jetons = await echanger(app, autorisation.json().code, autre.verificateur);
+    const jetons = await echanger(
+      app,
+      autorisation.json().code,
+      autre.verificateur,
+    );
     expect(jetons.statusCode).toBe(400);
     expect(jetons.json().motif).toBe('pkce_invalide');
   });
@@ -132,7 +141,9 @@ describe('flux authorization code + PKCE', () => {
     await creerCompte(app);
     const { defi } = pkce();
 
-    expect((await obtenirCode(app, defi, 'mauvais-mot-de-passe')).statusCode).toBe(401);
+    expect((await obtenirCode(app, defi, 'mauvais-mot-de-passe')).statusCode).toBe(
+      401,
+    );
 
     const clientInconnu = await app.inject({
       method: 'POST',
@@ -266,7 +277,10 @@ describe('401 : ce qui ne vaut pas jeton', () => {
   const cas: [string, () => Promise<string | undefined>][] = [
     ['aucun en-tête', async () => undefined],
     ['chaîne quelconque', async () => 'pas-un-jeton'],
-    ['jeton expiré', async () => jetonDeTest(ROCHAMBEAU, { expireDansSecondes: -10 })],
+    [
+      'jeton expiré',
+      async () => jetonDeTest(ROCHAMBEAU, { expireDansSecondes: -10 }),
+    ],
     [
       'émetteur inattendu',
       async () => jetonDeTest(ROCHAMBEAU, { emetteur: 'https://ailleurs.test' }),
@@ -339,7 +353,10 @@ describe('401 : ce qui ne vaut pas jeton', () => {
 describe('JWKS', () => {
   it('publie une clé publique de vérification, jamais la privée', async () => {
     const { app } = await monter();
-    const reponse = await app.inject({ method: 'GET', url: '/.well-known/jwks.json' });
+    const reponse = await app.inject({
+      method: 'GET',
+      url: '/.well-known/jwks.json',
+    });
 
     expect(reponse.statusCode).toBe(200);
     const cle = reponse.json().keys[0];

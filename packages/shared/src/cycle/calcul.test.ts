@@ -31,7 +31,9 @@ describe('estimations', () => {
   });
 
   it('ne parle de prévision fiable qu’à partir de deux cycles observés', () => {
-    expect(estimer([regles('2026-02-01'), regles('2026-03-01')]).fiable).toBe(false);
+    expect(estimer([regles('2026-02-01'), regles('2026-03-01')]).fiable).toBe(
+      false,
+    );
     expect(
       estimer([regles('2026-01-04'), regles('2026-02-01'), regles('2026-03-01')])
         .fiable,

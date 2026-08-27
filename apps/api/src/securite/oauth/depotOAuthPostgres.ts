@@ -94,7 +94,9 @@ export function creerDepotOAuthPostgres(pool: pg.Pool): DepotOAuth {
           expire_le: Date;
           utilise_le: Date | null;
           revoque_le: Date | null;
-        }>('SELECT * FROM jetons_rafraichissement WHERE empreinte = $1', [empreinte]);
+        }>('SELECT * FROM jetons_rafraichissement WHERE empreinte = $1', [
+          empreinte,
+        ]);
 
         const ligne = rows[0];
         if (!ligne) return undefined;

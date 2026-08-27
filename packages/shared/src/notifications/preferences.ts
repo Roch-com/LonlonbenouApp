@@ -27,7 +27,7 @@ export type CategorieNotification =
 
 export interface DefinitionCategorie {
   code: CategorieNotification;
-  libelle: string
+  libelle: string;
   detail: string;
   /** Catégories qu'on ne peut ni couper ni retarder. */
   imperative?: boolean;
@@ -145,10 +145,7 @@ function minutesDepuisMinuit(heure: string): number {
 }
 
 /** Gère les plages qui passent minuit, cas normal pour une nuit. */
-export function dansLaPlage(
-  plage: PlageSilence,
-  maintenant: Date,
-): boolean {
+export function dansLaPlage(plage: PlageSilence, maintenant: Date): boolean {
   if (!plage.actif) return false;
 
   const instant = maintenant.getHours() * 60 + maintenant.getMinutes();

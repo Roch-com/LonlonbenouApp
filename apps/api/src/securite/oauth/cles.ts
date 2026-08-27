@@ -1,4 +1,8 @@
-import { generateKeyPairSync, createPrivateKey, createPublicKey } from 'node:crypto';
+import {
+  generateKeyPairSync,
+  createPrivateKey,
+  createPublicKey,
+} from 'node:crypto';
 import type { KeyObject } from 'node:crypto';
 
 export interface PaireDeCles {

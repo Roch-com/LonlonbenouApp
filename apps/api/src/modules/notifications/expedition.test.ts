@@ -129,7 +129,9 @@ describe('contenu poussé', () => {
 
     // Un message poussé transite par Apple et Google et s'affiche sur un écran
     // verrouillé : il incite à ouvrir l'app, il ne raconte rien.
-    expect(JSON.stringify(transport.messages)).not.toContain('contenu confidentiel');
+    expect(JSON.stringify(transport.messages)).not.toContain(
+      'contenu confidentiel',
+    );
   });
 
   it('ne pousse rien vers un partenaire sans appareil enregistré', async () => {

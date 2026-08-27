@@ -45,7 +45,11 @@ export class ErreurPush extends Error {
 
   constructor(
     message: string,
-    options: { jetonInvalide?: boolean; reessayable?: boolean; statut?: number } = {},
+    options: {
+      jetonInvalide?: boolean;
+      reessayable?: boolean;
+      statut?: number;
+    } = {},
   ) {
     super(message);
     this.name = 'ErreurPush';

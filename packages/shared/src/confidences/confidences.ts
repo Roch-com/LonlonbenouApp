@@ -50,7 +50,10 @@ export function confidencesVisiblesPar(
 ): Confidence[] {
   return confidences.filter(
     (c) =>
-      estVisiblePar({ auteurId: c.auteurId, visibilite: c.visibilite }, lecteurId) &&
+      estVisiblePar(
+        { auteurId: c.auteurId, visibilite: c.visibilite },
+        lecteurId,
+      ) &&
       (type === undefined || c.type === type),
   );
 }

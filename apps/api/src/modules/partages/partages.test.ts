@@ -49,7 +49,9 @@ describe('opt-in symétrique', () => {
 
     for (const qui of [ROCHAMBEAU, GAELLE]) {
       const partages = (await lister(app, qui)).json().partages;
-      const croissance = partages.find((p: { module: string }) => p.module === 'croissance');
+      const croissance = partages.find(
+        (p: { module: string }) => p.module === 'croissance',
+      );
       expect(croissance.actif).toBe(false);
     }
   });

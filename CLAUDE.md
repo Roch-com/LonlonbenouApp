@@ -40,33 +40,39 @@ Si une implémentation demandée contredit ces principes, le signaler avant de c
 Légende : **P0** = MVP obligatoire · **P1** = V1.1 · **P2** = évolution ultérieure
 
 ### Pôle ① — Présence & connexion quotidienne
+
 - Tableau de bord / Accueil — **P0**
 - Carte & Présence (géoloc) — **P0** statuts manuels + check-in + SOS · **P1** carte temps réel, ETA, geofencing, point de rencontre à mi-chemin
 - Chat du couple — **P0** messagerie + notes douces + humeur · **P1** messages programmés, modèles guidés
 - Compteur & Widgets — **P0** compteur · **P1** widgets écran verrouillé
 
 ### Pôle ② — Communication profonde & croissance
+
 - Axes de croissance (fonctionnement en miroir obligatoire, jamais à sens unique) — **P0** structure de base · **P1** assistant de reformulation
 - Espace de confidences — **P0** gratitude + lettres · **P1** questions de complicité, brouillon différé 24h
 - Parcours guidé du couple — **P1**
 - Score d'implication (jamais une note de la personne, toujours de l'activité observable ; score de couple mis en avant plutôt que classement individuel) — **P0** base + suggestions privées · **P1** historique avancé
 
 ### Pôle ③ — Vie pratique partagée
+
 - Calendrier partagé — **P0**
 - Projets de couple — **P0** projets/jalons · **P1** projet surprise (visible d'un seul partenaire jusqu'à révélation programmée)
 - Finances partagées — **P1** saisie manuelle · **P2** agrégation bancaire
 - Initiatives & sorties — **P0** création/journal · **P1** catalogue algorithmique
 
 ### Pôle ④ — Intimité & bien-être
+
 - Cycle & fertilité (3 niveaux de partage contrôlés EXCLUSIVEMENT par la partenaire concernée) — **P0** saisie/calcul/partage niv.1-2 · **P1** synchro santé, mode désir d'enfant
 - Complicité & connexion — **P1**
 
 ### Pôle ⑤ — Mémoire & complicité
+
 - Souvenirs / Album — **P1**
 - Love Map — **P1**
 - Journal du couple — **P2**
 
 ### Pôle ⑥ — Sécurité & réglages (transverse)
+
 - Réglages du couple — **P0**
 - Notifications intelligentes — **P0** socle · **P1** personnalisation fine
 - Sécurité & confidentialité (verrou biométrique, dissociation de compte en cas de rupture avec révocation immédiate des accès croisés) — **P0**

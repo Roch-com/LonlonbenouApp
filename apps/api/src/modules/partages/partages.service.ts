@@ -23,10 +23,7 @@ import { MODULES_SENSIBLES } from '../../domaine/depot.ts';
 import type { Expediteur } from '../notifications/expedition.ts';
 
 export type RefusPartage =
-  | 'couple_introuvable'
-  | 'non_membre'
-  | 'couple_dissocie'
-  | 'module_inconnu';
+  'couple_introuvable' | 'non_membre' | 'couple_dissocie' | 'module_inconnu';
 
 export interface EtatPartage {
   module: string;
@@ -64,10 +61,7 @@ async function autoriser(
   return { couple: enregistrement };
 }
 
-function versEtat(
-  partage: PartageReciproque,
-  moiId: PartenaireId,
-): EtatPartage {
+function versEtat(partage: PartageReciproque, moiId: PartenaireId): EtatPartage {
   const moi = partage.consentements.find((c) => c.partenaireId === moiId);
   const autre = partage.consentements.find((c) => c.partenaireId !== moiId);
   return {
@@ -107,7 +101,12 @@ export function creerServicePartages(
       if (!partage) return { ok: false, motif: 'module_inconnu' };
 
       const moi = acces.couple.couple.partenaires.find((p) => p.id === moiId);
-      const resultat = basculerConsentement(partage, moiId, actif, moi?.prenom ?? '');
+      const resultat = basculerConsentement(
+        partage,
+        moiId,
+        actif,
+        moi?.prenom ?? '',
+      );
 
       await depot.couples.enregistrer({
         ...acces.couple,

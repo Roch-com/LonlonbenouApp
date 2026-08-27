@@ -278,9 +278,9 @@ describe('déclencheur de tâche planifiée', () => {
   it('refuse sans le secret, accepte avec', async () => {
     const { app } = await monterServeur();
 
-    expect((await app.inject({ method: 'POST', url: '/taches/rappels' })).statusCode).toBe(
-      401,
-    );
+    expect(
+      (await app.inject({ method: 'POST', url: '/taches/rappels' })).statusCode,
+    ).toBe(401);
 
     const avec = await app.inject({
       method: 'POST',

@@ -53,7 +53,10 @@ type Resultat<T = undefined> = {
 };
 
 export interface ServiceViePratique {
-  lire(coupleId: string, lecteurId: PartenaireId): Promise<Resultat<VueViePratique>>;
+  lire(
+    coupleId: string,
+    lecteurId: PartenaireId,
+  ): Promise<Resultat<VueViePratique>>;
 
   ajouterEvenement(
     coupleId: string,

@@ -176,7 +176,13 @@ export function creerServeurAutorisation(
       return compte;
     },
 
-    async autoriser({ courriel, motDePasse, clientId, defiPkce, portee = 'couple' }) {
+    async autoriser({
+      courriel,
+      motDePasse,
+      clientId,
+      defiPkce,
+      portee = 'couple',
+    }) {
       if (!clientConnu(clientId)) return { ok: false, motif: 'client_inconnu' };
 
       const compte = await depot.comptes.parCourriel(courriel.trim().toLowerCase());
@@ -218,7 +224,9 @@ export function creerServeurAutorisation(
       if (Date.now() > Date.parse(enregistre.expireLe)) {
         return { ok: false, motif: 'code_expire' };
       }
-      if (!memeChaine(defiDepuisVerificateur(verificateurPkce), enregistre.defiPkce)) {
+      if (
+        !memeChaine(defiDepuisVerificateur(verificateurPkce), enregistre.defiPkce)
+      ) {
         return { ok: false, motif: 'pkce_invalide' };
       }
 

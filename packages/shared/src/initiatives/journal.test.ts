@@ -65,7 +65,11 @@ describe('cycle de vie d’une initiative', () => {
     expect(programmee.etat).toBe('prevue');
     expect(programmee.prevuePour).toBe('2026-03-20');
 
-    const vecue = marquerVecue(programmee, '  On a ri tout le repas.  ', MAINTENANT);
+    const vecue = marquerVecue(
+      programmee,
+      '  On a ri tout le repas.  ',
+      MAINTENANT,
+    );
     expect(vecue.etat).toBe('vecue');
     expect(vecue.vecueLe).toBe(MAINTENANT);
     expect(vecue.souvenir).toBe('On a ri tout le repas.');
@@ -100,7 +104,9 @@ describe('résumé', () => {
   });
 
   it('ne dit rien plutôt que zéro quand rien n’a été vécu', () => {
-    expect(resumeJournal([initiative('a')], MAINTENANT).depuisDerniere).toBeUndefined();
+    expect(
+      resumeJournal([initiative('a')], MAINTENANT).depuisDerniere,
+    ).toBeUndefined();
   });
 });
 

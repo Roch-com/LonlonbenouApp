@@ -2,7 +2,7 @@
  * Adaptateur en mémoire.
  *
  * Sert aux tests et au développement local. L'adaptateur PostgreSQL reste à
- * écrire (voir `src/db/schema.sql`, qui décrit les tables attendues) : ce qui
+ * écrire (voir `src/db/migrations/001_socle.sql`, qui décrit les tables attendues) : ce qui
  * compte à ce stade, c'est que la logique des quatre exigences soit vérifiable
  * sans base de données, donc vérifiable en intégration continue.
  */
@@ -35,7 +35,7 @@ export function creerDepotMemoire(): Depot {
   const couples = new Map<string, CoupleServeur>();
   const axes = new Map<string, AxeCroissance[]>();
   const invitations = new Map<string, InvitationServeur>();
-  const preferences = new Map<PartenaireId, (typeof PREFERENCES_PAR_DEFAUT)>();
+  const preferences = new Map<PartenaireId, typeof PREFERENCES_PAR_DEFAUT>();
   const notifications: NotificationServeur[] = [];
   const appareils: Appareil[] = [];
   const partagesCycle = new Map<string, PartageCycle>();
@@ -148,12 +148,17 @@ export function creerDepotMemoire(): Depot {
         return copie(evenements.get(coupleId) ?? []);
       },
       async enregistrerEvenement(coupleId, evenement) {
-        const liste = (evenements.get(coupleId) ?? []).filter((e) => e.id !== evenement.id);
+        const liste = (evenements.get(coupleId) ?? []).filter(
+          (e) => e.id !== evenement.id,
+        );
         liste.push(copie(evenement));
         evenements.set(coupleId, liste);
       },
       async supprimerEvenement(coupleId, id) {
-        evenements.set(coupleId, (evenements.get(coupleId) ?? []).filter((e) => e.id !== id));
+        evenements.set(
+          coupleId,
+          (evenements.get(coupleId) ?? []).filter((e) => e.id !== id),
+        );
       },
       async projets(coupleId) {
         return copie(projets.get(coupleId) ?? []);
@@ -163,7 +168,9 @@ export function creerDepotMemoire(): Depot {
         return trouve ? copie(trouve) : undefined;
       },
       async enregistrerProjet(coupleId, projet) {
-        const liste = (projets.get(coupleId) ?? []).filter((p) => p.id !== projet.id);
+        const liste = (projets.get(coupleId) ?? []).filter(
+          (p) => p.id !== projet.id,
+        );
         liste.push(copie(projet));
         projets.set(coupleId, liste);
       },
@@ -175,12 +182,17 @@ export function creerDepotMemoire(): Depot {
         return trouve ? copie(trouve) : undefined;
       },
       async enregistrerInitiative(coupleId, initiative) {
-        const liste = (initiatives.get(coupleId) ?? []).filter((i) => i.id !== initiative.id);
+        const liste = (initiatives.get(coupleId) ?? []).filter(
+          (i) => i.id !== initiative.id,
+        );
         liste.push(copie(initiative));
         initiatives.set(coupleId, liste);
       },
       async supprimerInitiative(coupleId, id) {
-        initiatives.set(coupleId, (initiatives.get(coupleId) ?? []).filter((i) => i.id !== id));
+        initiatives.set(
+          coupleId,
+          (initiatives.get(coupleId) ?? []).filter((i) => i.id !== id),
+        );
       },
       async rappelsEmis(coupleId) {
         return copie(rappelsEmis.get(coupleId) ?? []);
@@ -277,7 +289,9 @@ export function creerDepotMemoire(): Depot {
         );
       },
       async enregistrerAlerte(coupleId, alerte) {
-        const liste = (alertes.get(coupleId) ?? []).filter((a) => a.id !== alerte.id);
+        const liste = (alertes.get(coupleId) ?? []).filter(
+          (a) => a.id !== alerte.id,
+        );
         liste.push(copie(alerte));
         alertes.set(coupleId, liste);
       },
@@ -339,11 +353,16 @@ export function creerDepotMemoire(): Depot {
         regles.set(coupleId, liste);
       },
       async supprimerRegles(coupleId, id) {
-        regles.set(coupleId, (regles.get(coupleId) ?? []).filter((r) => r.id !== id));
+        regles.set(
+          coupleId,
+          (regles.get(coupleId) ?? []).filter((r) => r.id !== id),
+        );
       },
       async symptomes(coupleId) {
         return copie(
-          (symptomes.get(coupleId) ?? []).sort((a, b) => b.date.localeCompare(a.date)),
+          (symptomes.get(coupleId) ?? []).sort((a, b) =>
+            b.date.localeCompare(a.date),
+          ),
         );
       },
       async noterSymptome(coupleId, symptome) {

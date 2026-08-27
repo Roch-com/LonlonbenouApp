@@ -32,7 +32,9 @@ export function enregistrerRoutesConfidences(
         type,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return { confidences: resultat.confidences };
     },
@@ -64,7 +66,9 @@ export function enregistrerRoutesConfidences(
         corps.titre,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return reponse.code(201).send({ confidence: resultat.confidence });
     },
@@ -81,7 +85,9 @@ export function enregistrerRoutesConfidences(
         id,
       );
       if (!resultat.ok) {
-        return reponse.code(repondre(resultat.motif)).send({ motif: resultat.motif });
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
       }
       return { confidence: resultat.confidence };
     },

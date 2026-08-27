@@ -1,0 +1,57 @@
+# Déploiement de l'API LONLONBENU sur Render.
+#
+# À importer depuis le tableau de bord Render : New → Blueprint, puis choisir
+# le dépôt GitHub. Render lit ce fichier et crée le service.
+#
+# La base n'est pas déclarée ici : elle vit chez Neon, dont le palier gratuit
+# est durable là où celui de Render expire. Il suffit de coller l'URL de
+# connexion Neon dans `DATABASE_URL`.
+
+services:
+  - type: web
+    name: lonlonbenu-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    # Le dépôt est un monorepo npm : l'installation se fait à la racine, sinon
+    # `@lonlonbenu/shared` reste introuvable.
+    rootDir: .
+    buildCommand: npm ci
+    startCommand: npm run start --workspace=@lonlonbenu/api
+    healthCheckPath: /sante
+    envVars:
+      # `sync: false` : la valeur se saisit dans le tableau de bord et n'entre
+      # jamais dans le dépôt.
+      - key: DATABASE_URL
+        sync: false
+      - key: LONLONBENU_CLE_PRIVEE_PEM
+        sync: false
+      - key: LONLONBENU_OAUTH_EMETTEUR
+        sync: false
+      - key: LONLONBENU_SECRET_TACHES
+        # Render en fabrique un aléatoire et le garde : c'est le secret qui
+        # protège le déclencheur externe de rappels.
+        generateValue: true
+      - key: LONLONBENU_FCM_PROJET_ID
+        sync: false
+      - key: LONLONBENU_FCM_COURRIEL_COMPTE_SERVICE
+        sync: false
+      - key: LONLONBENU_FCM_CLE_PRIVEE_PEM
+        sync: false
+      # Suivi des erreurs. Laisser vide tant que le compte Sentry n'existe
+      # pas : le serveur démarre et l'annonce au journal.
+      - key: SENTRY_DSN
+        sync: false
+      - key: LONLONBENU_OAUTH_AUDIENCE
+        value: lonlonbenu-api
+      - key: LONLONBENU_OAUTH_CLIENTS
+        value: lonlonbenu-mobile
+      # Neon impose TLS ; `auto` l'active de lui-même, on l'inscrit pour que ce
+      # soit lisible sans avoir à ouvrir le code.
+      - key: LONLONBENU_DB_SSL
+        value: auto
+      # Les dépendances de développement sont nécessaires au build du monorepo.
+      - key: NPM_CONFIG_PRODUCTION
+        value: 'false'
+      - key: NODE_VERSION
+        value: '24'

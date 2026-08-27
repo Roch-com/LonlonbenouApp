@@ -137,14 +137,23 @@ export function etatDuCycle(
   if (ecoules < 0) return undefined;
 
   const jourDuCycle = ecoules + 1;
-  const prochainesReglesLe = ajouterJours(dernieres.debutLe, estimations.dureeCycle);
-  const joursAvantProchaines = joursEntre(maintenant.slice(0, 10), prochainesReglesLe);
+  const prochainesReglesLe = ajouterJours(
+    dernieres.debutLe,
+    estimations.dureeCycle,
+  );
+  const joursAvantProchaines = joursEntre(
+    maintenant.slice(0, 10),
+    prochainesReglesLe,
+  );
 
   return {
     jourDuCycle,
     // Au-delà de la durée estimée, on reste sur la dernière phase connue
     // plutôt que de faire repartir un cycle qui n'a pas commencé.
-    phase: phasePourJour(Math.min(jourDuCycle, estimations.dureeCycle), estimations),
+    phase: phasePourJour(
+      Math.min(jourDuCycle, estimations.dureeCycle),
+      estimations,
+    ),
     estimations,
     debutDernieresRegles: dernieres.debutLe,
     prochainesReglesLe,
