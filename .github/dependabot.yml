@@ -1,0 +1,27 @@
+# Mises à jour de dépendances.
+#
+# Groupées et mensuelles à dessein : une demande de fusion par paquet et par
+# semaine finit ignorée, ce qui est pire que pas de robot du tout. Les correctifs
+# de sécurité, eux, arrivent séparément et sans attendre.
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    groups:
+      # Expo impose des versions accordées entre elles : les séparer produirait
+      # des combinaisons que personne n'a testées.
+      expo:
+        patterns: ['expo', 'expo-*', 'react-native', '@expo/*']
+      outillage:
+        patterns: ['eslint*', 'prettier', 'typescript*', 'vitest', '@types/*']
+      serveur:
+        patterns: ['fastify', '@fastify/*', 'pg', 'jose']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

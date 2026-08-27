@@ -1,0 +1,45 @@
+# Déclencheur externe des rappels.
+#
+# Deux raisons d'exister, et la seconde est la plus importante :
+#
+#  1. Le planificateur interne de l'API balaie les couples toutes les cinq
+#     minutes — mais seulement tant que le processus tourne.
+#  2. Sur le palier gratuit de Render, le serveur s'endort après un quart
+#     d'heure sans trafic. Endormi, il n'émet plus rien : un rappel du matin
+#     n'arriverait jamais. Cet appel régulier le tient éveillé *et* déclenche
+#     le balayage.
+#
+# À configurer : le secret `URL_API` (adresse publique du service) et
+# `SECRET_TACHES` (la valeur générée par Render pour LONLONBENU_SECRET_TACHES),
+# dans Settings → Secrets and variables → Actions.
+
+name: Rappels LONLONBENU
+
+on:
+  schedule:
+    # Toutes les dix minutes. En deçà du quart d'heure de veille de Render, avec
+    # de la marge : GitHub décale volontiers l'exécution de quelques minutes aux
+    # heures chargées.
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  declencher:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Appeler le balayage des rappels
+        run: |
+          # `--max-time 90` : le premier appel après une veille attend le
+          # réveil du serveur plutôt que d'échouer aussitôt.
+          code=$(curl -s -o /tmp/reponse.txt -w '%{http_code}' \
+            --max-time 90 \
+            -X POST "${{ secrets.URL_API }}/taches/rappels" \
+            -H "authorization: Bearer ${{ secrets.SECRET_TACHES }}")
+
+          echo "HTTP $code"
+          cat /tmp/reponse.txt
+
+          if [ "$code" != "200" ]; then
+            echo "::error::Le balayage des rappels a échoué (HTTP $code)"
+            exit 1
+          fi
