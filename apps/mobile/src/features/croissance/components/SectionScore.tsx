@@ -17,10 +17,7 @@ import {
   useSession,
 } from '@/features/reglages/stores/sessionStore';
 import { useGestes } from '../hooks/useGestes';
-import {
-  BoutonTransparence,
-  RESUME_TRANSPARENCE,
-} from './TransparenceScore';
+import { BoutonTransparence, RESUME_TRANSPARENCE } from './TransparenceScore';
 
 /**
  * Pôle ② — Score d'implication (P0 : base + suggestions privées).
@@ -146,23 +143,24 @@ function MonRythme({
         {phrases[tendance]}
       </Texte>
       <Texte variante="meta">
-        {joursActifs} jour{joursActifs > 1 ? 's' : ''} avec un geste de votre
-        part. Cette ligne ne s’affiche que pour vous — elle vous situe par
-        rapport à vous-même, jamais par rapport à l’autre.
+        {joursActifs} jour{joursActifs > 1 ? 's' : ''} avec un geste de votre part.
+        Cette ligne ne s’affiche que pour vous — elle vous situe par rapport à
+        vous-même, jamais par rapport à l’autre.
       </Texte>
     </Carte>
   );
 }
 
-const DESTINATIONS: Partial<Record<TypeGeste, { route: string; libelle: string }>> = {
-  note_douce: { route: '/', libelle: 'Aller à l’accueil' },
-  message: { route: '/chat', libelle: 'Ouvrir la conversation' },
-  humeur: { route: '/chat', libelle: 'Dire mon humeur' },
-  statut: { route: '/presence', libelle: 'Mettre à jour mon statut' },
-  check_in: { route: '/presence', libelle: 'Faire un check-in' },
-  gratitude: { route: '/croissance', libelle: 'Écrire un merci' },
-  lettre: { route: '/croissance', libelle: 'Commencer une lettre' },
-};
+const DESTINATIONS: Partial<Record<TypeGeste, { route: string; libelle: string }>> =
+  {
+    note_douce: { route: '/', libelle: 'Aller à l’accueil' },
+    message: { route: '/chat', libelle: 'Ouvrir la conversation' },
+    humeur: { route: '/chat', libelle: 'Dire mon humeur' },
+    statut: { route: '/presence', libelle: 'Mettre à jour mon statut' },
+    check_in: { route: '/presence', libelle: 'Faire un check-in' },
+    gratitude: { route: '/croissance', libelle: 'Écrire un merci' },
+    lettre: { route: '/croissance', libelle: 'Commencer une lettre' },
+  };
 
 function Suggestion({ geste, texte }: { geste: TypeGeste; texte: string }) {
   const router = useRouter();

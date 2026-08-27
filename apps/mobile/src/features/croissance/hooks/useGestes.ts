@@ -15,7 +15,6 @@
  */
 import { useMemo } from 'react';
 import type { Geste } from '@lonlonbenu/shared';
-import { useChat } from '@/features/presence/stores/chatStore';
 import { usePresence } from '@/features/presence/stores/presenceStore';
 import { useFilLisible } from '@/features/presence/hooks/useLecturesDechiffrees';
 import { useAxes } from '../stores/axesStore';
@@ -26,7 +25,6 @@ export function useGestes(): Geste[] {
   const vuePresence = usePresence((e) => e.vue);
   const confidences = useConfidences((e) => e.confidences);
   const axes = useAxes((e) => e.axes);
-  const messagesBruts = useChat((e) => e.messages);
 
   return useMemo(() => {
     const gestes: Geste[] = [];
@@ -84,7 +82,8 @@ export function useGestes(): Geste[] {
     }
 
     return gestes;
-    // `messagesBruts` participe pour que le calcul reparte quand le fil change
-    // sans que son déchiffrement ait encore abouti.
-  }, [fil, messagesBruts, vuePresence, confidences, axes]);
+    // Le fil déchiffré suffit : tant que le déchiffrement n'a pas abouti, les
+    // messages bruts ne changent rien au résultat. S'y abonner ne faisait que
+    // relancer le calcul et provoquer un rendu de plus, sans effet visible.
+  }, [fil, vuePresence, confidences, axes]);
 }

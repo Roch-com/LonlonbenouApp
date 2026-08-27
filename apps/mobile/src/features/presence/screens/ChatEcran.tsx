@@ -10,10 +10,13 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Bouton, Carte, Texte } from '@/components/ui';
+import { Bouton, Carte, EnTeteApp, Texte } from '@/components/ui';
 import {
+  chrome,
   colors,
   espacements,
+  margeEcran,
+  ombres,
   polices,
   rayons,
   typography,
@@ -69,16 +72,26 @@ export function ChatEcran() {
       await chargerPresence(coupleId, partenaireId);
       await marquerLus(coupleId);
     })();
-  }, [connecte, coupleId, partenaireId, preparerLesCles, charger, chargerPresence, marquerLus]);
+  }, [
+    connecte,
+    coupleId,
+    partenaireId,
+    preparerLesCles,
+    charger,
+    chargerPresence,
+    marquerLus,
+  ]);
 
   if (etat === 'anonyme' || (etat === 'connecte' && !coupleId)) {
     return (
       <View style={[styles.fond, styles.centre, { paddingTop: marges.top }]}>
         <Carte>
-          <Texte variante="titre">Une conversation a besoin de deux appareils</Texte>
+          <Texte variante="titre">
+            Une conversation a besoin de deux appareils
+          </Texte>
           <Texte variante="corpsDoux" style={styles.intro}>
-            Les messages sont chiffrés de bout en bout : il faut un compte de
-            chaque côté pour que les clés puissent s’échanger.
+            Les messages sont chiffrés de bout en bout : il faut un compte de chaque
+            côté pour que les clés puissent s’échanger.
           </Texte>
           <View style={styles.action}>
             <Bouton
@@ -104,14 +117,13 @@ export function ChatEcran() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={marges.top}
     >
+      <EnTeteApp titre={autre.prenom} surtitre="Nous deux" />
+
       <FlatList
         ref={liste}
         data={fil}
         keyExtractor={(m) => m.id}
-        contentContainerStyle={[
-          styles.contenu,
-          { paddingTop: marges.top + espacements.md },
-        ]}
+        contentContainerStyle={[styles.contenu, { paddingTop: espacements.md }]}
         ListHeaderComponent={
           <View style={styles.entete}>
             <Carte>
@@ -182,7 +194,16 @@ export function ChatEcran() {
         onContentSizeChange={() => liste.current?.scrollToEnd({ animated: true })}
       />
 
-      <View style={[styles.barre, { paddingBottom: marges.bottom + espacements.sm }]}>
+      {/* La barre d'onglets est en position absolue : sans sa hauteur ajoutée
+          ici, le champ de saisie disparaissait derrière elle. */}
+      <View
+        style={[
+          styles.barre,
+          {
+            paddingBottom: marges.bottom + chrome.barreOnglets + espacements.sm,
+          },
+        ]}
+      >
         <TextInput
           style={styles.saisie}
           placeholder="Écrire à deux…"
@@ -213,12 +234,12 @@ export function ChatEcran() {
 
 const styles = StyleSheet.create({
   fond: { flex: 1, backgroundColor: colors.fond },
-  centre: { justifyContent: 'center', paddingHorizontal: espacements.lg },
+  centre: { justifyContent: 'center', paddingHorizontal: margeEcran },
   intro: { marginTop: espacements.xs },
   action: { marginTop: espacements.lg },
   entete: { gap: espacements.md, marginBottom: espacements.md },
   contenu: {
-    paddingHorizontal: espacements.lg,
+    paddingHorizontal: margeEcran,
     paddingBottom: espacements.md,
     gap: espacements.sm,
   },
@@ -229,11 +250,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: espacements.xs,
-    paddingHorizontal: espacements.lg,
+    paddingHorizontal: margeEcran,
     paddingTop: espacements.sm,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.bordure,
     backgroundColor: colors.fondEleve,
+    ...ombres.effleuree,
   },
   saisie: {
     flex: 1,

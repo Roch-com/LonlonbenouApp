@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { formaterCode } from '@lonlonbenu/shared';
-import { Bouton, Carte, Champ, Ecran, EnTete, Texte } from '@/components/ui';
+import { Bouton, Carte, Champ, EnTete, Texte } from '@/components/ui';
+import { EcranModale } from '@/components/chrome';
 import { colors, espacements } from '@/design/theme';
 import { messageLisible } from '@/lib/api/erreurs';
 import {
@@ -58,7 +59,7 @@ export function AppairageEcran() {
   };
 
   return (
-    <Ecran>
+    <EcranModale section="Appairage">
       <EnTete
         surtitre="Appairage"
         titre="Relier vos deux comptes"
@@ -91,8 +92,8 @@ export function AppairageEcran() {
               </Texte>
               <Texte variante="corpsDoux">
                 Transmettez-le de vive voix. Il vaut{' '}
-                {Math.round(emise.expireDansSecondes / 60)} minutes, ne sert
-                qu’une fois, et se bloque après cinq erreurs.
+                {Math.round(emise.expireDansSecondes / 60)} minutes, ne sert qu’une
+                fois, et se bloque après cinq erreurs.
               </Texte>
               <Texte variante="meta" style={styles.identifiant}>
                 Identifiant à saisir avec le code : {emise.invitationId}
@@ -167,7 +168,7 @@ export function AppairageEcran() {
       {role !== 'choix' ? (
         <Bouton libelle="Revenir" ton="discret" onPress={() => setRole('choix')} />
       ) : null}
-    </Ecran>
+    </EcranModale>
   );
 }
 

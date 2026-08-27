@@ -27,9 +27,7 @@ import { usePush } from './pushStore';
 
 export type EtatSessionServeur =
   /** Avant la première tentative de restauration. */
-  | 'inconnu'
-  | 'anonyme'
-  | 'connecte';
+  'inconnu' | 'anonyme' | 'connecte';
 
 interface ReponseJetons {
   access_token: string;
@@ -222,7 +220,9 @@ export const useSessionServeur = create<EtatSessionStore>()((set, get) => {
 
     async rafraichirLeCouple() {
       try {
-        const moi = await appeler<{ partenaireId: string; coupleId?: string }>('/moi');
+        const moi = await appeler<{ partenaireId: string; coupleId?: string }>(
+          '/moi',
+        );
         await enregistrerPartenaireId(moi.partenaireId);
         set({ partenaireId: moi.partenaireId, coupleId: moi.coupleId });
       } catch (erreur) {

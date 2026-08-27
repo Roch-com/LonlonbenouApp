@@ -51,12 +51,15 @@ export function SectionAxes() {
       <Carte>
         <Texte variante="titre">Un espace qui vit sur le serveur</Texte>
         <Texte variante="corpsDoux" style={styles.intro}>
-          Les axes de croissance se travaillent à deux, depuis deux appareils.
-          Ils ont donc besoin d’un compte — c’est ce qui permet à ce que vous
-          déposez d’arriver jusqu’à {autre.prenom}.
+          Les axes de croissance se travaillent à deux, depuis deux appareils. Ils
+          ont donc besoin d’un compte — c’est ce qui permet à ce que vous déposez
+          d’arriver jusqu’à {autre.prenom}.
         </Texte>
         <View style={styles.action}>
-          <Bouton libelle="Se connecter" onPress={() => router.push('/connexion')} />
+          <Bouton
+            libelle="Se connecter"
+            onPress={() => router.push('/connexion')}
+          />
         </View>
       </Carte>
     );
@@ -67,11 +70,14 @@ export function SectionAxes() {
       <Carte>
         <Texte variante="titre">Il manque {autre.prenom}</Texte>
         <Texte variante="corpsDoux" style={styles.intro}>
-          Votre compte existe, mais il n’est encore relié à personne. L’appairage
-          se fait une seule fois, avec un code à se transmettre.
+          Votre compte existe, mais il n’est encore relié à personne. L’appairage se
+          fait une seule fois, avec un code à se transmettre.
         </Texte>
         <View style={styles.action}>
-          <Bouton libelle="Relier nos comptes" onPress={() => router.push('/appairage')} />
+          <Bouton
+            libelle="Relier nos comptes"
+            onPress={() => router.push('/appairage')}
+          />
         </View>
       </Carte>
     );
@@ -103,8 +109,8 @@ export function SectionAxes() {
         <Carte discrete>
           <Texte variante="petit">
             Sans connexion pour l’instant. Vous voyez l’état
-            {synchroniseeLe ? ` d’${ilYA(synchroniseeLe)}` : ' précédent'} ; rien
-            ne peut être déposé tant que le serveur n’est pas joignable.
+            {synchroniseeLe ? ` d’${ilYA(synchroniseeLe)}` : ' précédent'} ; rien ne
+            peut être déposé tant que le serveur n’est pas joignable.
           </Texte>
         </Carte>
       ) : null}
@@ -133,8 +139,8 @@ export function SectionAxes() {
       {!chargement && axes.length === 0 && !erreur ? (
         <Carte discrete>
           <Texte variante="corpsDoux">
-            Aucun axe pour l’instant. Un axe n’est pas un reproche : c’est un
-            sujet que vous décidez de regarder à deux.
+            Aucun axe pour l’instant. Un axe n’est pas un reproche : c’est un sujet
+            que vous décidez de regarder à deux.
           </Texte>
         </Carte>
       ) : null}

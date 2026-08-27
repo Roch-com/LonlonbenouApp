@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { Bouton, Carte, Champ, Ecran, EnTete, Texte } from '@/components/ui';
+import { Bouton, Carte, Champ, EnTete, Texte } from '@/components/ui';
+import { EcranModale } from '@/components/chrome';
 import { espacements } from '@/design/theme';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 import { useAutre } from '@/features/reglages/stores/sessionStore';
@@ -33,7 +34,7 @@ export function SosEcran() {
   };
 
   return (
-    <Ecran>
+    <EcranModale section="SOS">
       <EnTete
         surtitre="SOS"
         titre="Besoin d’aide ?"
@@ -74,7 +75,11 @@ export function SosEcran() {
           <Texte variante="corps" style={styles.question}>
             Envoyer l’alerte à {autre.prenom} maintenant ?
           </Texte>
-          <Bouton libelle="Oui, envoyer le SOS" ton="urgence" onPress={() => void envoyer()} />
+          <Bouton
+            libelle="Oui, envoyer le SOS"
+            ton="urgence"
+            onPress={() => void envoyer()}
+          />
           <Bouton
             libelle="Annuler"
             ton="discret"
@@ -88,7 +93,7 @@ export function SosEcran() {
           onPress={() => setConfirme(true)}
         />
       )}
-    </Ecran>
+    </EcranModale>
   );
 }
 

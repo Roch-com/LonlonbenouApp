@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Bouton, Carte, Champ, Ecran, EnTete, Texte } from '@/components/ui';
+import { Bouton, Carte, Champ, EnTete, Texte } from '@/components/ui';
+import { EcranModale } from '@/components/chrome';
 import { colors, espacements } from '@/design/theme';
 import { CONFIGURATION_API } from '@/lib/api/configuration';
 import { useSessionServeur } from '../stores/sessionServeurStore';
@@ -33,7 +34,7 @@ export function ConnexionEcran() {
   };
 
   return (
-    <Ecran>
+    <EcranModale section="Compte">
       <EnTete
         surtitre="Votre compte"
         titre={mode === 'connexion' ? 'Se connecter' : 'Créer un compte'}
@@ -93,11 +94,9 @@ export function ConnexionEcran() {
       </Carte>
 
       <Carte discrete>
-        <Texte variante="meta">
-          Serveur : {CONFIGURATION_API.base}
-        </Texte>
+        <Texte variante="meta">Serveur : {CONFIGURATION_API.base}</Texte>
       </Carte>
-    </Ecran>
+    </EcranModale>
   );
 }
 

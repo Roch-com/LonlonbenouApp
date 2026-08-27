@@ -7,32 +7,55 @@ import { useSession } from '@/features/reglages/stores/sessionStore';
 
 interface Props {
   compact?: boolean;
+  /** Traitement de couverture : dégradé or, texte clair. */
+  enAvant?: boolean;
 }
 
-/** Pôle ① — Compteur du couple (P0). */
-export function CompteurCarte({ compact }: Props) {
+/**
+ * Pôle ① — Compteur du couple (P0).
+ *
+ * En mode `enAvant`, c'est la seule surface colorée de l'écran d'accueil. Un
+ * écran où tout est mis en avant n'a plus de hiérarchie : le nombre de jours
+ * ensemble est ce qui mérite d'être vu en premier, le reste se lit ensuite.
+ */
+export function CompteurCarte({ compact, enAvant }: Props) {
   const depuis = useSession((e) => e.couple.depuis);
   const maintenant = new Date().toISOString();
 
   const jours = joursEnsemble(depuis, maintenant);
   const jalon = prochainJalon(depuis, maintenant);
 
+  const surOr = enAvant ? styles.surOr : undefined;
+  const surOrDoux = enAvant ? styles.surOrDoux : undefined;
+
   return (
-    <Carte>
-      <Texte variante="surtitre">Ensemble depuis</Texte>
+    <Carte ton={enAvant ? 'accent' : 'elevee'}>
+      <Texte variante="surtitre" style={surOr}>
+        Ensemble depuis
+      </Texte>
+
       <View style={styles.ligne}>
-        <Texte variante="afficheXl">{formaterJours(jours)}</Texte>
-        <Texte variante="sousTitre" style={styles.unite}>
+        <Texte
+          variante="afficheXl"
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          style={[styles.nombre, surOr]}
+        >
+          {formaterJours(jours)}
+        </Texte>
+        <Texte variante="sousTitre" style={[styles.unite, surOrDoux]}>
           jours
         </Texte>
       </View>
 
       {!compact ? (
-        <Texte variante="petit">Depuis le {dateLongue(depuis)}</Texte>
+        <Texte variante="petit" style={surOrDoux}>
+          Depuis le {dateLongue(depuis)}
+        </Texte>
       ) : null}
 
-      <View style={styles.jalon}>
-        <Texte variante="corpsDoux">
+      <View style={[styles.jalon, enAvant && styles.jalonSurOr]}>
+        <Texte variante="corpsDoux" style={surOrDoux}>
           {jalon.libelle} · dans {jalon.joursRestants}{' '}
           {jalon.joursRestants > 1 ? 'jours' : 'jour'}
         </Texte>
@@ -42,7 +65,15 @@ export function CompteurCarte({ compact }: Props) {
 }
 
 const styles = StyleSheet.create({
-  ligne: { flexDirection: 'row', alignItems: 'baseline', gap: espacements.xs },
+  ligne: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: espacements.xs,
+    marginTop: espacements.xxs,
+  },
+  // `flexShrink` : au-delà de mille jours, le nombre doit se réduire plutôt
+  // que pousser l'unité hors de la carte.
+  nombre: { flexShrink: 1 },
   unite: { color: colors.texteDoux },
   jalon: {
     marginTop: espacements.md,
@@ -50,4 +81,8 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.bordure,
   },
+  jalonSurOr: { borderTopColor: 'rgba(255, 255, 255, 0.32)' },
+  surOr: { color: colors.texteInverse },
+  // Blanc voilé plutôt qu'un gris : sur un fond or, un gris devient sale.
+  surOrDoux: { color: 'rgba(255, 255, 255, 0.86)' },
 });

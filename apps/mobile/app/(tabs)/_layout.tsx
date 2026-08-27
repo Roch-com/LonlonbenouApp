@@ -1,12 +1,30 @@
 import { Tabs } from 'expo-router';
+import { Platform, StyleSheet, View, type ColorValue } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { colors, polices, typography } from '@/design/theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  chrome,
+  colors,
+  espacements,
+  ombres,
+  polices,
+  rayons,
+} from '@/design/theme';
 import { useMoi } from '@/features/reglages/stores/sessionStore';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 import { useMessagesNonLus } from '@/features/presence/stores/chatStore';
 import { useConfidencesNonLues } from '@/features/croissance/stores/confidencesStore';
 
+/**
+ * Barre d'onglets — cinq destinations, pas six.
+ *
+ * La sixième (« Notre espace ») a rejoint le menu. À six, chaque onglet
+ * disposait d'une soixantaine de points sur un écran de 360 : les libellés se
+ * tronquaient, et une barre saturée fait perdre la hiérarchie qu'elle est
+ * censée donner. Cinq est la limite haute reconnue, et c'est déjà beaucoup.
+ */
 export default function DispositionOnglets() {
+  const marges = useSafeAreaInsets();
   const moi = useMoi();
   const partenaireId = useSessionServeur((e) => e.partenaireId);
   const nonLus = useMessagesNonLus(partenaireId ?? '');
@@ -17,14 +35,36 @@ export default function DispositionOnglets() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.accentFonce,
-        tabBarInactiveTintColor: colors.texteDoux,
+        tabBarInactiveTintColor: colors.texteVoile,
+        // La barre flotte au-dessus du contenu : `Ecran` réserve exactement
+        // `chrome.barreOnglets` pour que rien ne passe dessous.
         tabBarStyle: {
+          position: 'absolute',
+          height: chrome.barreOnglets + marges.bottom,
+          paddingTop: espacements.xs,
+          paddingBottom: marges.bottom || espacements.xs,
           backgroundColor: colors.fondEleve,
+          borderTopWidth: StyleSheet.hairlineWidth,
           borderTopColor: colors.bordure,
+          ...ombres.effleuree,
         },
+        tabBarItemStyle: { paddingVertical: 0 },
         tabBarLabelStyle: {
           fontFamily: polices.corpsMoyen,
-          fontSize: typography.tailles.minuscule,
+          fontSize: 10,
+          letterSpacing: 0.2,
+          marginTop: 2,
+        },
+        // Un libellé qui rétrécit reste lisible ; un libellé tronqué par des
+        // points de suspension ne veut plus rien dire.
+        tabBarAllowFontScaling: false,
+        tabBarBadgeStyle: {
+          backgroundColor: colors.tendresse,
+          color: colors.texteInverse,
+          fontFamily: polices.corpsFort,
+          fontSize: 10,
+          minWidth: 18,
+          lineHeight: Platform.OS === 'ios' ? 16 : 14,
         },
       }}
     >
@@ -32,18 +72,14 @@ export default function DispositionOnglets() {
         name="index"
         options={{
           title: 'Accueil',
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="home" color={color} size={size} />
-          ),
+          tabBarIcon: (etat) => <Icone nom="home" {...etat} />,
         }}
       />
       <Tabs.Screen
         name="presence"
         options={{
           title: 'Présence',
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="map-pin" color={color} size={size} />
-          ),
+          tabBarIcon: (etat) => <Icone nom="map-pin" {...etat} />,
         }}
       />
       <Tabs.Screen
@@ -51,19 +87,14 @@ export default function DispositionOnglets() {
         options={{
           title: 'Nous deux',
           tabBarBadge: nonLus > 0 ? nonLus : undefined,
-          tabBarBadgeStyle: { backgroundColor: colors.tendresse },
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="message-circle" color={color} size={size} />
-          ),
+          tabBarIcon: (etat) => <Icone nom="message-circle" {...etat} />,
         }}
       />
       <Tabs.Screen
         name="pratique"
         options={{
           title: 'Pratique',
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="calendar" color={color} size={size} />
-          ),
+          tabBarIcon: (etat) => <Icone nom="calendar" {...etat} />,
         }}
       />
       <Tabs.Screen
@@ -71,21 +102,43 @@ export default function DispositionOnglets() {
         options={{
           title: 'Croissance',
           tabBarBadge: confidencesNonLues > 0 ? confidencesNonLues : undefined,
-          tabBarBadgeStyle: { backgroundColor: colors.tendresse },
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="feather" color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="nous"
-        options={{
-          title: 'Notre espace',
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="heart" color={color} size={size} />
-          ),
+          tabBarIcon: (etat) => <Icone nom="feather" {...etat} />,
         }}
       />
     </Tabs>
   );
 }
+
+/**
+ * L'onglet actif reçoit une pastille ivoire derrière son icône. C'est le seul
+ * repère qui reste lisible quand la couleur ne suffit pas — luminosité forte,
+ * ou daltonisme.
+ */
+function Icone({
+  nom,
+  color,
+  focused,
+}: {
+  nom: keyof typeof Feather.glyphMap;
+  // React Navigation annonce une `ColorValue`, pas une chaîne : elle peut être
+  // un objet opaque sur les plateformes qui gèrent les couleurs dynamiques.
+  color: ColorValue;
+  focused: boolean;
+}) {
+  return (
+    <View style={[styles.icone, focused && styles.iconeActive]}>
+      <Feather name={nom} color={color} size={20} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  icone: {
+    width: 40,
+    height: 30,
+    borderRadius: rayons.rond,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconeActive: { backgroundColor: colors.fondNuance },
+});

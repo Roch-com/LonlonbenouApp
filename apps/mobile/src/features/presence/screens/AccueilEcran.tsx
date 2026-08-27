@@ -1,7 +1,8 @@
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { NOTES_SUGGEREES } from '@lonlonbenu/shared';
-import { Bouton, Carte, Ecran, EnTete, Puce, Texte } from '@/components/ui';
+import { Bouton, Carte, EnTete, Puce, Texte } from '@/components/ui';
+import { EcranOnglet } from '@/components/chrome/EcranOnglet';
 import { espacements } from '@/design/theme';
 import { useAutre, useMoi } from '@/features/reglages/stores/sessionStore';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
@@ -23,7 +24,7 @@ export function AccueilEcran() {
   const nonLus = useMessagesNonLus(partenaireId ?? '');
 
   return (
-    <Ecran>
+    <EcranOnglet section="Accueil">
       <EnTete
         surtitre={salutation()}
         titre={moi.prenom}
@@ -31,6 +32,7 @@ export function AccueilEcran() {
       />
 
       <BandeauSos />
+      <CompteurCarte compact enAvant />
       <CarteDuPartenaire />
 
       <Carte>
@@ -38,7 +40,6 @@ export function AccueilEcran() {
       </Carte>
 
       <CarteCycle />
-      <CompteurCarte compact />
 
       <Carte>
         <Texte variante="surtitre">Une note douce</Texte>
@@ -69,7 +70,7 @@ export function AccueilEcran() {
         ton="secondaire"
         onPress={() => router.push('/chat')}
       />
-    </Ecran>
+    </EcranOnglet>
   );
 }
 
@@ -83,5 +84,7 @@ function salutation(maintenant: Date = new Date()): string {
 
 const styles = StyleSheet.create({
   intro: { marginBottom: espacements.md },
-  puces: { gap: espacements.xs, alignItems: 'flex-start' },
+  // Pleine largeur plutôt qu'ajustées au contenu : ce sont des phrases
+  // entières, et une colonne de pastilles de longueurs inégales fait désordre.
+  puces: { gap: espacements.xs, alignSelf: 'stretch' },
 });

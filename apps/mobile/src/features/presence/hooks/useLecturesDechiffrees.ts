@@ -66,7 +66,10 @@ export function useFilLisible(): MessageLisible[] {
 
         if (clair) {
           try {
-            const charge = JSON.parse(clair) as { type?: TypeMessage; texte?: string };
+            const charge = JSON.parse(clair) as {
+              type?: TypeMessage;
+              texte?: string;
+            };
             if (charge?.texte !== undefined) {
               type = charge.type ?? 'texte';
               texte = charge.texte;
@@ -119,8 +122,12 @@ export function usePresenceLisible(): PresenceLisible {
   const cle = useCleDuCouple();
 
   return useMemo(() => {
-    const statut = (s: typeof vue extends undefined ? never : NonNullable<typeof vue>['mien']) =>
-      s ? { code: s.code, note: ouvrir(cle, s.noteScellee), majLe: s.majLe } : undefined;
+    const statut = (
+      s: typeof vue extends undefined ? never : NonNullable<typeof vue>['mien'],
+    ) =>
+      s
+        ? { code: s.code, note: ouvrir(cle, s.noteScellee), majLe: s.majLe }
+        : undefined;
     const humeur = (s: NonNullable<typeof vue>['mien']) =>
       s?.humeurCode
         ? {

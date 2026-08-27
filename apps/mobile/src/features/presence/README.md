@@ -2,12 +2,12 @@
 
 Périmètre **implémenté (P0)** :
 
-| Module | État | Où |
-| --- | --- | --- |
-| Tableau de bord / Accueil | ✅ P0 | `screens/AccueilEcran.tsx` |
-| Carte & Présence — statuts manuels, check-in, SOS | ✅ P0 | `screens/PresenceEcran.tsx`, `screens/SosEcran.tsx` |
-| Chat du couple — messagerie, notes douces, humeur | ✅ P0 | `screens/ChatEcran.tsx` |
-| Compteur | ✅ P0 | `components/CompteurCarte.tsx` + `@lonlonbenu/shared/compteur` |
+| Module                                            | État  | Où                                                             |
+| ------------------------------------------------- | ----- | -------------------------------------------------------------- |
+| Tableau de bord / Accueil                         | ✅ P0 | `screens/AccueilEcran.tsx`                                     |
+| Carte & Présence — statuts manuels, check-in, SOS | ✅ P0 | `screens/PresenceEcran.tsx`, `screens/SosEcran.tsx`            |
+| Chat du couple — messagerie, notes douces, humeur | ✅ P0 | `screens/ChatEcran.tsx`                                        |
+| Compteur                                          | ✅ P0 | `components/CompteurCarte.tsx` + `@lonlonbenu/shared/compteur` |
 
 **Hors périmètre pour l'instant (P1)** : carte temps réel, ETA, geofencing, point
 de rencontre à mi-chemin, messages programmés, modèles guidés, widgets écran

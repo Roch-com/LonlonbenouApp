@@ -136,7 +136,9 @@ export const useNotifications = create<EtatNotifications>()(
         set((e) => modifier(e, partenaireId, (p) => ({ ...p, silence }))),
 
       definirHeureRecapitulatif: (partenaireId, heureRecapitulatif) =>
-        set((e) => modifier(e, partenaireId, (p) => ({ ...p, heureRecapitulatif }))),
+        set((e) =>
+          modifier(e, partenaireId, (p) => ({ ...p, heureRecapitulatif })),
+        ),
 
       pauser: (partenaireId, minutes) =>
         set((e) =>

@@ -90,8 +90,8 @@ export function VuePorteuse({ coupleId, moiId, vue, lectureSeule }: Props) {
       ) : (
         <Carte discrete>
           <Texte variante="corpsDoux">
-            Saisissez le premier jour de vos dernières règles pour commencer.
-            Rien n’est calculé avant que vous l’ayez fait.
+            Saisissez le premier jour de vos dernières règles pour commencer. Rien
+            n’est calculé avant que vous l’ayez fait.
           </Texte>
         </Carte>
       )}
@@ -167,7 +167,9 @@ export function VuePorteuse({ coupleId, moiId, vue, lectureSeule }: Props) {
                 }
                 emoji={symptome.emoji}
                 active={!!note}
-                onPress={lectureSeule ? undefined : () => basculerSymptome(symptome.code)}
+                onPress={
+                  lectureSeule ? undefined : () => basculerSymptome(symptome.code)
+                }
               />
             );
           })}

@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Bouton, Carte, Ecran, EnTete, Texte } from '@/components/ui';
+import { Bouton, Carte, EnTete, Texte } from '@/components/ui';
+import { EcranOnglet } from '@/components/chrome/EcranOnglet';
 import { colors, espacements } from '@/design/theme';
 import { ilYA } from '@/lib/temps';
 import { useAutre, useSession } from '@/features/reglages/stores/sessionStore';
@@ -22,7 +23,7 @@ export function PresenceEcran() {
   const { checkIns } = usePresenceLisible();
 
   return (
-    <Ecran>
+    <EcranOnglet section="Présence">
       <EnTete
         surtitre="Présence"
         titre="Où en êtes-vous"
@@ -69,7 +70,7 @@ export function PresenceEcran() {
       <Texte variante="petit" style={styles.mentionSos}>
         Le SOS prévient {autre.prenom} immédiatement. Personne d’autre n’est alerté.
       </Texte>
-    </Ecran>
+    </EcranOnglet>
   );
 }
 

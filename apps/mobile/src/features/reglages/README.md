@@ -21,12 +21,12 @@ SOS, consentements et notifications. Rien n'est écrit en clair sur l'appareil.
 
 ### Comment
 
-| Élément | Choix | Où |
-| --- | --- | --- |
-| Primitive | XChaCha20-Poly1305 (`@noble/ciphers`) | `packages/shared/src/privacy/coffre.ts` |
-| Clé | 256 bits, tirée du CSPRNG système (`expo-crypto`) | `src/lib/chiffrement.ts` |
-| Garde de la clé | `expo-secure-store` → Keychain iOS / Keystore Android | `src/lib/chiffrement.ts` |
-| Support chiffré | AsyncStorage, qui ne voit que des enveloppes | `src/lib/stockage.ts` |
+| Élément         | Choix                                                 | Où                                      |
+| --------------- | ----------------------------------------------------- | --------------------------------------- |
+| Primitive       | XChaCha20-Poly1305 (`@noble/ciphers`)                 | `packages/shared/src/privacy/coffre.ts` |
+| Clé             | 256 bits, tirée du CSPRNG système (`expo-crypto`)     | `src/lib/chiffrement.ts`                |
+| Garde de la clé | `expo-secure-store` → Keychain iOS / Keystore Android | `src/lib/chiffrement.ts`                |
+| Support chiffré | AsyncStorage, qui ne voit que des enveloppes          | `src/lib/stockage.ts`                   |
 
 Format d'enveloppe : `lb1.<nonce base64>.<scellé base64>`.
 
@@ -133,8 +133,8 @@ situations vécues :
 
 - **Un partenaire dont l'empreinte ou le visage est enregistré sur l'appareil
   peut ouvrir l'app.** C'est la limite la plus importante pour une app de
-  couple : la biométrie authentifie le *jeu d'identités enrôlées sur
-  l'appareil*, pas une personne en particulier. Quelqu'un qui craint d'être
+  couple : la biométrie authentifie le _jeu d'identités enrôlées sur
+  l'appareil_, pas une personne en particulier. Quelqu'un qui craint d'être
   surveillé par son partenaire doit désactiver la biométrie et n'utiliser que
   le code — et savoir que ce code se regarde par-dessus l'épaule.
 - **Un appareil rooté**, sur lequel les données de l'app et le trousseau
@@ -193,7 +193,7 @@ L'ordre des opérations est le cœur du mécanisme :
 1. **`oublierLaCle()` en premier.** À cet instant précis, tout ce qui est
    chiffré sur l'appareil devient illisible — même si l'effacement qui suit
    était interrompu par une batterie vide, un plantage ou un retrait de l'app.
-   C'est ce qui rend la révocation *immédiate* plutôt que « normalement
+   C'est ce qui rend la révocation _immédiate_ plutôt que « normalement
    complète ».
 2. Effacement du code de verrouillage, qui n'a plus d'objet.
 3. Suppression des enveloppes dans AsyncStorage, pour ne pas laisser de résidus.
@@ -208,7 +208,7 @@ L'ordre des opérations est le cœur du mécanisme :
 jamais tenter de retenir. Pas de « êtes-vous sûr, pensez à tous ces
 souvenirs » — quelqu'un qui quitte une relation n'a pas à négocier avec une
 application. L'écran prévient en revanche clairement qu'il n'y a ni sauvegarde
-ni retour en arrière, et invite à conserver ce qui doit l'être *avant*.
+ni retour en arrière, et invite à conserver ce qui doit l'être _avant_.
 
 ### Ce que le backend devra ajouter
 
@@ -319,14 +319,14 @@ et faire connaître l'appareil au serveur.
 
 ## Notifications poussées — inscription de l'appareil
 
-| Quoi | Où |
-| --- | --- |
-| Écran de demande de permission | `screens/NotificationsEcran.tsx`, route `/notifications` |
-| Permission + inscription | `stores/pushStore.ts` |
-| Jeton natif et repli de développement | `services/jetonAppareil.ts` |
-| Appel serveur | `api/appareils.api.ts` → `POST /appareils` |
-| Resynchronisation à l'ouverture de session | `hooks/useInscriptionPush.ts` |
-| Affichage app ouverte | `services/affichagePush.ts` |
+| Quoi                                       | Où                                                       |
+| ------------------------------------------ | -------------------------------------------------------- |
+| Écran de demande de permission             | `screens/NotificationsEcran.tsx`, route `/notifications` |
+| Permission + inscription                   | `stores/pushStore.ts`                                    |
+| Jeton natif et repli de développement      | `services/jetonAppareil.ts`                              |
+| Appel serveur                              | `api/appareils.api.ts` → `POST /appareils`               |
+| Resynchronisation à l'ouverture de session | `hooks/useInscriptionPush.ts`                            |
+| Affichage app ouverte                      | `services/affichagePush.ts`                              |
 
 **Le jeton natif, pas un jeton Expo.** Le serveur parle directement à FCM et à
 APNs : il attend le jeton d'enregistrement FCM côté Android, le jeton APNs

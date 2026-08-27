@@ -22,17 +22,15 @@ export function NouvelAxe({ prenomAutre, onOuvrir }: Props) {
   };
 
   if (!deplie) {
-    return (
-      <Bouton libelle="Ouvrir un axe" onPress={() => setDeplie(true)} />
-    );
+    return <Bouton libelle="Ouvrir un axe" onPress={() => setDeplie(true)} />;
   }
 
   return (
     <Carte>
       <Texte variante="surtitre">Nouvel axe</Texte>
       <Texte variante="corpsDoux" style={styles.intro}>
-        Un axe s’ouvre pour vous deux. {prenomAutre} le verra apparaître et
-        pourra y déposer sa part.
+        Un axe s’ouvre pour vous deux. {prenomAutre} le verra apparaître et pourra y
+        déposer sa part.
       </Texte>
 
       <View style={styles.puces}>

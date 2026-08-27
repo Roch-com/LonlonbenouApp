@@ -22,8 +22,8 @@ export function VuePartenaireCycle({ prenomAutre, vue, compact }: Props) {
       <Carte discrete>
         <Texte variante="surtitre">Cycle</Texte>
         <Texte variante="corpsDoux" style={styles.espace}>
-          {prenomAutre} n’a rien mis en partage ici, et c’est entièrement son
-          choix. Il n’y a rien à demander ni à attendre.
+          {prenomAutre} n’a rien mis en partage ici, et c’est entièrement son choix.
+          Il n’y a rien à demander ni à attendre.
         </Texte>
       </Carte>
     );

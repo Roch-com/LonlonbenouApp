@@ -26,7 +26,12 @@ export function SelecteurStatut() {
             emoji={s.emoji}
             active={mien?.code === s.code}
             onPress={() =>
-              void definirStatut(coupleId, partenaireId, s.code as CodeStatut, mien?.note)
+              void definirStatut(
+                coupleId,
+                partenaireId,
+                s.code as CodeStatut,
+                mien?.note,
+              )
             }
           />
         ))}

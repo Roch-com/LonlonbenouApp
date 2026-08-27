@@ -38,10 +38,30 @@ interface EtatPresence {
   erreur?: string;
 
   charger: (coupleId: string, moiId: string) => Promise<void>;
-  definirStatut: (coupleId: string, moiId: string, code: string, note?: string) => Promise<void>;
-  definirHumeur: (coupleId: string, moiId: string, code: string, mot?: string) => Promise<void>;
-  faireUnCheckIn: (coupleId: string, moiId: string, lieu: string, mot?: string) => Promise<boolean>;
-  declencherSos: (coupleId: string, moiId: string, lieu?: string, message?: string) => Promise<boolean>;
+  definirStatut: (
+    coupleId: string,
+    moiId: string,
+    code: string,
+    note?: string,
+  ) => Promise<void>;
+  definirHumeur: (
+    coupleId: string,
+    moiId: string,
+    code: string,
+    mot?: string,
+  ) => Promise<void>;
+  faireUnCheckIn: (
+    coupleId: string,
+    moiId: string,
+    lieu: string,
+    mot?: string,
+  ) => Promise<boolean>;
+  declencherSos: (
+    coupleId: string,
+    moiId: string,
+    lieu?: string,
+    message?: string,
+  ) => Promise<boolean>;
   changerEtatAlerte: (
     coupleId: string,
     moiId: string,

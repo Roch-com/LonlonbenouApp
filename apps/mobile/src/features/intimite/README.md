@@ -1,9 +1,9 @@
 # Pôle ④ — Intimité & bien-être
 
-| Module | État | Où |
-| --- | --- | --- |
+| Module                                                              | État  | Où                                        |
+| ------------------------------------------------------------------- | ----- | ----------------------------------------- |
 | Cycle & fertilité — saisie, calcul des phases, affichage partenaire | ✅ P0 | `screens/CycleEcran.tsx`, `shared/cycle/` |
-| Complicité & connexion | ❌ P1 | — |
+| Complicité & connexion                                              | ❌ P1 | —                                         |
 
 **Hors périmètre, absents du modèle** : synchronisation Apple Santé / Google Fit
 et mode désir d'enfant (P1).
@@ -77,11 +77,11 @@ directement à l'état du cycle. Le niveau ne filtre pas un affichage après cou
 il détermine la forme même de l'objet rendu — un niveau `discret` ne contient
 aucun champ de phase, il n'y a donc rien à oublier de masquer.
 
-| Niveau | Ce que l'autre voit |
-| --- | --- |
-| Rien du tout | Aucune carte, aucune trace |
-| Discret | Un seul signal : « ces jours-ci méritent un peu plus d'attention ». Aucun nom de phase |
-| Les phases | La phase en cours, en langage d'accompagnement, plus des gestes concrets |
+| Niveau       | Ce que l'autre voit                                                                    |
+| ------------ | -------------------------------------------------------------------------------------- |
+| Rien du tout | Aucune carte, aucune trace                                                             |
+| Discret      | Un seul signal : « ces jours-ci méritent un peu plus d'attention ». Aucun nom de phase |
+| Les phases   | La phase en cours, en langage d'accompagnement, plus des gestes concrets               |
 
 **Ne sortent jamais, quel que soit le niveau** : les symptômes, les notes
 personnelles, les dates, et même le numéro du jour de cycle (qui permettrait de

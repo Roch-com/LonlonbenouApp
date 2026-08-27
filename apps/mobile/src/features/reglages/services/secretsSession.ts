@@ -22,7 +22,9 @@ export async function enregistrerRafraichissement(jeton: string): Promise<void> 
 }
 
 export async function lireRafraichissement(): Promise<string | undefined> {
-  return (await SecureStore.getItemAsync(ENTREE_RAFRAICHISSEMENT, OPTIONS)) ?? undefined;
+  return (
+    (await SecureStore.getItemAsync(ENTREE_RAFRAICHISSEMENT, OPTIONS)) ?? undefined
+  );
 }
 
 export async function enregistrerPartenaireId(id: string): Promise<void> {

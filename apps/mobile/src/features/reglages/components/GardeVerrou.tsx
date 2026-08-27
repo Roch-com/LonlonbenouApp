@@ -33,7 +33,9 @@ export function GardeVerrou({ children }: { children: ReactNode }) {
   // puis le masquer laisserait entrevoir ce que le verrou est censé couvrir.
   if (!pret) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.fond, justifyContent: 'center' }}>
+      <View
+        style={{ flex: 1, backgroundColor: colors.fond, justifyContent: 'center' }}
+      >
         <ActivityIndicator color={colors.accent} />
       </View>
     );

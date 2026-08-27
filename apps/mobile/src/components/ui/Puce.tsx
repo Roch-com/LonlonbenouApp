@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet } from 'react-native';
 import { Texte } from './Texte';
-import { colors, espacements, rayons } from '@/design/theme';
+import { colors, espacements, ombres, rayons } from '@/design/theme';
 
 interface Props {
   libelle: string;
@@ -9,7 +9,13 @@ interface Props {
   onPress?: () => void;
 }
 
-/** Pastille sélectionnable — statuts, humeurs, lieux de check-in. */
+/**
+ * Pastille sélectionnable — statuts, humeurs, lieux de check-in.
+ *
+ * `flexShrink` et `numberOfLines` ensemble : les notes douces suggérées sont
+ * des phrases entières, et sans ces deux garde-fous elles sortaient de leur
+ * carte au lieu de s'y plier.
+ */
 export function Puce({ libelle, emoji, active, onPress }: Props) {
   return (
     <Pressable
@@ -25,7 +31,8 @@ export function Puce({ libelle, emoji, active, onPress }: Props) {
     >
       <Texte
         variante="petit"
-        style={active ? styles.texteActif : styles.texte}
+        numberOfLines={2}
+        style={[styles.texte, active && styles.texteActif]}
       >
         {emoji ? `${emoji}  ` : ''}
         {libelle}
@@ -39,15 +46,21 @@ const styles = StyleSheet.create({
     paddingVertical: espacements.xs,
     paddingHorizontal: espacements.md,
     borderRadius: rayons.rond,
-    backgroundColor: colors.fondNuance,
+    backgroundColor: colors.fondEleve,
     borderWidth: 1,
-    borderColor: 'transparent',
+    borderColor: colors.bordure,
+    // Ne dépasse jamais son conteneur, quelle que soit la longueur du libellé.
+    flexShrink: 1,
+    maxWidth: '100%',
+    minHeight: 36,
+    justifyContent: 'center',
   },
   active: {
     backgroundColor: colors.fondEleve,
     borderColor: colors.accent,
+    ...ombres.effleuree,
   },
-  pressee: { opacity: 0.8 },
-  texte: { color: colors.texteDoux },
+  pressee: { backgroundColor: colors.effleurement },
+  texte: { color: colors.texteDoux, flexShrink: 1 },
   texteActif: { color: colors.accentFonce },
 });

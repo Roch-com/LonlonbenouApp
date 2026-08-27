@@ -61,7 +61,10 @@ interface EtatPush {
   oublier: () => Promise<void>;
 }
 
-function depuisLaReponse(accordee: boolean, demandeeAvant: boolean): EtatPermission {
+function depuisLaReponse(
+  accordee: boolean,
+  demandeeAvant: boolean,
+): EtatPermission {
   if (accordee) return 'accordee';
   return demandeeAvant ? 'refusee' : 'jamais_demandee';
 }

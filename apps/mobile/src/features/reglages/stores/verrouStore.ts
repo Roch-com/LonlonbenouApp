@@ -74,7 +74,12 @@ export const useVerrou = create<EtatVerrou>()(
 
         const sel = Crypto.getRandomBytes(LONGUEUR_SEL);
         await enregistrerVerificateur(await creerVerificateurAsync(pin, sel));
-        set({ actif: true, deverrouille: true, echecs: 0, dernierEchecLe: undefined });
+        set({
+          actif: true,
+          deverrouille: true,
+          echecs: 0,
+          dernierEchecLe: undefined,
+        });
         return { ok: true };
       },
 
@@ -134,10 +139,7 @@ export const useVerrou = create<EtatVerrou>()(
 
         const nouveauxEchecs = echecs + 1;
         set({ echecs: nouveauxEchecs, dernierEchecLe: new Date().toISOString() });
-        const suivant = etatDurcissement(
-          nouveauxEchecs,
-          new Date().toISOString(),
-        );
+        const suivant = etatDurcissement(nouveauxEchecs, new Date().toISOString());
         return {
           ok: false,
           secondesRestantes: suivant.secondesRestantes,
@@ -162,7 +164,12 @@ export const useVerrou = create<EtatVerrou>()(
         });
 
         if (resultat.success) {
-          set({ deverrouille: true, echecs: 0, dernierEchecLe: undefined, masqueDepuis: undefined });
+          set({
+            deverrouille: true,
+            echecs: 0,
+            dernierEchecLe: undefined,
+            masqueDepuis: undefined,
+          });
         }
         return resultat.success;
       },

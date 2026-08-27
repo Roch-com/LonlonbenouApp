@@ -61,8 +61,16 @@ export function SectionProjets() {
               onChangeText={setIntention}
               multiline
             />
-            <Bouton libelle="Créer le projet" onPress={valider} disabled={!titre.trim()} />
-            <Bouton libelle="Annuler" ton="discret" onPress={() => setOuvert(false)} />
+            <Bouton
+              libelle="Créer le projet"
+              onPress={valider}
+              disabled={!titre.trim()}
+            />
+            <Bouton
+              libelle="Annuler"
+              ton="discret"
+              onPress={() => setOuvert(false)}
+            />
           </View>
         </Carte>
       ) : (
@@ -72,8 +80,8 @@ export function SectionProjets() {
       {tries.length === 0 ? (
         <Carte discrete>
           <Texte variante="corpsDoux">
-            Aucun projet pour l’instant. Un projet, c’est simplement quelque
-            chose que vous voulez faire arriver à deux.
+            Aucun projet pour l’instant. Un projet, c’est simplement quelque chose
+            que vous voulez faire arriver à deux.
           </Texte>
         </Carte>
       ) : (
@@ -83,11 +91,21 @@ export function SectionProjets() {
             projet={projet}
             partenaires={couple.partenaires}
             maintenant={maintenant}
-            onCocher={(jalonId) => void cocherJalon(coupleId!, partenaireId!, projet.id, jalonId)}
-            onAjouterJalon={(titreJalon, echeance) =>
-              void ajouterJalon(coupleId!, partenaireId!, projet.id, titreJalon, echeance)
+            onCocher={(jalonId) =>
+              void cocherJalon(coupleId!, partenaireId!, projet.id, jalonId)
             }
-            onArchiver={(archive) => void archiverProjet(coupleId!, partenaireId!, projet.id, archive)}
+            onAjouterJalon={(titreJalon, echeance) =>
+              void ajouterJalon(
+                coupleId!,
+                partenaireId!,
+                projet.id,
+                titreJalon,
+                echeance,
+              )
+            }
+            onArchiver={(archive) =>
+              void archiverProjet(coupleId!, partenaireId!, projet.id, archive)
+            }
           />
         ))
       )}

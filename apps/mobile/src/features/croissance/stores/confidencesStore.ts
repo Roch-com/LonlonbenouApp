@@ -17,11 +17,7 @@
  */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import {
-  nonLues,
-  type Confidence,
-  type TypeConfidence,
-} from '@lonlonbenu/shared';
+import { nonLues, type Confidence, type TypeConfidence } from '@lonlonbenu/shared';
 import { identifiant, stockage } from '@/lib/stockage';
 import { ErreurApi, messageLisible } from '@/lib/api/erreurs';
 import {
@@ -52,7 +48,11 @@ interface EtatConfidences {
   erreur?: string;
 
   charger: (coupleId: string, moiId: string) => Promise<void>;
-  offrirGratitude: (coupleId: string, moiId: string, texte: string) => Promise<boolean>;
+  offrirGratitude: (
+    coupleId: string,
+    moiId: string,
+    texte: string,
+  ) => Promise<boolean>;
 
   commencerLettre: (titre: string, texte: string) => string;
   modifierLettre: (id: string, titre: string, texte: string) => void;

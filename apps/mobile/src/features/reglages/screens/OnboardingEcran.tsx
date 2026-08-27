@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import {
-  controlerNomEspace,
-  propositionsNomEspace,
-} from '@lonlonbenu/shared';
+import { controlerNomEspace, propositionsNomEspace } from '@lonlonbenu/shared';
 import { Bouton, Carte, Champ, Ecran, EnTete, Puce, Texte } from '@/components/ui';
 import { colors, espacements, rayons } from '@/design/theme';
 import { EtapeAppairage } from '../components/EtapeAppairage';
@@ -86,7 +83,11 @@ export function OnboardingEcran() {
         <>
           <EnTete surtitre="Étape 2" titre="Vous relier" />
           <EtapeAppairage onAppaire={avancer} />
-          <Bouton libelle="Retour" ton="discret" onPress={() => setEtape('prenoms')} />
+          <Bouton
+            libelle="Retour"
+            ton="discret"
+            onPress={() => setEtape('prenoms')}
+          />
         </>
       ) : null}
 
@@ -121,9 +122,7 @@ export function OnboardingEcran() {
                   setNom(v);
                 }}
               />
-              {messageNom ? (
-                <Texte variante="petit">{messageNom}</Texte>
-              ) : null}
+              {messageNom ? <Texte variante="petit">{messageNom}</Texte> : null}
             </View>
           </Carte>
           <Bouton libelle="Continuer" onPress={validerNom} disabled={!nom.trim()} />
@@ -147,14 +146,13 @@ export function OnboardingEcran() {
           <EnTete surtitre="C’est prêt" titre="Bonne route à vous deux" />
           <Carte>
             <Texte variante="corps">
-              Vous pourrez revenir sur chaque réglage à tout moment, depuis
-              l’onglet « Notre espace ». Rien de ce que vous avez choisi ici
-              n’est définitif.
+              Vous pourrez revenir sur chaque réglage à tout moment, depuis l’onglet
+              « Notre espace ». Rien de ce que vous avez choisi ici n’est définitif.
             </Texte>
             <Texte variante="corpsDoux" style={styles.mention}>
               Un dernier point : chaque fois qu’un partage change, vous serez
-              prévenus tous les deux. Il n’y a pas de réglage silencieux dans
-              cette app.
+              prévenus tous les deux. Il n’y a pas de réglage silencieux dans cette
+              app.
             </Texte>
           </Carte>
           <Bouton libelle="Entrer" onPress={terminerOnboarding} />
@@ -167,7 +165,10 @@ export function OnboardingEcran() {
 function Progression({ etape }: { etape: Etape }) {
   const index = ORDRE.indexOf(etape);
   return (
-    <View style={styles.progression} accessibilityLabel={`Étape ${index + 1} sur ${ORDRE.length}`}>
+    <View
+      style={styles.progression}
+      accessibilityLabel={`Étape ${index + 1} sur ${ORDRE.length}`}
+    >
       {ORDRE.map((e, i) => (
         <View key={e} style={[styles.jalon, i <= index && styles.jalonFait]} />
       ))}
@@ -189,6 +190,11 @@ const styles = StyleSheet.create({
   },
   jalonFait: { backgroundColor: colors.accent },
   champs: { gap: espacements.md, marginTop: espacements.md },
-  puces: { flexDirection: 'row', flexWrap: 'wrap', gap: espacements.xs, marginTop: espacements.sm },
+  puces: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: espacements.xs,
+    marginTop: espacements.sm,
+  },
   mention: { marginTop: espacements.md },
 });

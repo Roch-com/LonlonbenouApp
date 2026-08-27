@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Avatar, Bouton, Carte, Ecran, EnTete, Texte } from '@/components/ui';
+import { Avatar, Bouton, Carte, EnTete, Texte } from '@/components/ui';
+import { EcranModale } from '@/components/chrome';
 import { colors, espacements } from '@/design/theme';
 import { ilYA } from '@/lib/temps';
 import { ReglagePartage } from '@/features/reglages/components/ReglagePartage';
@@ -32,7 +33,7 @@ export function NousEcran() {
   const mesNotifications = journal.filter((n) => n.destinataireId === moi.id);
 
   return (
-    <Ecran>
+    <EcranModale section="Notre espace">
       <EnTete surtitre="Nous" titre={nomEspace} />
 
       <Carte>
@@ -72,9 +73,9 @@ export function NousEcran() {
           <ReglagePartage module="score" sansTitre={false} />
         </View>
         <Texte variante="meta" style={styles.mention}>
-          Un partage n’est actif que si vous l’activez tous les deux, et chacun
-          peut le suspendre quand il veut. Toute modification est annoncée aux
-          deux — jamais en silence.
+          Un partage n’est actif que si vous l’activez tous les deux, et chacun peut
+          le suspendre quand il veut. Toute modification est annoncée aux deux —
+          jamais en silence.
         </Texte>
       </Carte>
 
@@ -125,8 +126,8 @@ export function NousEcran() {
       <Carte discrete>
         <Texte variante="surtitre">Test — couple pilote</Texte>
         <Texte variante="petit" style={styles.vide}>
-          Bascule d’un partenaire à l’autre pour vérifier que chaque écran est
-          bien symétrique. À retirer avant la mise en production.
+          Bascule d’un partenaire à l’autre pour vérifier que chaque écran est bien
+          symétrique. À retirer avant la mise en production.
         </Texte>
         <View style={styles.action}>
           <Bouton
@@ -136,7 +137,7 @@ export function NousEcran() {
           />
         </View>
       </Carte>
-    </Ecran>
+    </EcranModale>
   );
 }
 

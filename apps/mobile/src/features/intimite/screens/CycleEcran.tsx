@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Bouton, Carte, Ecran, EnTete, Texte } from '@/components/ui';
+import { Bouton, Carte, EnTete, Texte } from '@/components/ui';
+import { EcranModale } from '@/components/chrome';
 import { colors, espacements } from '@/design/theme';
 import { ilYA } from '@/lib/temps';
 import {
@@ -44,25 +45,28 @@ export function CycleEcran() {
 
   if (etatSession === 'anonyme') {
     return (
-      <Ecran>
+      <EcranModale section="Cycle">
         <EnTete surtitre="Cycle" titre="Un module qui vit sur le serveur" />
         <Carte>
           <Texte variante="corpsDoux">
-            Le cycle se suit sur son propre appareil, et c’est le serveur qui
-            décide de ce que l’autre en voit. Il a donc besoin d’un compte.
+            Le cycle se suit sur son propre appareil, et c’est le serveur qui décide
+            de ce que l’autre en voit. Il a donc besoin d’un compte.
           </Texte>
           <View style={styles.actions}>
-            <Bouton libelle="Se connecter" onPress={() => router.push('/connexion')} />
+            <Bouton
+              libelle="Se connecter"
+              onPress={() => router.push('/connexion')}
+            />
             <Bouton libelle="Fermer" ton="discret" onPress={() => router.back()} />
           </View>
         </Carte>
-      </Ecran>
+      </EcranModale>
     );
   }
 
   if (etatSession === 'connecte' && !coupleId) {
     return (
-      <Ecran>
+      <EcranModale section="Cycle">
         <EnTete surtitre="Cycle" titre={`Il manque ${autre.prenom}`} />
         <Carte>
           <Texte variante="corpsDoux">
@@ -77,17 +81,17 @@ export function CycleEcran() {
             <Bouton libelle="Fermer" ton="discret" onPress={() => router.back()} />
           </View>
         </Carte>
-      </Ecran>
+      </EcranModale>
     );
   }
 
   if (!connecte || (chargement && !vue)) {
     return (
-      <Ecran>
+      <EcranModale section="Cycle">
         <Carte discrete>
           <Texte variante="corpsDoux">Lecture du cycle…</Texte>
         </Carte>
-      </Ecran>
+      </EcranModale>
     );
   }
 
@@ -97,10 +101,12 @@ export function CycleEcran() {
   const rienDeclare = vue?.role === 'partenaire' && !vue.vue.partage;
 
   return (
-    <Ecran>
+    <EcranModale section="Cycle">
       <EnTete
         surtitre="Cycle"
-        titre={vue?.role === 'porteuse' ? 'Mon cycle' : `Le cycle de ${autre.prenom}`}
+        titre={
+          vue?.role === 'porteuse' ? 'Mon cycle' : `Le cycle de ${autre.prenom}`
+        }
         sousTitre={
           vue?.role === 'porteuse'
             ? 'Ce que vous saisissez, et ce que vous choisissez d’en partager.'
@@ -112,8 +118,8 @@ export function CycleEcran() {
         <Carte discrete>
           <Texte variante="petit">
             Sans connexion. Vous voyez l’état
-            {synchroniseeLe ? ` d’${ilYA(synchroniseeLe)}` : ' précédent'} ; rien
-            ne peut être enregistré tant que le serveur n’est pas joignable.
+            {synchroniseeLe ? ` d’${ilYA(synchroniseeLe)}` : ' précédent'} ; rien ne
+            peut être enregistré tant que le serveur n’est pas joignable.
           </Texte>
         </Carte>
       ) : null}
@@ -139,8 +145,8 @@ export function CycleEcran() {
               onPress={() => void declarer(coupleId!, partenaireId!, partenaireId!)}
             />
             <Texte variante="meta">
-              Si c’est {autre.prenom}, c’est à elle de le déclarer depuis son
-              propre téléphone — pas à vous de le faire à sa place.
+              Si c’est {autre.prenom}, c’est à elle de le déclarer depuis son propre
+              téléphone — pas à vous de le faire à sa place.
             </Texte>
           </View>
         </Carte>
@@ -158,7 +164,7 @@ export function CycleEcran() {
       {vue?.role === 'partenaire' && vue.vue.partage ? (
         <VuePartenaireCycle prenomAutre={autre.prenom} vue={vue.vue} />
       ) : null}
-    </Ecran>
+    </EcranModale>
   );
 }
 

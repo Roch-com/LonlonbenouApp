@@ -111,7 +111,14 @@ export function SectionSorties() {
                 <Bouton
                   libelle="On l’a fait"
                   ton="secondaire"
-                  onPress={() => void vivre(coupleId!, partenaireId!, initiative.id, souvenirs[initiative.id])}
+                  onPress={() =>
+                    void vivre(
+                      coupleId!,
+                      partenaireId!,
+                      initiative.id,
+                      souvenirs[initiative.id],
+                    )
+                  }
                 />
               </View>
             ))}
@@ -151,15 +158,24 @@ export function SectionSorties() {
                       onPress={() => {
                         const date = dates[initiative.id] ?? '';
                         if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-                          void programmerInitiative(coupleId!, partenaireId!, initiative.id, date);
+                          void programmerInitiative(
+                            coupleId!,
+                            partenaireId!,
+                            initiative.id,
+                            date,
+                          );
                         }
                       }}
-                      disabled={!/^\d{4}-\d{2}-\d{2}$/.test(dates[initiative.id] ?? '')}
+                      disabled={
+                        !/^\d{4}-\d{2}-\d{2}$/.test(dates[initiative.id] ?? '')
+                      }
                     />
                     <Bouton
                       libelle="Retirer"
                       ton="discret"
-                      onPress={() => void supprimer(coupleId!, partenaireId!, initiative.id)}
+                      onPress={() =>
+                        void supprimer(coupleId!, partenaireId!, initiative.id)
+                      }
                     />
                   </View>
                 </View>
@@ -173,8 +189,8 @@ export function SectionSorties() {
         <Texte variante="surtitre">Journal</Texte>
         {vecues.length === 0 ? (
           <Texte variante="corpsDoux" style={styles.mention}>
-            Rien encore. Le journal se remplit tout seul, à mesure que vous
-            cochez « on l’a fait ».
+            Rien encore. Le journal se remplit tout seul, à mesure que vous cochez «
+            on l’a fait ».
           </Texte>
         ) : (
           <>

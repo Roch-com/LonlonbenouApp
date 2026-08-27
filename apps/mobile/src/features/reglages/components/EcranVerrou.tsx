@@ -62,7 +62,9 @@ export function EcranVerrou() {
         desactive={enCours}
       />
 
-      <View style={[styles.pied, { paddingBottom: marges.bottom + espacements.lg }]}>
+      <View
+        style={[styles.pied, { paddingBottom: marges.bottom + espacements.lg }]}
+      >
         <Texte variante="petit" style={styles.message}>
           {message ??
             (enCours ? 'Vérification…' : 'Saisissez votre code, puis validez.')}

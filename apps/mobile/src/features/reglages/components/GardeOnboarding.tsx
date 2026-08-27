@@ -19,7 +19,9 @@ export function GardeOnboarding({ children }: { children: ReactNode }) {
 
   if (!pret) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.fond, justifyContent: 'center' }}>
+      <View
+        style={{ flex: 1, backgroundColor: colors.fond, justifyContent: 'center' }}
+      >
         <ActivityIndicator color={colors.accent} />
       </View>
     );

@@ -47,7 +47,9 @@ export function CarteConfidence({ confidence, moiId, prenomAutre, onLue }: Props
       </Texte>
 
       <Texte variante="meta" style={styles.pied}>
-        {confidence.envoyeeLe ? ilYA(confidence.envoyeeLe) : ilYA(confidence.creeLe)}
+        {confidence.envoyeeLe
+          ? ilYA(confidence.envoyeeLe)
+          : ilYA(confidence.creeLe)}
       </Texte>
     </Carte>
   );

@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Carte, Ecran, EnTete, Texte } from '@/components/ui';
+import { Carte, EnTete, Texte } from '@/components/ui';
+import { EcranModale } from '@/components/chrome';
 import { colors, espacements, rayons } from '@/design/theme';
 
 /**
@@ -79,7 +80,7 @@ const SECTIONS: { titre: string; paragraphes: string[] }[] = [
 
 export function TransparenceScore() {
   return (
-    <Ecran>
+    <EcranModale section="Transparence">
       <EnTete
         surtitre="Score d’implication"
         titre="Comment il marche"
@@ -98,7 +99,7 @@ export function TransparenceScore() {
           </View>
         </Carte>
       ))}
-    </Ecran>
+    </EcranModale>
   );
 }
 

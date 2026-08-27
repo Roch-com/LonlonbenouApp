@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { Linking, Platform, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Bouton, Carte, Ecran, EnTete, Texte } from '@/components/ui';
+import { Bouton, Carte, EnTete, Texte } from '@/components/ui';
+import { EcranModale } from '@/components/chrome';
 import { espacements } from '@/design/theme';
 import { usePush } from '../stores/pushStore';
 import { useSessionServeur } from '../stores/sessionServeurStore';
@@ -36,7 +37,7 @@ export function NotificationsEcran() {
   }, [relire]);
 
   return (
-    <Ecran>
+    <EcranModale section="Notifications">
       <EnTete
         surtitre="Pôle ⑥"
         titre="Notifications"
@@ -50,20 +51,20 @@ export function NotificationsEcran() {
           message, jamais un prénom, jamais ce dont il s’agit.
         </Texte>
         <Texte variante="meta" style={styles.mention}>
-          Une notification passe par les serveurs d’Apple ou de Google et
-          s’affiche sur un écran verrouillé, que n’importe qui peut lire par
-          dessus votre épaule. Ce qui est écrit dans l’app y reste. Pour le chat,
-          la question ne se pose même pas : il est chiffré de bout en bout, et le
-          serveur lui-même ne peut pas le lire.
+          Une notification passe par les serveurs d’Apple ou de Google et s’affiche
+          sur un écran verrouillé, que n’importe qui peut lire par dessus votre
+          épaule. Ce qui est écrit dans l’app y reste. Pour le chat, la question ne
+          se pose même pas : il est chiffré de bout en bout, et le serveur lui-même
+          ne peut pas le lire.
         </Texte>
       </Carte>
 
       <Carte>
         <Texte variante="surtitre">Vos réglages restent les vôtres</Texte>
         <Texte variante="corps" style={styles.mention}>
-          Le silence nocturne, la pause et les fréquences par catégorie
-          s’appliquent aussi aux notifications poussées. Accepter ici ne
-          contourne rien de ce que vous avez réglé.
+          Le silence nocturne, la pause et les fréquences par catégorie s’appliquent
+          aussi aux notifications poussées. Accepter ici ne contourne rien de ce que
+          vous avez réglé.
         </Texte>
         <Texte variante="meta" style={styles.mention}>
           Seul un SOS traverse tout. C’est la seule exception, et elle n’est pas
@@ -86,8 +87,8 @@ export function NotificationsEcran() {
             <Texte variante="meta" style={styles.mention}>
               Cet appareil est inscrit avec un jeton de développement :
               l’inscription fonctionne de bout en bout, mais aucune notification
-              n’arrivera réellement tant que les comptes Firebase et Apple du
-              projet n’existent pas. Ce n’est pas une panne de votre téléphone.
+              n’arrivera réellement tant que les comptes Firebase et Apple du projet
+              n’existent pas. Ce n’est pas une panne de votre téléphone.
             </Texte>
           ) : null}
 
@@ -104,8 +105,8 @@ export function NotificationsEcran() {
           <Texte variante="surtitre">Vous avez dit non</Texte>
           <Texte variante="corps" style={styles.mention}>
             C’est entendu, et nous ne le redemanderons pas. Tout continue de
-            fonctionner : vous retrouverez dans l’app ce qui vous attend, au
-            moment où vous l’ouvrirez.
+            fonctionner : vous retrouverez dans l’app ce qui vous attend, au moment
+            où vous l’ouvrirez.
           </Texte>
           <Texte variante="meta" style={styles.mention}>
             {Platform.OS === 'ios'
@@ -138,18 +139,14 @@ export function NotificationsEcran() {
             enCours={enCours}
             onPress={() => void demander()}
           />
-          <Bouton
-            libelle="Plus tard"
-            ton="discret"
-            onPress={() => router.back()}
-          />
+          <Bouton libelle="Plus tard" ton="discret" onPress={() => router.back()} />
         </View>
       ) : (
         <View style={styles.actions}>
           <Bouton libelle="Fermer" ton="discret" onPress={() => router.back()} />
         </View>
       )}
-    </Ecran>
+    </EcranModale>
   );
 }
 

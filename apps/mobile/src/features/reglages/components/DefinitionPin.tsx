@@ -61,7 +61,14 @@ export function DefinitionPin({ onValide, onAnnuler, titre }: Props) {
           (etape === 'choix' ? 'Choisissez un code' : 'Saisissez-le à nouveau')}
       </Texte>
 
-      <ClavierPin valeur={pin} onChange={(v) => { setMessage(undefined); setPin(v); }} desactive={enCours} />
+      <ClavierPin
+        valeur={pin}
+        onChange={(v) => {
+          setMessage(undefined);
+          setPin(v);
+        }}
+        desactive={enCours}
+      />
 
       <Texte variante="petit" style={styles.message}>
         {message ??

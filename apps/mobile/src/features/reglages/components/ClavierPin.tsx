@@ -32,7 +32,10 @@ export function ClavierPin({
 
   return (
     <View style={styles.bloc}>
-      <View style={styles.points} accessibilityLabel={`${valeur.length} chiffres saisis`}>
+      <View
+        style={styles.points}
+        accessibilityLabel={`${valeur.length} chiffres saisis`}
+      >
         {Array.from({ length: longueurAttendue }, (_, i) => (
           <View
             key={i}

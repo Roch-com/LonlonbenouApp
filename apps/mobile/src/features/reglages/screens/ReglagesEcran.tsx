@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Switch, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { Bouton, Carte, Ecran, EnTete, Texte } from '@/components/ui';
+import { Bouton, Carte, EnTete, Texte } from '@/components/ui';
+import { EcranModale } from '@/components/chrome';
 import { colors, espacements } from '@/design/theme';
 import { DefinitionPin } from '../components/DefinitionPin';
 import { ReglagesNotifications } from '../components/ReglagesNotifications';
@@ -40,14 +41,15 @@ export function ReglagesEcran() {
 
   const enregistrerPin = async (pin: string) => {
     const resultat = await activerVerrou(pin);
-    if (!resultat.ok) return resultat.message ?? 'Ce code n’a pas pu être enregistré.';
+    if (!resultat.ok)
+      return resultat.message ?? 'Ce code n’a pas pu être enregistré.';
     setDefinitionEnCours(false);
     setChangementEnCours(false);
     return undefined;
   };
 
   return (
-    <Ecran>
+    <EcranModale section="Sécurité">
       <EnTete
         surtitre="Pôle ⑥"
         titre="Sécurité & réglages"
@@ -106,7 +108,10 @@ export function ReglagesEcran() {
                     value={biometrie && biometrieDisponible !== false}
                     disabled={biometrieDisponible === false}
                     onValueChange={(v) => void basculerBiometrie(v)}
-                    trackColor={{ true: colors.accentDoux, false: colors.fondNuance }}
+                    trackColor={{
+                      true: colors.accentDoux,
+                      false: colors.fondNuance,
+                    }}
                     thumbColor={biometrie ? colors.accent : undefined}
                     accessibilityLabel="Déverrouillage biométrique"
                   />
@@ -127,11 +132,11 @@ export function ReglagesEcran() {
 
                 <Texte variante="meta" style={styles.mention}>
                   L’app se reverrouille au lancement, et après{' '}
-                  {DELAI_GRACE_MS / 1000} secondes passées en arrière-plan — de
-                  quoi aller chercher une information ailleurs sans avoir à
-                  ressaisir votre code. Après plusieurs codes erronés, l’attente
-                  s’allonge, mais rien n’est jamais effacé : personne ne doit
-                  pouvoir détruire vos données en tapant de faux codes.
+                  {DELAI_GRACE_MS / 1000} secondes passées en arrière-plan — de quoi
+                  aller chercher une information ailleurs sans avoir à ressaisir
+                  votre code. Après plusieurs codes erronés, l’attente s’allonge,
+                  mais rien n’est jamais effacé : personne ne doit pouvoir détruire
+                  vos données en tapant de faux codes.
                 </Texte>
               </>
             ) : null}
@@ -146,11 +151,14 @@ export function ReglagesEcran() {
         {etatSession === 'connecte' ? (
           <>
             <Texte variante="corps" style={styles.mention}>
-              Connecté{coupleId ? ' et relié à votre partenaire.' : ', mais pas encore relié.'}
+              Connecté
+              {coupleId
+                ? ' et relié à votre partenaire.'
+                : ', mais pas encore relié.'}
             </Texte>
             <Texte variante="meta">
-              Ce qui passe par le serveur — pour l’instant les axes de croissance
-              — se synchronise entre vos deux appareils.
+              Ce qui passe par le serveur — pour l’instant les axes de croissance —
+              se synchronise entre vos deux appareils.
             </Texte>
             <View style={styles.actions}>
               {!coupleId ? (
@@ -170,8 +178,8 @@ export function ReglagesEcran() {
         ) : (
           <>
             <Texte variante="corps" style={styles.mention}>
-              Aucun compte sur cet appareil. Tout reste local, et rien ne parvient
-              à votre partenaire.
+              Aucun compte sur cet appareil. Tout reste local, et rien ne parvient à
+              votre partenaire.
             </Texte>
             <View style={styles.actions}>
               <Bouton
@@ -198,7 +206,7 @@ export function ReglagesEcran() {
           />
         </View>
       </Carte>
-    </Ecran>
+    </EcranModale>
   );
 }
 

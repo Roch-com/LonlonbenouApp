@@ -50,18 +50,66 @@ interface EtatViePratique {
 
   charger: (coupleId: string, moiId: string) => Promise<void>;
 
-  ajouterEvenement: (coupleId: string, moiId: string, brouillon: BrouillonEvenement) => Promise<boolean>;
-  supprimerEvenement: (coupleId: string, moiId: string, id: string) => Promise<boolean>;
+  ajouterEvenement: (
+    coupleId: string,
+    moiId: string,
+    brouillon: BrouillonEvenement,
+  ) => Promise<boolean>;
+  supprimerEvenement: (
+    coupleId: string,
+    moiId: string,
+    id: string,
+  ) => Promise<boolean>;
 
-  creerProjet: (coupleId: string, moiId: string, titre: string, intention?: string) => Promise<boolean>;
-  ajouterJalon: (coupleId: string, moiId: string, projetId: string, titre: string, echeance?: string) => Promise<boolean>;
-  cocherJalon: (coupleId: string, moiId: string, projetId: string, jalonId: string) => Promise<boolean>;
-  archiverProjet: (coupleId: string, moiId: string, projetId: string, archive: boolean) => Promise<boolean>;
+  creerProjet: (
+    coupleId: string,
+    moiId: string,
+    titre: string,
+    intention?: string,
+  ) => Promise<boolean>;
+  ajouterJalon: (
+    coupleId: string,
+    moiId: string,
+    projetId: string,
+    titre: string,
+    echeance?: string,
+  ) => Promise<boolean>;
+  cocherJalon: (
+    coupleId: string,
+    moiId: string,
+    projetId: string,
+    jalonId: string,
+  ) => Promise<boolean>;
+  archiverProjet: (
+    coupleId: string,
+    moiId: string,
+    projetId: string,
+    archive: boolean,
+  ) => Promise<boolean>;
 
-  proposerInitiative: (coupleId: string, moiId: string, titre: string, categorie: CategorieSortie) => Promise<boolean>;
-  programmerInitiative: (coupleId: string, moiId: string, id: string, prevuePour: string) => Promise<boolean>;
-  vivreInitiative: (coupleId: string, moiId: string, id: string, souvenir?: string) => Promise<boolean>;
-  supprimerInitiative: (coupleId: string, moiId: string, id: string) => Promise<boolean>;
+  proposerInitiative: (
+    coupleId: string,
+    moiId: string,
+    titre: string,
+    categorie: CategorieSortie,
+  ) => Promise<boolean>;
+  programmerInitiative: (
+    coupleId: string,
+    moiId: string,
+    id: string,
+    prevuePour: string,
+  ) => Promise<boolean>;
+  vivreInitiative: (
+    coupleId: string,
+    moiId: string,
+    id: string,
+    souvenir?: string,
+  ) => Promise<boolean>;
+  supprimerInitiative: (
+    coupleId: string,
+    moiId: string,
+    id: string,
+  ) => Promise<boolean>;
 
   vider: () => void;
 }
@@ -140,12 +188,16 @@ export const useViePratique = create<EtatViePratique>()(
         },
 
         ajouterEvenement: (coupleId, moiId, brouillon) =>
-          ecrire(coupleId, moiId, () => ajouterEvenementServeur(coupleId, brouillon)),
+          ecrire(coupleId, moiId, () =>
+            ajouterEvenementServeur(coupleId, brouillon),
+          ),
         supprimerEvenement: (coupleId, moiId, id) =>
           ecrire(coupleId, moiId, () => supprimerEvenementServeur(coupleId, id)),
 
         creerProjet: (coupleId, moiId, titre, intention) =>
-          ecrire(coupleId, moiId, () => creerProjetServeur(coupleId, titre, intention)),
+          ecrire(coupleId, moiId, () =>
+            creerProjetServeur(coupleId, titre, intention),
+          ),
         ajouterJalon: (coupleId, moiId, projetId, titre, echeance) =>
           ecrire(coupleId, moiId, () =>
             ajouterJalonServeur(coupleId, projetId, titre, echeance),

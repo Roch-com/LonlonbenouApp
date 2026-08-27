@@ -41,9 +41,9 @@ export function EtapePartagesInitiaux() {
       <Carte>
         <Texte variante="titre">Cycle</Texte>
         <Texte variante="corpsDoux" style={styles.intro}>
-          Si l’un de vous suit son cycle, c’est cette personne — et elle seule —
-          qui décide de ce qui est partagé, et qui peut en changer. Personne ne
-          peut le régler à sa place, pas même ici.
+          Si l’un de vous suit son cycle, c’est cette personne — et elle seule — qui
+          décide de ce qui est partagé, et qui peut en changer. Personne ne peut le
+          régler à sa place, pas même ici.
         </Texte>
 
         {coupleId ? (

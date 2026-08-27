@@ -27,9 +27,7 @@ export function BandeauSos() {
   return (
     <View style={styles.bandeau}>
       <Texte variante="sousTitre" style={styles.titre}>
-        {cEstMoi
-          ? 'Ton SOS a été envoyé'
-          : `${autre.prenom} a déclenché un SOS`}
+        {cEstMoi ? 'Ton SOS a été envoyé' : `${autre.prenom} a déclenché un SOS`}
       </Texte>
 
       <Texte variante="petit" style={styles.detail}>

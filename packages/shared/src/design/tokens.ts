@@ -14,7 +14,11 @@ export const palette = {
   ivoireOmbre: '#F2E9D8',
   encre: '#2B2420',
   encreDouce: '#6B5F55',
+  encreVoilee: '#9A8E84',
   blanc: '#FFFFFF',
+  /** Fond des surfaces posées sur l'ivoire, à peine détaché. */
+  creme: '#FDFAF4',
+  sable: '#EFE4CE',
 } as const;
 
 /** Couleurs sémantiques : ce que le code consomme au quotidien. */
@@ -34,8 +38,16 @@ export const colors = {
   tendresse: palette.rose,
   tendresseDouce: palette.roseClair,
 
+  fondCreme: palette.creme,
+
+  texteVoile: palette.encreVoilee,
+
   bordure: 'rgba(43, 36, 32, 0.10)',
+  bordureNette: 'rgba(43, 36, 32, 0.16)',
+  bordureOr: 'rgba(156, 122, 60, 0.28)',
   voile: 'rgba(43, 36, 32, 0.55)',
+  /** Surbrillance d'un élément pressé, sur fond clair. */
+  effleurement: 'rgba(156, 122, 60, 0.10)',
 
   /** Réservé au SOS. Jamais utilisé pour du décoratif. */
   urgence: '#C0392B',
@@ -94,21 +106,74 @@ export const rayons = {
   rond: 999,
 } as const;
 
+/**
+ * Trois niveaux de profondeur, pas un de plus.
+ *
+ * Android n'a qu'`elevation` et la traduit en ombre grise : une valeur trop
+ * haute salit l'ivoire. On la garde basse et on laisse `shadowColor` teinté
+ * faire le travail sur iOS, où l'ombre peut être chaude plutôt que grise.
+ */
 export const ombres = {
+  /** Repose à peine — barres, champs, éléments de liste. */
+  effleuree: {
+    shadowColor: palette.encre,
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 1,
+  },
   carte: {
     shadowColor: palette.encre,
-    shadowOpacity: 0.08,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.09,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 10 },
     elevation: 3,
   },
   flottant: {
     shadowColor: palette.encre,
-    shadowOpacity: 0.16,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 8,
+    shadowOpacity: 0.18,
+    shadowRadius: 32,
+    shadowOffset: { width: 0, height: 16 },
+    elevation: 10,
   },
+} as const;
+
+/**
+ * Dégradés de marque. Tableaux de deux à trois arrêts, prêts pour
+ * `expo-linear-gradient`.
+ *
+ * Ils portent l'essentiel du caractère premium : une surface unie est neutre,
+ * une surface qui glisse d'un ton à l'autre a de la matière. À réserver aux
+ * grandes zones — fond d'écran, en-tête, bouton principal — jamais sur du
+ * texte ni sur des éléments répétés, où l'effet devient bruit.
+ */
+export const degrades = {
+  /** Fond général : ivoire qui se réchauffe vers le bas. */
+  fond: [palette.ivoire, palette.creme, palette.ivoireOmbre] as const,
+  /** En-tête d'application, sous le texte sombre. */
+  chrome: ['rgba(251,246,236,0.98)', 'rgba(242,233,216,0.92)'] as const,
+  /** Bouton et accents actifs. */
+  or: [palette.orClair, palette.or, palette.orFonce] as const,
+  /** Cartes de mise en avant. */
+  tendresse: [palette.roseClair, palette.rose] as const,
+  /** Voile du haut vers le bas, pour détacher une barre flottante. */
+  estompeBas: [
+    'rgba(251,246,236,0)',
+    'rgba(251,246,236,0.9)',
+    palette.ivoire,
+  ] as const,
+} as const;
+
+/**
+ * Hauteurs du chrome. Fixées ici parce que les écrans doivent réserver
+ * exactement la place que la barre occupe : une valeur devinée au jugé fait
+ * disparaître le dernier bouton sous la barre d'onglets.
+ */
+export const chrome = {
+  barreOnglets: 62,
+  enTete: 56,
+  /** Zone tactile minimale — recommandation d'accessibilité, non négociable. */
+  toucheMin: 44,
 } as const;
 
 export const durees = {
@@ -124,6 +189,8 @@ export const tokens = {
   espacements,
   rayons,
   ombres,
+  degrades,
+  chrome,
   durees,
 } as const;
 

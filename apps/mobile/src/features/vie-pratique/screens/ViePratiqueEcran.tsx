@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Bouton, Carte, Ecran, EnTete, Texte } from '@/components/ui';
-import { colors, espacements, rayons } from '@/design/theme';
+import { Bouton, Carte, EnTete, Segments, Texte } from '@/components/ui';
+import { EcranOnglet } from '@/components/chrome/EcranOnglet';
+import { colors, espacements } from '@/design/theme';
 import { ilYA } from '@/lib/temps';
 import {
   useSessionServeur,
@@ -46,12 +47,12 @@ export function ViePratiqueEcran() {
 
   if (etat === 'anonyme' || (etat === 'connecte' && !coupleId)) {
     return (
-      <Ecran>
+      <EcranOnglet section="Vie pratique">
         <EnTete surtitre="Vie pratique" titre="S’organiser à deux" />
         <Carte>
           <Texte variante="corpsDoux">
-            Un agenda commun, des projets communs : il faut deux comptes reliés
-            pour que ce que l’un ajoute parvienne à {autre.prenom}.
+            Un agenda commun, des projets communs : il faut deux comptes reliés pour
+            que ce que l’un ajoute parvienne à {autre.prenom}.
           </Texte>
           <View style={styles.action}>
             <Bouton
@@ -62,42 +63,31 @@ export function ViePratiqueEcran() {
             />
           </View>
         </Carte>
-      </Ecran>
+      </EcranOnglet>
     );
   }
 
   return (
-    <Ecran>
+    <EcranOnglet section="Vie pratique">
       <EnTete
         surtitre="Vie pratique"
         titre="S’organiser à deux"
         sousTitre={SOUS_TITRES[onglet]}
       />
 
-      <View style={styles.segments}>
-        <Segment
-          libelle="Agenda"
-          actif={onglet === 'agenda'}
-          onPress={() => setOnglet('agenda')}
-        />
-        <Segment
-          libelle="Projets"
-          actif={onglet === 'projets'}
-          onPress={() => setOnglet('projets')}
-        />
-        <Segment
-          libelle="Sorties"
-          actif={onglet === 'sorties'}
-          onPress={() => setOnglet('sorties')}
-        />
-      </View>
+      <Segments
+        etiquette="Sections de la vie pratique"
+        segments={SEGMENTS}
+        actif={onglet}
+        onChanger={setOnglet}
+      />
 
       {horsLigne ? (
         <Carte discrete>
           <Texte variante="petit">
             Sans connexion. Vous voyez l’état
-            {synchroniseeLe ? ` d’${ilYA(synchroniseeLe)}` : ' précédent'} ; rien
-            ne peut être ajouté tant que le serveur n’est pas joignable.
+            {synchroniseeLe ? ` d’${ilYA(synchroniseeLe)}` : ' précédent'} ; rien ne
+            peut être ajouté tant que le serveur n’est pas joignable.
           </Texte>
         </Carte>
       ) : null}
@@ -119,9 +109,15 @@ export function ViePratiqueEcran() {
       {onglet === 'agenda' ? <SectionAgenda /> : null}
       {onglet === 'projets' ? <SectionProjets /> : null}
       {onglet === 'sorties' ? <SectionSorties /> : null}
-    </Ecran>
+    </EcranOnglet>
   );
 }
+
+const SEGMENTS = [
+  { cle: 'agenda', libelle: 'Agenda' },
+  { cle: 'projets', libelle: 'Projets' },
+  { cle: 'sorties', libelle: 'Sorties' },
+] as const satisfies readonly { cle: Onglet; libelle: string }[];
 
 const SOUS_TITRES: Record<Onglet, string> = {
   agenda: 'Un seul calendrier, visible pareil des deux côtés.',
@@ -129,50 +125,7 @@ const SOUS_TITRES: Record<Onglet, string> = {
   sorties: 'Les envies, les dates, et ce qu’il en reste.',
 };
 
-function Segment({
-  libelle,
-  actif,
-  onPress,
-}: {
-  libelle: string;
-  actif: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="tab"
-      accessibilityState={{ selected: actif }}
-      onPress={onPress}
-      style={[styles.segment, actif && styles.segmentActif]}
-    >
-      <Texte
-        variante="petit"
-        style={actif ? styles.segmentTexteActif : styles.segmentTexte}
-      >
-        {libelle}
-      </Texte>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   action: { marginTop: espacements.lg },
   erreur: { color: colors.tendresse },
-  segments: {
-    flexDirection: 'row',
-    gap: espacements.xxs,
-    padding: espacements.xxs,
-    borderRadius: rayons.rond,
-    backgroundColor: colors.fondNuance,
-    marginBottom: espacements.xs,
-  },
-  segment: {
-    flex: 1,
-    paddingVertical: espacements.sm,
-    borderRadius: rayons.rond,
-    alignItems: 'center',
-  },
-  segmentActif: { backgroundColor: colors.fondEleve },
-  segmentTexte: { color: colors.texteDoux },
-  segmentTexteActif: { color: colors.accentFonce },
 });

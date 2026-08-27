@@ -113,15 +113,24 @@ export function CarteProjet({
                   >
                     <View style={[styles.case, fait && styles.caseCochee]}>
                       {fait ? (
-                        <Feather name="check" size={14} color={colors.texteInverse} />
+                        <Feather
+                          name="check"
+                          size={14}
+                          color={colors.texteInverse}
+                        />
                       ) : null}
                     </View>
                     <View style={styles.jalonTexte}>
-                      <Texte variante="corps" style={fait ? styles.faitTexte : undefined}>
+                      <Texte
+                        variante="corps"
+                        style={fait ? styles.faitTexte : undefined}
+                      >
                         {jalon.titre}
                       </Texte>
                       <Texte variante="meta">
-                        {jalon.echeance ? quand(jalon.echeance, maintenant) : 'sans date'}
+                        {jalon.echeance
+                          ? quand(jalon.echeance, maintenant)
+                          : 'sans date'}
                         {fait && auteur ? ` · coché par ${auteur.prenom}` : ''}
                       </Texte>
                     </View>
@@ -151,7 +160,9 @@ export function CarteProjet({
               disabled={!titreJalon.trim()}
             />
             <Bouton
-              libelle={projet.archiveLe ? 'Sortir des archives' : 'Archiver ce projet'}
+              libelle={
+                projet.archiveLe ? 'Sortir des archives' : 'Archiver ce projet'
+              }
               ton="discret"
               onPress={() => onArchiver(!projet.archiveLe)}
             />

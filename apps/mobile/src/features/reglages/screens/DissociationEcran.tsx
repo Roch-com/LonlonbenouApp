@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Bouton, Carte, Ecran, EnTete, Texte } from '@/components/ui';
+import { Bouton, Carte, EnTete, Texte } from '@/components/ui';
+import { EcranModale } from '@/components/chrome';
 import { colors, espacements } from '@/design/theme';
 import { useAutre } from '../stores/sessionStore';
 import {
@@ -35,7 +36,7 @@ export function DissociationEcran() {
 
   if (etape === 'faite') {
     return (
-      <Ecran>
+      <EcranModale section="Séparation">
         <EnTete surtitre="C’est fait" titre="Les accès sont coupés" />
         <Carte>
           <Texte variante="corps">
@@ -54,12 +55,12 @@ export function DissociationEcran() {
             repartirDeZero();
           }}
         />
-      </Ecran>
+      </EcranModale>
     );
   }
 
   return (
-    <Ecran>
+    <EcranModale section="Séparation">
       <EnTete
         surtitre="Dissociation"
         titre="Séparer vos deux comptes"
@@ -76,8 +77,8 @@ export function DissociationEcran() {
           ))}
         </View>
         <Texte variante="corpsDoux" style={styles.espace}>
-          La coupure est symétrique et immédiate. Il n’existe aucun état où l’un
-          de vous garderait un accès que l’autre a perdu.
+          La coupure est symétrique et immédiate. Il n’existe aucun état où l’un de
+          vous garderait un accès que l’autre a perdu.
         </Texte>
       </Carte>
 
@@ -89,8 +90,8 @@ export function DissociationEcran() {
           reste deviennent illisibles — définitivement, y compris pour vous.
         </Texte>
         <Texte variante="corpsDoux" style={styles.espace}>
-          Il n’y a pas de sauvegarde et pas de retour en arrière. Si vous
-          souhaitez garder une trace de quelque chose, faites-le avant.
+          Il n’y a pas de sauvegarde et pas de retour en arrière. Si vous souhaitez
+          garder une trace de quelque chose, faites-le avant.
         </Texte>
       </Carte>
 
@@ -121,7 +122,7 @@ export function DissociationEcran() {
           />
         </View>
       )}
-    </Ecran>
+    </EcranModale>
   );
 }
 

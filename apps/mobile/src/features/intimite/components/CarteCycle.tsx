@@ -61,7 +61,11 @@ export function CarteCycle() {
         </Texte>
       )}
       <View style={styles.action}>
-        <Bouton libelle="Ouvrir" ton="secondaire" onPress={() => router.push('/cycle')} />
+        <Bouton
+          libelle="Ouvrir"
+          ton="secondaire"
+          onPress={() => router.push('/cycle')}
+        />
       </View>
     </Carte>
   );

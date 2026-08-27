@@ -66,7 +66,8 @@ export function CarteDuPartenaire() {
       {humeurDeLautre ? (
         <View style={styles.humeur}>
           <Texte variante="petit">
-            Humeur du jour · {definitionHumeur(humeurDeLautre.code as CodeHumeur).emoji}{' '}
+            Humeur du jour ·{' '}
+            {definitionHumeur(humeurDeLautre.code as CodeHumeur).emoji}{' '}
             {definitionHumeur(humeurDeLautre.code as CodeHumeur).libelle}
             {humeurDeLautre.mot ? ` — ${humeurDeLautre.mot}` : ''}
           </Texte>

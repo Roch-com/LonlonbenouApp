@@ -67,11 +67,14 @@ export function SectionConfidences() {
       <Carte>
         <Texte variante="titre">Ce qui s’offre a besoin d’arriver</Texte>
         <Texte variante="corpsDoux" style={styles.intro}>
-          Une gratitude, une lettre : ce sont des textes destinés à
-          {' '}{autre.prenom}. Il leur faut un compte pour lui parvenir.
+          Une gratitude, une lettre : ce sont des textes destinés à {autre.prenom}.
+          Il leur faut un compte pour lui parvenir.
         </Texte>
         <View style={styles.action}>
-          <Bouton libelle="Se connecter" onPress={() => router.push('/connexion')} />
+          <Bouton
+            libelle="Se connecter"
+            onPress={() => router.push('/connexion')}
+          />
         </View>
       </Carte>
     );
@@ -82,8 +85,8 @@ export function SectionConfidences() {
       <Carte>
         <Texte variante="titre">Il manque {autre.prenom}</Texte>
         <Texte variante="corpsDoux" style={styles.intro}>
-          Votre compte n’est encore relié à personne. Vos brouillons vous
-          attendent en attendant.
+          Votre compte n’est encore relié à personne. Vos brouillons vous attendent
+          en attendant.
         </Texte>
         <View style={styles.action}>
           <Bouton
@@ -177,9 +180,7 @@ export function SectionConfidences() {
 
       {lettresEchangees.length === 0 ? (
         <Carte discrete>
-          <Texte variante="corpsDoux">
-            Aucune lettre échangée pour l’instant.
-          </Texte>
+          <Texte variante="corpsDoux">Aucune lettre échangée pour l’instant.</Texte>
         </Carte>
       ) : (
         <View style={styles.liste}>

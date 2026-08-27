@@ -2,11 +2,11 @@
 
 Périmètre **implémenté (P0)** :
 
-| Module | État | Où |
-| --- | --- | --- |
-| Axes de croissance — structure de base | ✅ P0 | `components/SectionAxes.tsx`, `components/CarteAxe.tsx` |
-| Espace de confidences — gratitude + lettres | ✅ P0 | `components/SectionConfidences.tsx`, `components/AtelierLettre.tsx` |
-| Score d'implication — base + suggestions privées | ✅ P0 | `components/SectionScore.tsx`, `packages/shared/src/score/` |
+| Module                                           | État  | Où                                                                  |
+| ------------------------------------------------ | ----- | ------------------------------------------------------------------- |
+| Axes de croissance — structure de base           | ✅ P0 | `components/SectionAxes.tsx`, `components/CarteAxe.tsx`             |
+| Espace de confidences — gratitude + lettres      | ✅ P0 | `components/SectionConfidences.tsx`, `components/AtelierLettre.tsx` |
+| Score d'implication — base + suggestions privées | ✅ P0 | `components/SectionScore.tsx`, `packages/shared/src/score/`         |
 
 **P1** : assistant de reformulation, questions de complicité, brouillon différé
 24 h, parcours guidé, historique avancé du score.
@@ -153,11 +153,11 @@ mais des rythmes.
 
 Trois composantes, sur une fenêtre glissante de 14 jours :
 
-| Composante | Poids | Ce qu'elle regarde |
-| --- | --- | --- |
-| Régularité | 45 % | Jours où au moins un geste a eu lieu |
-| Élan partagé | 35 % | Équilibre entre les deux rythmes, sans dire lequel est lequel |
-| Variété | 20 % | Nombre de façons différentes de se rejoindre |
+| Composante   | Poids | Ce qu'elle regarde                                            |
+| ------------ | ----- | ------------------------------------------------------------- |
+| Régularité   | 45 %  | Jours où au moins un geste a eu lieu                          |
+| Élan partagé | 35 %  | Équilibre entre les deux rythmes, sans dire lequel est lequel |
+| Variété      | 20 %  | Nombre de façons différentes de se rejoindre                  |
 
 Conséquence directe : **le score ne se gonfle pas**. Cinquante messages dans la
 même journée comptent comme un seul jour vivant.

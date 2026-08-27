@@ -43,9 +43,7 @@ export async function paireDeLAppareil(): Promise<PaireDeClesE2E> {
 }
 
 /** Clé de messages du couple. Recalculée à la demande, jamais stockée. */
-export async function cleDeMessages(
-  clePubliqueAutre: string,
-): Promise<Uint8Array> {
+export async function cleDeMessages(clePubliqueAutre: string): Promise<Uint8Array> {
   const { cleePrivee } = await paireDeLAppareil();
   return deriverCleDeMessages(cleePrivee, clePubliqueAutre);
 }

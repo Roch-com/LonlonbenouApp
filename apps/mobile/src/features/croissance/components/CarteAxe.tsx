@@ -62,7 +62,7 @@ export function CarteAxe({
         style={styles.entete}
       >
         <Texte variante="titre" style={styles.titre}>
-          {theme.emoji}  {axe.titre}
+          {theme.emoji} {axe.titre}
         </Texte>
         <Texte variante="meta">
           {theme.libelle} · ouvert {ilYA(axe.ouvertLe)}

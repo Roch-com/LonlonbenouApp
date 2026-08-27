@@ -109,7 +109,11 @@ export function SectionAgenda() {
               />
             ) : null}
 
-            <Champ etiquette="Où ? (facultatif)" value={lieu} onChangeText={setLieu} />
+            <Champ
+              etiquette="Où ? (facultatif)"
+              value={lieu}
+              onChangeText={setLieu}
+            />
 
             <Texte variante="petit">Rappel</Texte>
             <View style={styles.puces}>
@@ -133,7 +137,11 @@ export function SectionAgenda() {
               onPress={valider}
               disabled={!titre.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(date)}
             />
-            <Bouton libelle="Annuler" ton="discret" onPress={() => setOuvert(false)} />
+            <Bouton
+              libelle="Annuler"
+              ton="discret"
+              onPress={() => setOuvert(false)}
+            />
           </View>
         </Carte>
       ) : (
@@ -174,7 +182,13 @@ export function SectionAgenda() {
                       libelle="Retirer"
                       ton="discret"
                       pleineLargeur={false}
-                      onPress={() => void supprimerEvenement(coupleId!, partenaireId!, evenement.id)}
+                      onPress={() =>
+                        void supprimerEvenement(
+                          coupleId!,
+                          partenaireId!,
+                          evenement.id,
+                        )
+                      }
                     />
                   </View>
                 );

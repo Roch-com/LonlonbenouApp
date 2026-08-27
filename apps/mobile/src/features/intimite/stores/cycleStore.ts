@@ -38,15 +38,27 @@ interface EtatCycleStore {
   erreur?: string;
 
   charger: (coupleId: string, moiId: string) => Promise<void>;
-  declarer: (coupleId: string, moiId: string, porteuseId: string) => Promise<boolean>;
-  definirNiveau: (coupleId: string, moiId: string, niveau: NiveauCycle) => Promise<boolean>;
+  declarer: (
+    coupleId: string,
+    moiId: string,
+    porteuseId: string,
+  ) => Promise<boolean>;
+  definirNiveau: (
+    coupleId: string,
+    moiId: string,
+    niveau: NiveauCycle,
+  ) => Promise<boolean>;
   enregistrerRegles: (
     coupleId: string,
     moiId: string,
     debutLe: string,
     finLe?: string,
   ) => Promise<boolean>;
-  supprimerRegles: (coupleId: string, moiId: string, id: string) => Promise<boolean>;
+  supprimerRegles: (
+    coupleId: string,
+    moiId: string,
+    id: string,
+  ) => Promise<boolean>;
   noterSymptome: (
     coupleId: string,
     moiId: string,
@@ -55,7 +67,11 @@ interface EtatCycleStore {
     intensite: Intensite,
     note?: string,
   ) => Promise<boolean>;
-  retirerSymptome: (coupleId: string, moiId: string, id: string) => Promise<boolean>;
+  retirerSymptome: (
+    coupleId: string,
+    moiId: string,
+    id: string,
+  ) => Promise<boolean>;
   vider: () => void;
 }
 

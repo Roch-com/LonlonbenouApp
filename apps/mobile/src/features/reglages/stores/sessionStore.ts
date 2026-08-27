@@ -165,9 +165,7 @@ export function useAutre(): Partenaire {
   });
 }
 
-export function usePartage(
-  module: ModuleSensible,
-): PartageReciproque | undefined {
+export function usePartage(module: ModuleSensible): PartageReciproque | undefined {
   return useSession((e) => e.partages[module]);
 }
 

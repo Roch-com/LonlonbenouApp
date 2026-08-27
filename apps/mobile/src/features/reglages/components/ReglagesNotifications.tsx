@@ -81,8 +81,8 @@ export function ReglagesNotifications() {
           <View style={styles.texte}>
             <Texte variante="corps">Silence nocturne</Texte>
             <Texte variante="petit">
-              De {preferences.silence.debut} à {preferences.silence.fin}. Rien
-              n’est perdu : ce qui arrive pendant est remis ensuite.
+              De {preferences.silence.debut} à {preferences.silence.fin}. Rien n’est
+              perdu : ce qui arrive pendant est remis ensuite.
             </Texte>
           </View>
           <Switch
@@ -168,7 +168,9 @@ export function ReglagesNotifications() {
                   <Puce
                     key={frequence.code}
                     libelle={frequence.libelle}
-                    active={preferences.parCategorie[categorie.code] === frequence.code}
+                    active={
+                      preferences.parCategorie[categorie.code] === frequence.code
+                    }
                     onPress={() =>
                       definirFrequence(
                         moi.id,
@@ -196,8 +198,8 @@ export function ReglagesNotifications() {
         <Texte variante="meta" style={styles.mention}>
           Deux catégories ne sont pas réglables :{' '}
           {definitionCategorie('sos').libelle} et{' '}
-          {definitionCategorie('partage').libelle.toLowerCase()}. La seconde
-          parce qu’un partage qui change en silence redeviendrait un mode furtif.
+          {definitionCategorie('partage').libelle.toLowerCase()}. La seconde parce
+          qu’un partage qui change en silence redeviendrait un mode furtif.
         </Texte>
       </Carte>
     </View>
@@ -215,7 +217,12 @@ const styles = StyleSheet.create({
   texte: { flex: 1, gap: espacements.xxs },
   heures: { flexDirection: 'row', gap: espacements.md, marginTop: espacements.md },
   actions: { marginTop: espacements.md, gap: espacements.sm },
-  puces: { flexDirection: 'row', flexWrap: 'wrap', gap: espacements.xs, marginTop: espacements.sm },
+  puces: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: espacements.xs,
+    marginTop: espacements.sm,
+  },
   categories: { marginTop: espacements.md, gap: espacements.lg },
   categorie: { gap: espacements.xxs },
   mention: { marginTop: espacements.md },

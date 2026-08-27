@@ -2,11 +2,11 @@
 
 Périmètre **implémenté (P0)** :
 
-| Module | État | Où |
-| --- | --- | --- |
-| Calendrier partagé | ✅ P0 | `components/SectionAgenda.tsx`, `shared/calendrier/agenda.ts` |
-| Projets de couple — création, jalons, avancement | ✅ P0 | `components/SectionProjets.tsx`, `shared/projets/avancement.ts` |
-| Initiatives & sorties — création + journal | ✅ P0 | `components/SectionSorties.tsx`, `shared/initiatives/journal.ts` |
+| Module                                           | État  | Où                                                               |
+| ------------------------------------------------ | ----- | ---------------------------------------------------------------- |
+| Calendrier partagé                               | ✅ P0 | `components/SectionAgenda.tsx`, `shared/calendrier/agenda.ts`    |
+| Projets de couple — création, jalons, avancement | ✅ P0 | `components/SectionProjets.tsx`, `shared/projets/avancement.ts`  |
+| Initiatives & sorties — création + journal       | ✅ P0 | `components/SectionSorties.tsx`, `shared/initiatives/journal.ts` |
 
 **Hors périmètre**, et volontairement absents du modèle de données : projet
 surprise (P1), finances partagées (P1 manuel / P2 agrégation), catalogue
@@ -56,7 +56,7 @@ dans `journal.test.ts` : **aucune fonction n'agrège par partenaire**.
 - Savoir « qui propose le plus de sorties » transformerait un élan en dette.
 
 `Jalon.faitPar` et `Initiative.proposeePar` sont conservés pour afficher qui a
-coché *un* jalon donné ou proposé *une* envie — information anodine et utile —
+coché _un_ jalon donné ou proposé _une_ envie — information anodine et utile —
 mais rien ne les compte.
 
 ## Le champ `visibilite` du calendrier
