@@ -8,10 +8,10 @@ import { appeler } from '@/lib/api/client';
  * saisie correspond à un compte.
  */
 export async function demanderUnCode(courriel: string): Promise<string> {
-  const { message } = await appeler<{ message: string }>(
-    '/mot-de-passe/demandes',
-    { methode: 'POST', corps: { courriel } },
-  );
+  const { message } = await appeler<{ message: string }>('/mot-de-passe/demandes', {
+    methode: 'POST',
+    corps: { courriel },
+  });
   return message;
 }
 

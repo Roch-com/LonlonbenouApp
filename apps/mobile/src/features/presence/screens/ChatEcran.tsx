@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -8,7 +9,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useNavigation, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton, Carte, EnTeteApp, Texte } from '@/components/ui';
 import {
@@ -26,6 +27,7 @@ import {
   useServeurFaitAutorite,
 } from '@/features/reglages/stores/sessionServeurStore';
 import { useAutre } from '@/features/reglages/stores/sessionStore';
+import { cleDuJour, jourLisible } from '@/lib/temps';
 import { BulleMessage } from '../components/BulleMessage';
 import { SelecteurHumeur } from '../components/SelecteurHumeur';
 import { useFilLisible } from '../hooks/useLecturesDechiffrees';
@@ -65,6 +67,92 @@ export function ChatEcran() {
   const [brouillon, setBrouillon] = useState('');
   const [verificationOuverte, setVerificationOuverte] = useState(false);
   const liste = useRef<FlatList>(null);
+
+  const [clavierOuvert, setClavierOuvert] = useState(false);
+  const navigation = useNavigation();
+
+  /**
+   * La barre d'onglets s'efface quand le clavier monte.
+   *
+   * Elle est en position absolue : sans cela elle se retrouve posée sur le
+   * clavier, et l'espace qu'on lui réserve pousse le champ de saisie hors de
+   * l'écran — on écrivait sans voir ce qu'on écrivait. C'est aussi ce que font
+   * les messageries : pendant qu'on écrit, la navigation n'a rien à faire là.
+   */
+  useEffect(() => {
+    const parent = navigation.getParent();
+    const montre = Keyboard.addListener('keyboardDidShow', () => {
+      setClavierOuvert(true);
+      parent?.setOptions({ tabBarStyle: { display: 'none' } });
+    });
+    const cache = Keyboard.addListener('keyboardDidHide', () => {
+      setClavierOuvert(false);
+      parent?.setOptions({ tabBarStyle: undefined });
+    });
+
+    return () => {
+      montre.remove();
+      cache.remove();
+      // Quitter l'écran clavier ouvert laisserait la barre cachée ailleurs.
+      parent?.setOptions({ tabBarStyle: undefined });
+    };
+  }, [navigation]);
+
+  /**
+   * Fil prêt à afficher : séparateurs de jour intercalés, et pour chaque
+   * message ce qu'il faut savoir de ses voisins.
+   *
+   * Calculé une fois par changement du fil plutôt qu'à chaque ligne rendue :
+   * `renderItem` est rappelé au défilement, et y refaire ces comparaisons
+   * coûterait à chaque image.
+   */
+  const lignes = useMemo(() => {
+    type Ligne =
+      | { sorte: 'jour'; cle: string; libelle: string }
+      | {
+          sorte: 'message';
+          cle: string;
+          message: (typeof fil)[number];
+          suiteDuPrecedent: boolean;
+          dernierDuGroupe: boolean;
+        };
+
+    const resultat: Ligne[] = [];
+    let jourCourant: string | undefined;
+
+    fil.forEach((message, i) => {
+      const jour = cleDuJour(message.envoyeLe);
+      if (jour !== jourCourant) {
+        jourCourant = jour;
+        resultat.push({
+          sorte: 'jour',
+          cle: `jour-${jour}`,
+          libelle: jourLisible(message.envoyeLe),
+        });
+      }
+
+      const precedent = fil[i - 1];
+      const suivant = fil[i + 1];
+      const memeAuteur = (voisin?: (typeof fil)[number]) =>
+        !!voisin && voisin.auteurId === message.auteurId;
+
+      resultat.push({
+        sorte: 'message',
+        cle: message.id,
+        message,
+        suiteDuPrecedent:
+          memeAuteur(precedent) &&
+          cleDuJour(precedent!.envoyeLe) === jour &&
+          precedent!.type === message.type,
+        dernierDuGroupe:
+          !memeAuteur(suivant) ||
+          cleDuJour(suivant!.envoyeLe) !== jour ||
+          suivant!.type !== message.type,
+      });
+    });
+
+    return resultat;
+  }, [fil]);
 
   useEffect(() => {
     if (!connecte || !coupleId || !partenaireId) return;
@@ -123,8 +211,8 @@ export function ChatEcran() {
 
       <FlatList
         ref={liste}
-        data={fil}
-        keyExtractor={(m) => m.id}
+        data={lignes}
+        keyExtractor={(l) => l.cle}
         contentContainerStyle={[styles.contenu, { paddingTop: espacements.md }]}
         ListHeaderComponent={
           <View style={styles.entete}>
@@ -190,9 +278,22 @@ export function ChatEcran() {
             Rien encore. Le premier mot est souvent le plus simple.
           </Texte>
         }
-        renderItem={({ item }) => (
-          <BulleMessage message={item} deMoi={item.auteurId === partenaireId} />
-        )}
+        renderItem={({ item }) =>
+          item.sorte === 'jour' ? (
+            <View style={styles.jour}>
+              <Texte variante="meta" style={styles.jourTexte}>
+                {item.libelle}
+              </Texte>
+            </View>
+          ) : (
+            <BulleMessage
+              message={item.message}
+              deMoi={item.message.auteurId === partenaireId}
+              suiteDuPrecedent={item.suiteDuPrecedent}
+              dernierDuGroupe={item.dernierDuGroupe}
+            />
+          )
+        }
         onContentSizeChange={() => liste.current?.scrollToEnd({ animated: true })}
       />
 
@@ -202,7 +303,12 @@ export function ChatEcran() {
         style={[
           styles.barre,
           {
-            paddingBottom: marges.bottom + chrome.barreOnglets + espacements.sm,
+            // Clavier fermé, il faut dégager la barre d'onglets ; clavier
+            // ouvert, elle est masquée et lui réserver sa hauteur creuserait
+            // un vide sous le champ de saisie.
+            paddingBottom: clavierOuvert
+              ? espacements.sm
+              : marges.bottom + chrome.barreOnglets + espacements.sm,
           },
         ]}
       >
@@ -246,6 +352,15 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
     gap: espacements.sm,
   },
   nombre: { marginTop: espacements.xs, letterSpacing: 2 },
+  jour: {
+    alignSelf: 'center',
+    marginVertical: espacements.md,
+    paddingVertical: espacements.xxs,
+    paddingHorizontal: espacements.sm,
+    borderRadius: rayons.rond,
+    backgroundColor: colors.fondNuance,
+  },
+  jourTexte: { textTransform: 'capitalize' },
   vide: { textAlign: 'center', marginTop: espacements.xl },
   erreur: { color: colors.tendresse },
   barre: {

@@ -33,3 +33,36 @@ export function dateLongue(iso: string): string {
     year: 'numeric',
   });
 }
+
+/**
+ * Étiquette de séparation dans une conversation.
+ *
+ * « Aujourd'hui » et « Hier » plutôt que la date : dans un fil de discussion,
+ * ce sont les deux seuls repères dont on a réellement besoin, et les lire en
+ * toutes lettres évite de compter les jours de tête.
+ */
+export function jourLisible(iso: string, maintenant: Date = new Date()): string {
+  const jour = new Date(iso);
+  const memeJour = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+
+  if (memeJour(jour, maintenant)) return "Aujourd'hui";
+
+  const hier = new Date(maintenant);
+  hier.setDate(hier.getDate() - 1);
+  if (memeJour(jour, hier)) return 'Hier';
+
+  return jour.toLocaleDateString('fr-FR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  });
+}
+
+/** Clé de regroupement par jour civil, indépendante du fuseau d'affichage. */
+export function cleDuJour(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+}
