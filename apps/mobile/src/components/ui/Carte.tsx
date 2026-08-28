@@ -35,7 +35,13 @@ export function Carte({ discrete, ton, compacte, style, ...props }: Props) {
         style={[styles.base, styles.enRelief, { padding: 0 }, style]}
       >
         <LinearGradient
-          colors={variante === 'or' ? [...degrades.or] : [...degrades.tendresse]}
+          colors={
+            variante === 'accent'
+              ? [...degrades.accent]
+              : variante === 'or'
+                ? [...degrades.or]
+                : [...degrades.tendresse]
+          }
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.degrade, { padding: rembourrage }]}

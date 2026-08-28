@@ -7,6 +7,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 import { useNavigation, useRouter } from 'expo-router';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -28,6 +29,7 @@ import {
 import { useAutre } from '@/features/reglages/stores/sessionStore';
 import { cleDuJour, jourLisible } from '@/lib/temps';
 import { BulleMessage } from '../components/BulleMessage';
+import { SelecteurEmoji } from '../components/SelecteurEmoji';
 import { SelecteurHumeur } from '../components/SelecteurHumeur';
 import { useFilLisible } from '../hooks/useLecturesDechiffrees';
 import { useChat, useNombreDeVerification } from '../stores/chatStore';
@@ -68,6 +70,7 @@ export function ChatEcran() {
   const liste = useRef<FlatList>(null);
 
   const [clavierOuvert, setClavierOuvert] = useState(false);
+  const [emojisOuverts, setEmojisOuverts] = useState(false);
   const navigation = useNavigation();
 
   /**
@@ -82,6 +85,7 @@ export function ChatEcran() {
     const parent = navigation.getParent();
     const montre = Keyboard.addListener('keyboardDidShow', () => {
       setClavierOuvert(true);
+      setEmojisOuverts(false);
       parent?.setOptions({ tabBarStyle: { display: 'none' } });
     });
     const cache = Keyboard.addListener('keyboardDidHide', () => {
@@ -329,6 +333,26 @@ export function ChatEcran() {
           },
         ]}
       >
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            emojisOuverts ? 'Fermer les emoji' : 'Ouvrir les emoji'
+          }
+          onPress={() => {
+            // Ouvrir le panneau referme le clavier système : les deux à la
+            // fois ne laisseraient plus rien voir de la conversation.
+            if (!emojisOuverts) Keyboard.dismiss();
+            setEmojisOuverts((ouvert) => !ouvert);
+          }}
+          style={({ pressed }) => [styles.emoji, pressed && styles.envoiPresse]}
+        >
+          <Feather
+            name={emojisOuverts ? 'x' : 'smile'}
+            size={20}
+            color={colors.texteDoux}
+          />
+        </Pressable>
+
         <TextInput
           style={styles.saisie}
           placeholder="Écrire à deux…"
@@ -353,6 +377,14 @@ export function ChatEcran() {
           </Texte>
         </Pressable>
       </View>
+
+      {emojisOuverts ? (
+        <View style={{ paddingBottom: marges.bottom }}>
+          <SelecteurEmoji
+            onChoisir={(emoji) => setBrouillon((texte) => texte + emoji)}
+          />
+        </View>
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
@@ -390,6 +422,12 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
     borderTopColor: colors.bordure,
     backgroundColor: colors.fondEleve,
     ...ombres.effleuree,
+  },
+  emoji: {
+    width: 44,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   saisie: {
     flex: 1,
