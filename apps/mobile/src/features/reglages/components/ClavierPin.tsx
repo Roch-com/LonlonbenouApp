@@ -1,8 +1,11 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
+import { useCouleurs } from '@/design/ThemeProvider';
 import { Feather } from '@expo/vector-icons';
 import { LONGUEUR_PIN_MAX } from '@lonlonbenu/shared';
 import { Texte } from '@/components/ui';
-import { colors, espacements, rayons } from '@/design/theme';
+import { espacements, rayons } from '@/design/theme';
 
 interface Props {
   valeur: string;
@@ -20,6 +23,7 @@ export function ClavierPin({
   longueurAttendue = LONGUEUR_PIN_MAX,
   desactive,
 }: Props) {
+  const colors = useCouleurs();
   const ajouter = (chiffre: string) => {
     if (desactive || valeur.length >= LONGUEUR_PIN_MAX) return;
     onChange(valeur + chiffre);
@@ -102,7 +106,7 @@ function Touche({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   bloc: { gap: espacements.xl, alignItems: 'center' },
   points: { flexDirection: 'row', gap: espacements.sm },
   point: {
@@ -131,4 +135,4 @@ const styles = StyleSheet.create({
   touchePressee: { backgroundColor: colors.fondNuance },
   toucheInactive: { opacity: 0.4 },
   chiffre: { color: colors.texte },
-});
+}));

@@ -8,7 +8,10 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { chrome, colors, degrades, espacements, margeEcran } from '@/design/theme';
+import { chrome, espacements, margeEcran } from '@/design/theme';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
+import { useTheme } from '@/design/ThemeProvider';
 
 interface Props {
   children: ReactNode;
@@ -44,6 +47,7 @@ export function Ecran({
   rafraichissement = false,
   scrollProps,
 }: Props) {
+  const { degrades, colors } = useTheme();
   const marges = useSafeAreaInsets();
 
   const hautDisponible = sousEnTete ? espacements.md : marges.top + espacements.md;
@@ -104,7 +108,7 @@ export function Ecran({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   fond: { flex: 1, backgroundColor: colors.fond },
   defilement: { flex: 1 },
   plein: { flex: 1 },
@@ -112,4 +116,4 @@ const styles = StyleSheet.create({
     paddingHorizontal: margeEcran,
     gap: espacements.md,
   },
-});
+}));

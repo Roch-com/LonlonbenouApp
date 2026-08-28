@@ -1,9 +1,12 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
+import { useCouleurs } from '@/design/ThemeProvider';
 import { useRouter } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Texte } from './Texte';
-import { chrome, colors, espacements, margeEcran, rayons } from '@/design/theme';
+import { chrome, espacements, margeEcran, rayons } from '@/design/theme';
 
 interface Props {
   titre?: string;
@@ -24,6 +27,7 @@ export function EnTeteModale({
   libelleFermeture = 'Fermer',
   onFermer,
 }: Props) {
+  const colors = useCouleurs();
   const router = useRouter();
   const marges = useSafeAreaInsets();
 
@@ -58,7 +62,7 @@ export function EnTeteModale({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   barre: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -77,4 +81,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pressee: { backgroundColor: colors.effleurement },
-});
+}));

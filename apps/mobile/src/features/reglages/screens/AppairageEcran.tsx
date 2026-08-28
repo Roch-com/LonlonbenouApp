@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useRouter } from 'expo-router';
 import { formaterCode } from '@lonlonbenu/shared';
 import { Bouton, Carte, Champ, EnTete, Texte } from '@/components/ui';
 import { EcranModale } from '@/components/chrome';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { messageLisible } from '@/lib/api/erreurs';
 import {
   accepterInvitation,
@@ -172,11 +174,11 @@ export function AppairageEcran() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   actions: { gap: espacements.sm, marginTop: espacements.lg },
   champs: { gap: espacements.sm, marginTop: espacements.md },
   resultat: { gap: espacements.md, marginTop: espacements.md },
   code: { textAlign: 'center', letterSpacing: 4 },
   identifiant: { color: colors.texteDoux },
   erreur: { color: colors.tendresse },
-});
+}));

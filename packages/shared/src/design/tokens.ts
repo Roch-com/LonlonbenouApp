@@ -182,6 +182,114 @@ export const durees = {
   douce: 400,
 } as const;
 
+/**
+ * Palette du mode sombre.
+ *
+ * Ce n'est pas l'inverse mathématique du mode clair, et cela ne peut pas
+ * l'être. Trois ajustements que l'inversion seule ne donne pas :
+ *
+ *  - **L'or s'éclaircit.** À luminosité égale, `#9C7A3C` sur fond sombre perd
+ *    tout éclat et vire au brun terne. L'accent monte donc vers `#D4AE6A`.
+ *  - **L'ivoire ne devient pas blanc pur.** Un texte `#FFFFFF` sur fond très
+ *    sombre produit un halo qui fatigue à la lecture ; on s'arrête à `#EDE4D6`.
+ *  - **Le fond reste chaud.** Un gris neutre trahirait l'identité de la marque ;
+ *    ces bruns très sombres gardent la chaleur de l'ivoire d'origine.
+ */
+export const paletteSombre = {
+  or: '#D4AE6A',
+  orFonce: '#B08E4E',
+  orClair: '#E8CE9B',
+  rose: '#D98595',
+  roseClair: '#8A4E58',
+  /** Fond principal — brun d'encre, jamais un gris. */
+  ivoire: '#1A1512',
+  /** Surface légèrement détachée du fond. */
+  ivoireOmbre: '#251E1A',
+  encre: '#EDE4D6',
+  encreDouce: '#B5A899',
+  encreVoilee: '#7D7268',
+  blanc: '#221B17',
+  creme: '#1F1915',
+  sable: '#2E2620',
+} as const;
+
+/** Couleurs sémantiques du mode sombre, mêmes clés que le mode clair. */
+export const colorsSombre = {
+  fond: paletteSombre.ivoire,
+  fondEleve: paletteSombre.blanc,
+  fondNuance: paletteSombre.ivoireOmbre,
+  fondCreme: paletteSombre.creme,
+
+  texte: paletteSombre.encre,
+  texteDoux: paletteSombre.encreDouce,
+  texteVoile: paletteSombre.encreVoilee,
+  /** Sur fond doré : reste sombre, pour rester lisible. */
+  texteInverse: palette.encre,
+
+  accent: paletteSombre.or,
+  accentFonce: paletteSombre.orClair,
+  accentDoux: paletteSombre.orFonce,
+
+  tendresse: paletteSombre.rose,
+  tendresseDouce: paletteSombre.roseClair,
+
+  // Les séparateurs s'éclaircissent au lieu de s'assombrir : sur fond sombre,
+  // une bordure noire est invisible.
+  bordure: 'rgba(237, 228, 214, 0.12)',
+  bordureNette: 'rgba(237, 228, 214, 0.20)',
+  bordureOr: 'rgba(212, 174, 106, 0.35)',
+  voile: 'rgba(0, 0, 0, 0.70)',
+  effleurement: 'rgba(212, 174, 106, 0.14)',
+
+  /** Réservé au SOS. Éclairci pour rester lisible sur fond sombre. */
+  urgence: '#E8574A',
+} as const;
+
+/** Dégradés du mode sombre. */
+export const degradesSombre = {
+  fond: [
+    paletteSombre.ivoire,
+    paletteSombre.creme,
+    paletteSombre.ivoireOmbre,
+  ] as const,
+  chrome: ['rgba(26,21,18,0.98)', 'rgba(37,30,26,0.92)'] as const,
+  or: [paletteSombre.orClair, paletteSombre.or, paletteSombre.orFonce] as const,
+  tendresse: [paletteSombre.roseClair, paletteSombre.rose] as const,
+  estompeBas: [
+    'rgba(26,21,18,0)',
+    'rgba(26,21,18,0.9)',
+    paletteSombre.ivoire,
+  ] as const,
+} as const;
+
+/**
+ * Un thème complet : ce que consomme l'application à l'exécution.
+ *
+ * Les valeurs sont élargies en `string` : `as const` fige chaque couleur en
+ * type littéral, ce qui rendrait le thème sombre incompatible avec le clair
+ * alors que c'est précisément leur interchangeabilité qu'on cherche. Les clés,
+ * elles, restent contraintes — oublier une couleur dans une palette doit se
+ * voir à la compilation.
+ */
+export type JeuDeCouleurs = Record<keyof typeof colors, string>;
+export type Degrade = readonly [string, string, ...string[]];
+export type JeuDeDegrades = Record<keyof typeof degrades, Degrade>;
+
+export interface Theme {
+  mode: 'clair' | 'sombre';
+  colors: JeuDeCouleurs;
+  degrades: JeuDeDegrades;
+}
+
+export const themeClair: Theme = { mode: 'clair', colors, degrades };
+export const themeSombre: Theme = {
+  mode: 'sombre',
+  colors: colorsSombre,
+  degrades: degradesSombre,
+};
+
+export const themes = { clair: themeClair, sombre: themeSombre } as const;
+
 export const tokens = {
   palette,
   colors,

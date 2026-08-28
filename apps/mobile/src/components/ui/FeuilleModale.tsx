@@ -10,14 +10,9 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Texte } from './Texte';
-import {
-  colors,
-  durees,
-  espacements,
-  margeEcran,
-  ombres,
-  rayons,
-} from '@/design/theme';
+import { durees, espacements, margeEcran, ombres, rayons } from '@/design/theme';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 
 interface Props {
   visible: boolean;
@@ -114,7 +109,7 @@ export function FeuilleModale({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   cadre: { flex: 1, justifyContent: 'flex-end' },
   voile: { backgroundColor: colors.voile },
   feuille: {
@@ -138,4 +133,4 @@ const styles = StyleSheet.create({
   },
   entete: { gap: espacements.xxs, marginBottom: espacements.md },
   contenu: { paddingBottom: espacements.xs },
-});
+}));

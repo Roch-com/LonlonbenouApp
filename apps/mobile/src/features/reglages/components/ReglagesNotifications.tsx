@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
-import { StyleSheet, Switch, View } from 'react-native';
+import { Switch, View } from 'react-native';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
+import { useCouleurs } from '@/design/ThemeProvider';
 import { useRouter } from 'expo-router';
 import {
   categoriesReglables,
@@ -8,7 +10,7 @@ import {
   type Frequence,
 } from '@lonlonbenu/shared';
 import { Bouton, Carte, Champ, Puce, Texte } from '@/components/ui';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { useMoi } from '../stores/sessionStore';
 import { usePreferencesDe, useNotifications } from '../stores/notificationsStore';
 import { usePush } from '../stores/pushStore';
@@ -21,6 +23,7 @@ import { usePush } from '../stores/pushStore';
  * qui le concerne.
  */
 export function ReglagesNotifications() {
+  const colors = useCouleurs();
   const router = useRouter();
   const moi = useMoi();
   const preferences = usePreferencesDe(moi.id);
@@ -206,7 +209,7 @@ export function ReglagesNotifications() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(() => ({
   section: { gap: espacements.md },
   ligne: {
     flexDirection: 'row',
@@ -226,4 +229,4 @@ const styles = StyleSheet.create({
   categories: { marginTop: espacements.md, gap: espacements.lg },
   categorie: { gap: espacements.xxs },
   mention: { marginTop: espacements.md },
-});
+}));

@@ -85,6 +85,14 @@ export default tseslint.config(
     },
   },
 
+  // Les ressources locales (images, polices) passent obligatoirement par
+  // `require` : c'est Metro qui les résout à la compilation, et un `import`
+  // ne lui donnerait pas le chemin.
+  {
+    files: ['apps/mobile/**/*.tsx'],
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
+
   // Les tests décrivent aussi des cas absurdes : on les laisse s'exprimer.
   {
     files: ['**/*.test.ts', '**/*.test.tsx', 'apps/api/scripts/**'],

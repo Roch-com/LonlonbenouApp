@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useRouter } from 'expo-router';
 import { Bouton, Carte, Champ, EnTete, Texte } from '@/components/ui';
 import { EcranModale } from '@/components/chrome';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { CONFIGURATION_API } from '@/lib/api/configuration';
 import { useSessionServeur } from '../stores/sessionServeurStore';
 
@@ -100,7 +102,7 @@ export function ConnexionEcran() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   champs: { gap: espacements.sm },
   erreur: { color: colors.tendresse },
-});
+}));

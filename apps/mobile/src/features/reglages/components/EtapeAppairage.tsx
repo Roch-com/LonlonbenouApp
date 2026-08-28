@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useRouter } from 'expo-router';
 import { Bouton, Carte, Texte } from '@/components/ui';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { useSessionServeur } from '../stores/sessionServeurStore';
 
 interface Props {
@@ -79,8 +81,8 @@ export function EtapeAppairage({ onAppaire }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   intro: { marginTop: espacements.xs },
   actions: { marginTop: espacements.lg, gap: espacements.sm },
   mention: { marginTop: espacements.md, color: colors.texteDoux },
-});
+}));

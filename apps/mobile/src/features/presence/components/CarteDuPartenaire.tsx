@@ -1,4 +1,6 @@
 import { StyleSheet, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import {
   definitionHumeur,
   definitionStatut,
@@ -6,7 +8,7 @@ import {
   type CodeStatut,
 } from '@lonlonbenu/shared';
 import { Avatar, Carte, Texte } from '@/components/ui';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { ilYA } from '@/lib/temps';
 import { useAutre } from '@/features/reglages/stores/sessionStore';
 import { usePresenceLisible } from '../hooks/useLecturesDechiffrees';
@@ -77,7 +79,7 @@ export function CarteDuPartenaire() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   entete: { flexDirection: 'row', alignItems: 'center', gap: espacements.md },
   identite: { flex: 1, gap: espacements.xxs },
   note: { marginTop: espacements.md, fontStyle: 'italic' },
@@ -87,4 +89,4 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.bordure,
   },
-});
+}));

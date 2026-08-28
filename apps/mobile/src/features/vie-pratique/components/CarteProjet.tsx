@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
+import { useCouleurs } from '@/design/ThemeProvider';
 import { Feather } from '@expo/vector-icons';
 import {
   avancementProjet,
@@ -10,7 +13,7 @@ import {
   type Projet,
 } from '@lonlonbenu/shared';
 import { Bouton, Carte, Champ, Texte } from '@/components/ui';
-import { colors, espacements, rayons } from '@/design/theme';
+import { espacements, rayons } from '@/design/theme';
 
 interface Props {
   projet: Projet;
@@ -29,6 +32,7 @@ export function CarteProjet({
   onAjouterJalon,
   onArchiver,
 }: Props) {
+  const colors = useCouleurs();
   const avancement = avancementProjet(projet, maintenant);
   const [deplie, setDeplie] = useState(false);
   const [titreJalon, setTitreJalon] = useState('');
@@ -173,7 +177,7 @@ export function CarteProjet({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   intention: { marginTop: espacements.xxs },
   jauge: { marginTop: espacements.md, gap: espacements.xs },
   piste: {
@@ -212,4 +216,4 @@ const styles = StyleSheet.create({
   jalonTexte: { flex: 1, gap: espacements.xxs },
   faitTexte: { color: colors.texteDoux, textDecorationLine: 'line-through' },
   ajout: { gap: espacements.sm },
-});
+}));

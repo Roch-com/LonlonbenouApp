@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useRouter } from 'expo-router';
 import { Bouton, Carte, EnTete, Segments, Texte } from '@/components/ui';
 import { EcranOnglet } from '@/components/chrome/EcranOnglet';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { ilYA } from '@/lib/temps';
 import {
   useSessionServeur,
@@ -125,7 +127,7 @@ const SOUS_TITRES: Record<Onglet, string> = {
   sorties: 'Les envies, les dates, et ce qu’il en reste.',
 };
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   action: { marginTop: espacements.lg },
   erreur: { color: colors.tendresse },
-});
+}));

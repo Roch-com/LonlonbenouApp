@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LONGUEUR_PIN_MIN } from '@lonlonbenu/shared';
 import { Bouton, Texte } from '@/components/ui';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { ClavierPin } from './ClavierPin';
 import { useVerrou } from '../stores/verrouStore';
 
@@ -93,7 +95,7 @@ export function EcranVerrou() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   fond: {
     flex: 1,
     backgroundColor: colors.fond,
@@ -106,4 +108,4 @@ const styles = StyleSheet.create({
   pied: { alignSelf: 'stretch', alignItems: 'center', gap: espacements.md },
   message: { textAlign: 'center', minHeight: 20 },
   lien: { color: colors.accentFonce },
-});
+}));

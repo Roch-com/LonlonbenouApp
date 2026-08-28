@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useRouter } from 'expo-router';
 import { GRATITUDES_SUGGEREES } from '@lonlonbenu/shared';
 import { Bouton, Carte, Champ, Puce, Texte } from '@/components/ui';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { ilYA } from '@/lib/temps';
 import {
   useSessionServeur,
@@ -199,7 +201,7 @@ export function SectionConfidences() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   section: { gap: espacements.md },
   intro: { marginTop: espacements.xs, marginBottom: espacements.md },
   action: { marginTop: espacements.lg },
@@ -208,4 +210,4 @@ const styles = StyleSheet.create({
   liste: { gap: espacements.md },
   sousTitre: { marginTop: espacements.lg },
   erreur: { color: colors.tendresse },
-});
+}));

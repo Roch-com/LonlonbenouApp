@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useRouter } from 'expo-router';
 import { Bouton, Carte, Texte } from '@/components/ui';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { ilYA } from '@/lib/temps';
 import { ConsentementServeur } from '@/features/reglages/components/ConsentementServeur';
 import {
@@ -183,10 +185,10 @@ export function SectionAxes() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   section: { gap: espacements.md },
   intro: { marginTop: espacements.xs },
   action: { marginTop: espacements.lg },
   sousTitre: { marginTop: espacements.md },
   erreur: { color: colors.tendresse },
-});
+}));

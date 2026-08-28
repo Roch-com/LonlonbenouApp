@@ -1,9 +1,12 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
+import { useCouleurs } from '@/design/ThemeProvider';
 import { Feather } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Carte, EnTete, Texte } from '@/components/ui';
 import { EcranModale } from '@/components/chrome';
-import { colors, espacements, rayons } from '@/design/theme';
+import { espacements, rayons } from '@/design/theme';
 
 /**
  * Ce que le score fait et ne fait pas, en clair.
@@ -23,6 +26,7 @@ export const RESUME_TRANSPARENCE =
 
 /** Bouton d'accès, à placer près de tout affichage du score. */
 export function BoutonTransparence() {
+  const colors = useCouleurs();
   const router = useRouter();
 
   return (
@@ -103,7 +107,7 @@ export function TransparenceScore() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   bouton: {
     width: 32,
     height: 32,
@@ -114,4 +118,4 @@ const styles = StyleSheet.create({
   },
   boutonPresse: { opacity: 0.7 },
   paragraphes: { marginTop: espacements.sm, gap: espacements.md },
-});
+}));

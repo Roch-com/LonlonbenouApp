@@ -1,7 +1,9 @@
 import { StyleSheet, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import type { VuePartenaire } from '@lonlonbenu/shared';
 import { Carte, Texte } from '@/components/ui';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 
 interface Props {
   prenomAutre: string;
@@ -57,7 +59,7 @@ export function VuePartenaireCycle({ prenomAutre, vue, compact }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   espace: { marginTop: espacements.xs },
   attentions: { marginTop: espacements.md, gap: espacements.xs },
   rappel: {
@@ -66,4 +68,4 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.bordure,
   },
-});
+}));

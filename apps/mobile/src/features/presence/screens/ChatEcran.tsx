@@ -31,6 +31,8 @@ import { SelecteurHumeur } from '../components/SelecteurHumeur';
 import { useFilLisible } from '../hooks/useLecturesDechiffrees';
 import { useChat, useNombreDeVerification } from '../stores/chatStore';
 import { usePresence } from '../stores/presenceStore';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 
 /**
  * Pôle ① — Chat du couple, chiffré de bout en bout.
@@ -232,7 +234,7 @@ export function ChatEcran() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   fond: { flex: 1, backgroundColor: colors.fond },
   centre: { justifyContent: 'center', paddingHorizontal: margeEcran },
   intro: { marginTop: espacements.xs },
@@ -280,4 +282,4 @@ const styles = StyleSheet.create({
   envoiInactif: { opacity: 0.4 },
   envoiPresse: { opacity: 0.85 },
   envoiTexte: { color: colors.texteInverse },
-});
+}));

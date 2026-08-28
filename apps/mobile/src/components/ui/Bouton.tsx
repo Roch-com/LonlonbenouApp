@@ -10,14 +10,10 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { Texte } from './Texte';
-import {
-  colors,
-  degrades,
-  durees,
-  espacements,
-  ombres,
-  rayons,
-} from '@/design/theme';
+import { durees, espacements, ombres, rayons } from '@/design/theme';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
+import { useTheme } from '@/design/ThemeProvider';
 
 export type TonBouton = 'principal' | 'secondaire' | 'discret' | 'urgence';
 
@@ -49,6 +45,7 @@ export function Bouton({
   disabled,
   ...props
 }: Props) {
+  const { degrades, colors } = useTheme();
   const inactif = disabled || enCours;
   const echelle = useRef(new Animated.Value(1)).current;
 
@@ -59,7 +56,8 @@ export function Bouton({
       useNativeDriver: true,
     }).start();
 
-  const teinte = textesTons[ton].color;
+  const tonTexte = couleurDuTon(ton, colors);
+  const teinte = tonTexte.color;
 
   const contenu = enCours ? (
     <ActivityIndicator color={teinte} size="small" />
@@ -69,7 +67,7 @@ export function Bouton({
       <Texte
         variante="sousTitre"
         numberOfLines={1}
-        style={[textesTons[ton], styles.libelle]}
+        style={[tonTexte, styles.libelle]}
       >
         {libelle}
       </Texte>
@@ -108,7 +106,7 @@ export function Bouton({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(() => ({
   base: {
     borderRadius: rayons.rond,
     paddingVertical: espacements.md,
@@ -124,9 +122,9 @@ const styles = StyleSheet.create({
   // au-delà de son conteneur.
   libelle: { flexShrink: 1, textAlign: 'center' },
   inactif: { opacity: 0.45 },
-});
+}));
 
-const fonds = StyleSheet.create({
+const fonds = stylesDynamiques(({ colors }: Theme) => ({
   principal: { backgroundColor: colors.accent },
   secondaire: {
     backgroundColor: colors.fondEleve,
@@ -135,23 +133,32 @@ const fonds = StyleSheet.create({
   },
   discret: { backgroundColor: colors.fondNuance },
   urgence: { backgroundColor: colors.urgence },
-});
+}));
 
 /**
  * L'ombre est portée par l'enveloppe et non par le Pressable : celui-ci a
  * `overflow: hidden` pour contenir le dégradé, ce qui rognerait l'ombre.
  * Le bouton discret n'en a pas — il ne doit rien réclamer.
  */
-const reliefs = StyleSheet.create({
+const reliefs = stylesDynamiques(() => ({
   principal: { borderRadius: rayons.rond, ...ombres.carte },
   secondaire: { borderRadius: rayons.rond, ...ombres.effleuree },
   discret: {},
   urgence: { borderRadius: rayons.rond, ...ombres.flottant },
-});
+}));
 
-const textesTons: Record<TonBouton, { color: string }> = {
-  principal: { color: colors.texteInverse },
-  secondaire: { color: colors.accentFonce },
-  discret: { color: colors.texte },
-  urgence: { color: colors.texteInverse },
-};
+/**
+ * Couleur du libellé selon le ton. Fonction du thème et non constante : sur
+ * fond sombre, un texte ivoire sur bouton doré deviendrait illisible, et c'est
+ * l'encre qui reprend ce rôle.
+ */
+function couleurDuTon(ton: TonBouton, colors: Theme['colors']): { color: string } {
+  switch (ton) {
+    case 'secondaire':
+      return { color: colors.accentFonce };
+    case 'discret':
+      return { color: colors.texte };
+    default:
+      return { color: colors.texteInverse };
+  }
+}

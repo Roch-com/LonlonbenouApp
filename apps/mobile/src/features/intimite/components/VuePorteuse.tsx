@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import {
   AVERTISSEMENT_MEDICAL,
   definitionPhase,
@@ -13,7 +15,7 @@ import {
   type TypeSymptome,
 } from '@lonlonbenu/shared';
 import { Bouton, Carte, Champ, Puce, Texte } from '@/components/ui';
-import { colors, espacements, rayons } from '@/design/theme';
+import { espacements, rayons } from '@/design/theme';
 import { useCycle } from '../stores/cycleStore';
 import type { VuePorteuse as VuePorteuseServeur } from '../api/cycle.api';
 
@@ -251,7 +253,7 @@ function Frise({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   section: { gap: espacements.md },
   phase: { marginTop: espacements.xxs },
   prevision: { marginTop: espacements.md },
@@ -292,4 +294,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.fondNuance,
   },
   niveauActif: { borderWidth: 1, borderColor: colors.accent },
-});
+}));

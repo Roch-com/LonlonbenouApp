@@ -1,7 +1,10 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
+import { Children, isValidElement } from 'react';
 import { Ecran, EnTeteModale } from '@/components/ui';
-import { colors } from '@/design/theme';
+import { Apparition } from './Apparition';
 
 interface Props {
   /** Court libellé de contexte, affiché à gauche de la croix. */
@@ -32,12 +35,20 @@ export function EcranModale({
         {...(onFermer ? { onFermer } : {})}
       />
       <Ecran sousEnTete defilable={defilable}>
-        {children}
+        {Children.toArray(children).map((enfant, rang) =>
+          isValidElement(enfant) ? (
+            <Apparition key={enfant.key ?? rang} rang={rang}>
+              {enfant}
+            </Apparition>
+          ) : (
+            enfant
+          ),
+        )}
       </Ecran>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   cadre: { flex: 1, backgroundColor: colors.fond },
-});
+}));

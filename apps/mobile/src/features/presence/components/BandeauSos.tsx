@@ -1,6 +1,8 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { Texte } from '@/components/ui';
-import { colors, espacements, ombres, rayons } from '@/design/theme';
+import { espacements, ombres, rayons } from '@/design/theme';
 import { ilYA } from '@/lib/temps';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 import { useAutre } from '@/features/reglages/stores/sessionStore';
@@ -72,7 +74,7 @@ export function BandeauSos() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   bandeau: {
     backgroundColor: colors.urgence,
     borderRadius: rayons.lg,
@@ -96,4 +98,4 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.18)',
   },
   actionTexte: { color: colors.texteInverse },
-});
+}));

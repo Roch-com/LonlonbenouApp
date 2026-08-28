@@ -40,7 +40,8 @@
           "color": "#9C7A3C"
         }
       ],
-      "@sentry/react-native"
+      "@sentry/react-native",
+      "expo-splash-screen"
     ],
     "experiments": {
       "typedRoutes": true

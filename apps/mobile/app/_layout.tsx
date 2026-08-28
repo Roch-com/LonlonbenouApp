@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import * as Sentry from '@sentry/react-native';
-import { ActivityIndicator, View } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -14,12 +13,17 @@ import {
   Manrope_500Medium,
   Manrope_600SemiBold,
 } from '@expo-google-fonts/manrope';
-import { colors } from '@/design/theme';
+import {
+  FournisseurTheme,
+  useContexteTheme,
+  useCouleurs,
+} from '@/design/ThemeProvider';
 import { GardeVerrou } from '@/features/reglages/components/GardeVerrou';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 import { GardeOnboarding } from '@/features/reglages/components/GardeOnboarding';
 import { configurerAffichagePush } from '@/features/reglages/services/affichagePush';
 import { useInscriptionPush } from '@/features/reglages/hooks/useInscriptionPush';
+import { Ouverture } from '@/components/chrome/Ouverture';
 import { demarrerLaSurveillance } from '@/lib/surveillance';
 
 // Hors du composant : l'initialisation doit précéder le premier rendu, sinon
@@ -28,6 +32,8 @@ import { demarrerLaSurveillance } from '@/lib/surveillance';
 const surveille = demarrerLaSurveillance();
 
 function DispositionRacine() {
+  const colors = useCouleurs();
+  const { theme } = useContexteTheme();
   const [policesPretes] = useFonts({
     CormorantGaramond_600SemiBold,
     CormorantGaramond_500Medium_Italic,
@@ -45,67 +51,59 @@ function DispositionRacine() {
 
   useInscriptionPush();
 
-  if (!policesPretes) {
-    return (
-      <View
-        style={{ flex: 1, backgroundColor: colors.fond, justifyContent: 'center' }}
-      >
-        <ActivityIndicator color={colors.accent} />
-      </View>
-    );
-  }
-
   return (
     <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <GardeVerrou>
-        <GardeOnboarding>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: colors.fond },
-            }}
-          >
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen
-              name="sos"
-              options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-            />
-            <Stack.Screen
-              name="transparence-score"
-              options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-            />
-            <Stack.Screen
-              name="reglages"
-              options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-            />
-            <Stack.Screen
-              name="connexion"
-              options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-            />
-            <Stack.Screen
-              name="appairage"
-              options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-            />
-            <Stack.Screen
-              name="cycle"
-              options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-            />
-            <Stack.Screen
-              name="notifications"
-              options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-            />
-            <Stack.Screen
-              name="nous"
-              options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-            />
-            <Stack.Screen
-              name="dissociation"
-              options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-            />
-          </Stack>
-        </GardeOnboarding>
-      </GardeVerrou>
+      <Ouverture prete={policesPretes}>
+        <StatusBar style={theme.mode === 'sombre' ? 'light' : 'dark'} />
+        <GardeVerrou>
+          <GardeOnboarding>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                contentStyle: { backgroundColor: colors.fond },
+              }}
+            >
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen
+                name="sos"
+                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+              />
+              <Stack.Screen
+                name="transparence-score"
+                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+              />
+              <Stack.Screen
+                name="reglages"
+                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+              />
+              <Stack.Screen
+                name="connexion"
+                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+              />
+              <Stack.Screen
+                name="appairage"
+                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+              />
+              <Stack.Screen
+                name="cycle"
+                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+              />
+              <Stack.Screen
+                name="notifications"
+                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+              />
+              <Stack.Screen
+                name="nous"
+                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+              />
+              <Stack.Screen
+                name="dissociation"
+                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+              />
+            </Stack>
+          </GardeOnboarding>
+        </GardeVerrou>
+      </Ouverture>
     </SafeAreaProvider>
   );
 }
@@ -116,4 +114,18 @@ function DispositionRacine() {
  * inconditionnellement pour qu'activer le suivi ne demande qu'une variable
  * d'environnement, jamais un changement de code.
  */
-export default surveille ? Sentry.wrap(DispositionRacine) : DispositionRacine;
+/**
+ * Le fournisseur de thème enveloppe tout, y compris l'écran d'attente des
+ * polices : celui-ci peint un fond plein écran, et le peindre en clair avant
+ * de basculer au sombre produirait un éclair blanc — désagréable de jour,
+ * pénible de nuit.
+ */
+function Racine() {
+  return (
+    <FournisseurTheme>
+      <DispositionRacine />
+    </FournisseurTheme>
+  );
+}
+
+export default surveille ? Sentry.wrap(Racine) : Racine;

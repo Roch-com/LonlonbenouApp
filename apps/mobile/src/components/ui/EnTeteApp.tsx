@@ -1,4 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -106,7 +108,7 @@ export function EnTeteApp({ titre, surtitre, actions = [], onRetour }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   socle: {
     backgroundColor: colors.fond,
     ...ombres.effleuree,
@@ -152,4 +154,4 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.bordure,
   },
-});
+}));

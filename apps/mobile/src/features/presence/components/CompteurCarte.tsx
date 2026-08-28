@@ -1,7 +1,9 @@
 import { StyleSheet, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { formaterJours, joursEnsemble, prochainJalon } from '@lonlonbenu/shared';
 import { Carte, Texte } from '@/components/ui';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { dateLongue } from '@/lib/temps';
 import { useSession } from '@/features/reglages/stores/sessionStore';
 
@@ -64,7 +66,7 @@ export function CompteurCarte({ compact, enAvant }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   ligne: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -85,4 +87,4 @@ const styles = StyleSheet.create({
   surOr: { color: colors.texteInverse },
   // Blanc voilé plutôt qu'un gris : sur un fond or, un gris devient sale.
   surOrDoux: { color: 'rgba(255, 255, 255, 0.86)' },
-});
+}));

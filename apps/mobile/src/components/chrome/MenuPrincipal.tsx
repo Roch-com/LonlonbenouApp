@@ -1,7 +1,9 @@
 import { useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { FeuilleModale, LigneMenu, Texte } from '@/components/ui';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { useMoi } from '@/features/reglages/stores/sessionStore';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 import { useConfidencesNonLues } from '@/features/croissance/stores/confidencesStore';
@@ -112,11 +114,11 @@ export function MenuPrincipal({ visible, onFermer }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   groupe: { gap: espacements.xxs, paddingVertical: espacements.xs },
   separateur: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.bordure,
     marginVertical: espacements.xs,
   },
-});
+}));

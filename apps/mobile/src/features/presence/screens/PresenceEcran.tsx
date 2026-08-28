@@ -1,8 +1,10 @@
 import { StyleSheet, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useRouter } from 'expo-router';
 import { Bouton, Carte, EnTete, Texte } from '@/components/ui';
 import { EcranOnglet } from '@/components/chrome/EcranOnglet';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { ilYA } from '@/lib/temps';
 import { useAutre, useSession } from '@/features/reglages/stores/sessionStore';
 import { BandeauSos } from '../components/BandeauSos';
@@ -74,7 +76,7 @@ export function PresenceEcran() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   vide: { marginTop: espacements.sm },
   journal: { marginTop: espacements.md, gap: espacements.md },
   entree: {
@@ -84,4 +86,4 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.bordure,
   },
   mentionSos: { textAlign: 'center' },
-});
+}));

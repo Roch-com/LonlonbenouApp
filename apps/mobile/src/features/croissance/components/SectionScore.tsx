@@ -1,4 +1,6 @@
 import { StyleSheet, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useRouter } from 'expo-router';
 import {
   monElan,
@@ -8,7 +10,7 @@ import {
   type TypeGeste,
 } from '@lonlonbenu/shared';
 import { Bouton, Carte, Texte } from '@/components/ui';
-import { colors, espacements, rayons } from '@/design/theme';
+import { espacements, rayons } from '@/design/theme';
 import { ReglagePartage } from '@/features/reglages/components/ReglagePartage';
 import {
   useAutre,
@@ -201,7 +203,7 @@ function Jauge({ composante }: { composante: Composante }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   section: { gap: espacements.md },
   enteteAvecInfo: {
     flexDirection: 'row',
@@ -246,4 +248,4 @@ const styles = StyleSheet.create({
   },
   suggestions: { marginTop: espacements.md, gap: espacements.lg },
   suggestion: { gap: espacements.sm },
-});
+}));

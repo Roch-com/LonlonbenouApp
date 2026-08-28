@@ -1,7 +1,9 @@
-import { StyleSheet, Switch, View } from 'react-native';
+import { Switch, View } from 'react-native';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
+import { useCouleurs } from '@/design/ThemeProvider';
 import { accesDe, type ModuleSensible, type RaisonAcces } from '@lonlonbenu/shared';
 import { Texte } from '@/components/ui';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import {
   LIBELLES_PARTAGE,
   useAutre,
@@ -22,6 +24,7 @@ interface Props {
  * qui émet les deux notifications.
  */
 export function ReglagePartage({ module, sansTitre }: Props) {
+  const colors = useCouleurs();
   const moi = useMoi();
   const autre = useAutre();
   const partage = usePartage(module);
@@ -73,8 +76,8 @@ export function explication(raison: RaisonAcces, prenomAutre: string): string {
   }
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(() => ({
   bloc: { gap: espacements.sm },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: espacements.md },
   texte: { flex: 1, gap: espacements.xxs },
-});
+}));

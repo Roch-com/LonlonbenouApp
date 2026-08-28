@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { controlerNomEspace, propositionsNomEspace } from '@lonlonbenu/shared';
 import { Bouton, Carte, Champ, Ecran, EnTete, Puce, Texte } from '@/components/ui';
-import { colors, espacements, rayons } from '@/design/theme';
+import { espacements, rayons } from '@/design/theme';
 import { EtapeAppairage } from '../components/EtapeAppairage';
 import { EtapePartagesInitiaux } from '../components/EtapePartagesInitiaux';
 import { useSession } from '../stores/sessionStore';
@@ -176,7 +178,7 @@ function Progression({ etape }: { etape: Etape }) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   progression: {
     flexDirection: 'row',
     gap: espacements.xs,
@@ -197,4 +199,4 @@ const styles = StyleSheet.create({
     marginTop: espacements.sm,
   },
   mention: { marginTop: espacements.md },
-});
+}));

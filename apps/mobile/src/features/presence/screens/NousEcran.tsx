@@ -1,8 +1,10 @@
 import { StyleSheet, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useRouter } from 'expo-router';
 import { Avatar, Bouton, Carte, EnTete, Texte } from '@/components/ui';
 import { EcranModale } from '@/components/chrome';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { ilYA } from '@/lib/temps';
 import { ReglagePartage } from '@/features/reglages/components/ReglagePartage';
 import {
@@ -141,7 +143,7 @@ export function NousEcran() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   duo: { flexDirection: 'row', justifyContent: 'space-around' },
   membre: { alignItems: 'center', gap: espacements.xs },
   partages: { marginTop: espacements.md, gap: espacements.lg },
@@ -154,4 +156,4 @@ const styles = StyleSheet.create({
   notifications: { marginTop: espacements.md, gap: espacements.md },
   notification: { gap: espacements.xxs },
   action: { marginTop: espacements.md },
-});
+}));

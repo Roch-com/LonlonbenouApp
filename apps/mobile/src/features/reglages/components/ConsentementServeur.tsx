@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, Switch, View } from 'react-native';
+import { Switch, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
+import { useCouleurs } from '@/design/ThemeProvider';
 import type { ModuleSensible } from '@lonlonbenu/shared';
 import { Texte } from '@/components/ui';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { messageLisible } from '@/lib/api/erreurs';
 import {
   basculerPartageServeur,
@@ -31,6 +34,7 @@ export function ConsentementServeur({
   prenomAutre,
   onChange,
 }: Props) {
+  const colors = useCouleurs();
   const [etat, setEtat] = useState<EtatPartageServeur>();
   const [erreur, setErreur] = useState<string>();
   const [enCours, setEnCours] = useState(false);
@@ -103,10 +107,10 @@ export function ConsentementServeur({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   bloc: { gap: espacements.xs },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: espacements.md },
   texte: { flex: 1, gap: espacements.xxs },
   etat: { marginTop: espacements.xxs },
   erreur: { color: colors.tendresse },
-});
+}));

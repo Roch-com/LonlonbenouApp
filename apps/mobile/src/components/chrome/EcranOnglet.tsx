@@ -1,10 +1,14 @@
 import { useState, type ReactNode } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useRouter } from 'expo-router';
 import { Ecran, EnTeteApp } from '@/components/ui';
-import { colors } from '@/design/theme';
+
 import { useMoi, useSession } from '@/features/reglages/stores/sessionStore';
 import { useNotifications } from '@/features/reglages/stores/notificationsStore';
+import { Children, isValidElement } from 'react';
+import { Apparition } from './Apparition';
 import { BandeauReveil } from './BandeauReveil';
 import { MenuPrincipal } from './MenuPrincipal';
 
@@ -71,7 +75,18 @@ export function EcranOnglet({
         {...(onRafraichir ? { onRafraichir } : {})}
         {...(rafraichissement !== undefined ? { rafraichissement } : {})}
       >
-        {children}
+        {/* Chaque bloc de premier niveau entre à son tour. La cascade se lit
+            comme un écran qui se compose, là où un affichage simultané donne
+            l'impression d'un saut. */}
+        {Children.toArray(children).map((enfant, rang) =>
+          isValidElement(enfant) ? (
+            <Apparition key={enfant.key ?? rang} rang={rang}>
+              {enfant}
+            </Apparition>
+          ) : (
+            enfant
+          ),
+        )}
       </Ecran>
 
       <MenuPrincipal visible={menuOuvert} onFermer={() => setMenuOuvert(false)} />
@@ -79,6 +94,6 @@ export function EcranOnglet({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   cadre: { flex: 1, backgroundColor: colors.fond },
-});
+}));

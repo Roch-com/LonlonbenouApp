@@ -1,6 +1,8 @@
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { Texte } from './Texte';
-import { colors, espacements, estPetitEcran, ombres, rayons } from '@/design/theme';
+import { espacements, estPetitEcran, ombres, rayons } from '@/design/theme';
 
 export interface Segment<T extends string> {
   cle: T;
@@ -88,7 +90,7 @@ export function Segments<T extends string>({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   rangee: {
     flexDirection: 'row',
     gap: espacements.xxs,
@@ -119,4 +121,4 @@ const styles = StyleSheet.create({
   segmentPresse: { backgroundColor: colors.effleurement },
   texte: { color: colors.texteDoux },
   texteActif: { color: colors.accentFonce },
-});
+}));

@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useRouter } from 'expo-router';
 import { Bouton, Carte, EnTete, Texte } from '@/components/ui';
 import { EcranModale } from '@/components/chrome';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { useAutre } from '../stores/sessionStore';
 import {
   ACCES_REVOQUES,
@@ -126,9 +128,9 @@ export function DissociationEcran() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   liste: { marginTop: espacements.sm, gap: espacements.xs },
   espace: { marginTop: espacements.md },
   actions: { gap: espacements.sm },
   question: { textAlign: 'center', color: colors.texte },
-});
+}));

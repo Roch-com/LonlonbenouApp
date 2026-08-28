@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Switch, View } from 'react-native';
+import { Switch, View } from 'react-native';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
+import { useCouleurs } from '@/design/ThemeProvider';
 import { useRouter } from 'expo-router';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { Bouton, Carte, EnTete, Texte } from '@/components/ui';
 import { EcranModale } from '@/components/chrome';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { DefinitionPin } from '../components/DefinitionPin';
+import { ChoixTheme } from '../components/ChoixTheme';
 import { ReglagesNotifications } from '../components/ReglagesNotifications';
 import { DELAI_GRACE_MS, useVerrou } from '../stores/verrouStore';
 import { useSessionServeur } from '../stores/sessionServeurStore';
 
 /** Pôle ⑥ — Sécurité & confidentialité. */
 export function ReglagesEcran() {
+  const colors = useCouleurs();
   const router = useRouter();
 
   const actif = useVerrou((e) => e.actif);
@@ -144,6 +148,8 @@ export function ReglagesEcran() {
         )}
       </Carte>
 
+      <ChoixTheme />
+
       <ReglagesNotifications />
 
       <Carte>
@@ -210,7 +216,7 @@ export function ReglagesEcran() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(() => ({
   definition: { marginTop: espacements.lg },
   ligne: {
     flexDirection: 'row',
@@ -221,4 +227,4 @@ const styles = StyleSheet.create({
   texte: { flex: 1, gap: espacements.xxs },
   actions: { marginTop: espacements.md, gap: espacements.sm },
   mention: { marginTop: espacements.md },
-});
+}));

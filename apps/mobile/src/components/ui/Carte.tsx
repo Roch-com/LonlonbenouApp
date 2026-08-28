@@ -1,13 +1,9 @@
 import { StyleSheet, View, type ViewProps } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
+import { useTheme } from '@/design/ThemeProvider';
 import { LinearGradient } from 'expo-linear-gradient';
-import {
-  colors,
-  degrades,
-  espacements,
-  margeCarte,
-  ombres,
-  rayons,
-} from '@/design/theme';
+import { espacements, margeCarte, ombres, rayons } from '@/design/theme';
 
 type Ton = 'elevee' | 'discrete' | 'accent' | 'tendresse';
 
@@ -28,6 +24,7 @@ interface Props extends ViewProps {
  * redonne la définition que l'ombre seule ne suffit pas à porter.
  */
 export function Carte({ discrete, ton, compacte, style, ...props }: Props) {
+  const { degrades } = useTheme();
   const variante: Ton = ton ?? (discrete ? 'discrete' : 'elevee');
   const rembourrage = compacte ? espacements.md : margeCarte;
 
@@ -64,7 +61,7 @@ export function Carte({ discrete, ton, compacte, style, ...props }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   base: {
     borderRadius: rayons.lg,
     // `overflow` garde le dégradé et les images dans l'arrondi ; sans lui, les
@@ -84,4 +81,4 @@ const styles = StyleSheet.create({
   },
   enRelief: { ...ombres.carte },
   degrade: { width: '100%' },
-});
+}));

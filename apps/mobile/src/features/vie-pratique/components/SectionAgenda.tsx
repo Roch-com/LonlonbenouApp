@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { StyleSheet, Switch, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
+import { useCouleurs } from '@/design/ThemeProvider';
 import {
   CATEGORIES_EVENEMENT,
   definitionCategorieEvenement,
@@ -11,7 +14,7 @@ import {
   type CategorieEvenement,
 } from '@lonlonbenu/shared';
 import { Bouton, Carte, Champ, Puce, Texte } from '@/components/ui';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { heure } from '@/lib/temps';
 import { useSession } from '@/features/reglages/stores/sessionStore';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
@@ -19,6 +22,7 @@ import { useViePratique } from '../stores/viePratiqueStore';
 
 /** Pôle ③ — Calendrier partagé (P0). */
 export function SectionAgenda() {
+  const colors = useCouleurs();
   const coupleId = useSessionServeur((e) => e.coupleId);
   const partenaireId = useSessionServeur((e) => e.partenaireId);
   const couple = useSession((e) => e.couple);
@@ -216,7 +220,7 @@ export function SectionAgenda() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   section: { gap: espacements.md },
   puces: {
     flexDirection: 'row',
@@ -235,4 +239,4 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.bordure,
   },
-});
+}));

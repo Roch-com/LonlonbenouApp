@@ -1,7 +1,10 @@
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
+import { useCouleurs } from '@/design/ThemeProvider';
 import type { Partenaire } from '@lonlonbenu/shared';
 import { Texte } from './Texte';
-import { colors, rayons } from '@/design/theme';
+import { rayons } from '@/design/theme';
 
 interface Props {
   partenaire: Partenaire;
@@ -9,6 +12,7 @@ interface Props {
 }
 
 export function Avatar({ partenaire, taille = 44 }: Props) {
+  const colors = useCouleurs();
   const forme = {
     width: taille,
     height: taille,
@@ -37,7 +41,7 @@ export function Avatar({ partenaire, taille = 44 }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   image: { backgroundColor: colors.fondNuance },
   initiales: {
     backgroundColor: colors.fondNuance,
@@ -46,4 +50,4 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.accentDoux,
   },
-});
+}));

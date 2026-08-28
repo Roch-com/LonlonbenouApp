@@ -1,4 +1,6 @@
-import { StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { TextInput, View, type TextInputProps } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { Texte } from './Texte';
 import {
   colors,
@@ -38,7 +40,7 @@ export function Champ({ etiquette, erreur, style, ...props }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   // `flex: 1` : dans une rangée de deux champs, chacun prend sa moitié au lieu
   // de déborder.
   bloc: { gap: espacements.xs, flex: 1, minWidth: 0 },
@@ -57,4 +59,4 @@ const styles = StyleSheet.create({
   },
   enErreur: { borderColor: colors.urgence },
   messageErreur: { color: colors.urgence, marginLeft: espacements.xxs },
-});
+}));

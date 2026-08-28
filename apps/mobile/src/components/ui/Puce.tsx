@@ -1,6 +1,8 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { Texte } from './Texte';
-import { colors, espacements, ombres, rayons } from '@/design/theme';
+import { espacements, ombres, rayons } from '@/design/theme';
 
 interface Props {
   libelle: string;
@@ -41,7 +43,7 @@ export function Puce({ libelle, emoji, active, onPress }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   puce: {
     paddingVertical: espacements.xs,
     paddingHorizontal: espacements.md,
@@ -63,4 +65,4 @@ const styles = StyleSheet.create({
   pressee: { backgroundColor: colors.effleurement },
   texte: { color: colors.texteDoux, flexShrink: 1 },
   texteActif: { color: colors.accentFonce },
-});
+}));

@@ -1,7 +1,9 @@
 import { StyleSheet, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import type { MessageLisible } from '../hooks/useLecturesDechiffrees';
 import { Texte } from '@/components/ui';
-import { colors, espacements, rayons } from '@/design/theme';
+import { espacements, rayons } from '@/design/theme';
 import { heure } from '@/lib/temps';
 
 interface Props {
@@ -46,7 +48,7 @@ export function BulleMessage({ message, deMoi }: Props) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   rangee: { flexDirection: 'row' },
   aDroite: { justifyContent: 'flex-end' },
   aGauche: { justifyContent: 'flex-start' },
@@ -75,4 +77,4 @@ const styles = StyleSheet.create({
   etiquetteDouce: { color: colors.tendresse },
   texteMien: { color: colors.texteInverse },
   metaMienne: { color: colors.texteInverse, opacity: 0.8 },
-});
+}));

@@ -1,7 +1,10 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
+import { useCouleurs } from '@/design/ThemeProvider';
 import { Feather } from '@expo/vector-icons';
 import { Texte } from './Texte';
-import { colors, espacements, rayons } from '@/design/theme';
+import { espacements, rayons } from '@/design/theme';
 
 interface Props {
   icone: keyof typeof Feather.glyphMap;
@@ -22,6 +25,7 @@ export function LigneMenu({
   grave,
   pastille,
 }: Props) {
+  const colors = useCouleurs();
   const teinte = grave ? colors.urgence : colors.accentFonce;
 
   return (
@@ -64,7 +68,7 @@ export function LigneMenu({
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   ligne: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -100,4 +104,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pastilleTexte: { color: colors.texteInverse, lineHeight: 14 },
-});
+}));

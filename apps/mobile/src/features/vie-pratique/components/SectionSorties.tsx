@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import {
   CATEGORIES_SORTIE,
   definitionCategorieSortie,
@@ -12,7 +14,7 @@ import {
   type CategorieSortie,
 } from '@lonlonbenu/shared';
 import { Bouton, Carte, Champ, Puce, Texte } from '@/components/ui';
-import { colors, espacements } from '@/design/theme';
+import { espacements } from '@/design/theme';
 import { useSession } from '@/features/reglages/stores/sessionStore';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 import { useViePratique } from '../stores/viePratiqueStore';
@@ -230,7 +232,7 @@ export function SectionSorties() {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   section: { gap: espacements.md },
   puces: {
     flexDirection: 'row',
@@ -249,4 +251,4 @@ const styles = StyleSheet.create({
   },
   actions: { gap: espacements.xs },
   souvenir: { fontStyle: 'italic' },
-});
+}));

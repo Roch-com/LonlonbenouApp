@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import type { Confidence } from '@lonlonbenu/shared';
 import { Carte, Texte } from '@/components/ui';
-import { colors, espacements, rayons } from '@/design/theme';
+import { espacements, rayons } from '@/design/theme';
 import { ilYA } from '@/lib/temps';
 
 interface Props {
@@ -55,7 +57,7 @@ export function CarteConfidence({ confidence, moiId, prenomAutre, onLue }: Props
   );
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   recue: {
     borderLeftWidth: 3,
     borderLeftColor: colors.tendresse,
@@ -75,4 +77,4 @@ const styles = StyleSheet.create({
   pastilleTexte: { color: colors.tendresse },
   titre: { marginTop: espacements.xs },
   pied: { marginTop: espacements.sm },
-});
+}));

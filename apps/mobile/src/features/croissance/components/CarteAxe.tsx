@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
+import type { Theme } from '@lonlonbenu/shared';
+import { stylesDynamiques } from '@/design/stylesDynamiques';
 import {
   definitionTheme,
   type AxeVisible,
   type Partenaire,
 } from '@lonlonbenu/shared';
 import { Bouton, Carte, Champ, Texte } from '@/components/ui';
-import { colors, espacements, rayons } from '@/design/theme';
+import { espacements, rayons } from '@/design/theme';
 import { ilYA } from '@/lib/temps';
 
 interface Props {
@@ -192,7 +194,7 @@ function resume(axe: AxeVisible, prenomAutre: string): string {
   }
 }
 
-const styles = StyleSheet.create({
+const styles = stylesDynamiques(({ colors }: Theme) => ({
   entete: { gap: espacements.xxs },
   titre: { paddingRight: espacements.lg },
   badge: {
@@ -222,4 +224,4 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.bordure,
   },
-});
+}));
