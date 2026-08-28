@@ -8,8 +8,8 @@ import { useTheme } from '@/design/ThemeProvider';
 import { espacements } from '@/design/theme';
 
 /** Le temps que la marque reste seule à l'écran, une fois l'app prête. */
-const REPOS_MS = 620;
-const FONDU_MS = 480;
+const REPOS_MS = 780;
+const FONDU_MS = 560;
 
 interface Props {
   /** Vrai quand l'app peut prendre le relais — polices chargées, session lue. */

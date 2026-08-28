@@ -230,6 +230,22 @@ export function ChatEcran() {
               </Carte>
             ) : null}
 
+            {fil.some((m) => m.illisible) ? (
+              <Carte discrete>
+                <Texte variante="surtitre">Messages d’avant</Texte>
+                <Texte variante="petit" style={styles.intro}>
+                  Certains messages ont été chiffrés avec des clés qui n’existent
+                  plus sur cet appareil — après une réinstallation, par exemple. Ils
+                  restent illisibles ici, et le resteront : personne, pas même le
+                  serveur, ne peut les rouvrir. C’est la contrepartie du chiffrement
+                  de bout en bout.
+                </Texte>
+                <Texte variante="meta" style={styles.intro}>
+                  Tout ce que vous vous écrivez maintenant s’ouvre normalement.
+                </Texte>
+              </Carte>
+            ) : null}
+
             {horsLigne ? (
               <Carte discrete>
                 <Texte variante="petit">

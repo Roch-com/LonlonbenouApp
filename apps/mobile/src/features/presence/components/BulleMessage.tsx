@@ -68,11 +68,12 @@ export function BulleMessage({
 
         <Texte
           variante={douce ? 'sousTitre' : 'corps'}
-          style={deMoi && !douce ? styles.texteMien : undefined}
+          style={[
+            deMoi && !douce ? styles.texteMien : undefined,
+            message.illisible && styles.illisible,
+          ]}
         >
-          {message.illisible
-            ? 'Message illisible sur cet appareil — la clé a changé.'
-            : message.texte}
+          {message.illisible ? 'Message d’avant vos clés actuelles' : message.texte}
         </Texte>
 
         {dernierDuGroupe ? (
@@ -140,5 +141,12 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
     gap: espacements.xxs,
   },
   metaMienne: { color: colors.texteInverse, opacity: 0.78 },
+  /**
+   * Un message qu'on ne peut plus ouvrir n'est pas une erreur à signaler en
+   * rouge : c'est une conséquence normale du chiffrement de bout en bout, et
+   * l'alarmer à chaque bulle laisserait croire à une panne. Il s'efface au
+   * lieu de crier.
+   */
+  illisible: { fontStyle: 'italic', opacity: 0.55 },
   accuse: { marginBottom: 1 },
 }));

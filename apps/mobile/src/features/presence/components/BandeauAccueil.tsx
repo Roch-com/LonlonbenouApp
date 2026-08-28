@@ -53,10 +53,13 @@ export function BandeauAccueil() {
   );
 
   const score = useMemo(() => {
-    const ids = partenaires?.map((p) => p.id);
-    if (!ids || ids.length !== 2) return undefined;
+    // Le serveur fait autorité, mais il peut ne pas avoir encore répondu ;
+    // sans repli, la carte disparaissait et il ne restait qu'une diapositive —
+    // un carrousel d'un seul élément ne défile pas et paraît cassé.
+    const ids = partenaires?.map((p) => p.id) ?? [moi.id, autre.id];
+    if (ids.length !== 2) return undefined;
     return scoreDuCouple(gestes, [ids[0]!, ids[1]!], maintenant);
-  }, [gestes, partenaires, maintenant]);
+  }, [gestes, partenaires, moi.id, autre.id, maintenant]);
 
   const diapositives: Diapositive[] = [
     { cle: 'compteur', contenu: <CompteurCarte enAvant /> },
@@ -128,6 +131,25 @@ export function BandeauAccueil() {
       ),
     });
   }
+
+  // Une dernière carte, sans condition : elle rappelle ce que l'app promet, et
+  // garantit qu'il y a toujours au moins deux diapositives — un carrousel qui
+  // n'en a qu'une ne défile pas, et se lit comme une panne.
+  diapositives.push({
+    cle: 'promesse',
+    contenu: (
+      <Carte>
+        <Texte variante="surtitre">Entre vous deux</Texte>
+        <Texte variante="titre" style={styles.titre}>
+          Rien ne se voit à sens unique
+        </Texte>
+        <Texte variante="corpsDoux">
+          Ce que {autre.prenom} voit de vous, vous le voyez de {autre.prenom}.
+          Chaque partage s’active à deux et se coupe d’un seul côté.
+        </Texte>
+      </Carte>
+    ),
+  });
 
   return <Carrousel diapositives={diapositives} />;
 }
