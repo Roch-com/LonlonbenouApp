@@ -19,7 +19,12 @@ interface Props {
  *
  * En mode `enAvant`, c'est la seule surface colorée de l'écran d'accueil. Un
  * écran où tout est mis en avant n'a plus de hiérarchie : le nombre de jours
- * ensemble est ce qui mérite d'être vu en premier, le reste se lit ensuite.
+ * ensemble mérite d'être vu en premier, le reste se lit ensuite.
+ *
+ * Cette surface porte l'accent **bleu** et non l'or. L'or en aplat, au milieu
+ * d'une interface bleue, ne se lisait pas comme une mise en avant mais comme
+ * une pièce rapportée. Il subsiste en filet, sur la ligne du prochain jalon :
+ * un accent secondaire se remarque d'autant mieux qu'il reste mince.
  */
 export function CompteurCarte({ compact, enAvant }: Props) {
   const depuisLocal = useSession((e) => e.couple.depuis);
@@ -34,12 +39,12 @@ export function CompteurCarte({ compact, enAvant }: Props) {
   const jours = joursEnsemble(depuis, maintenant);
   const jalon = prochainJalon(depuis, maintenant);
 
-  const surOr = enAvant ? styles.surOr : undefined;
-  const surOrDoux = enAvant ? styles.surOrDoux : undefined;
+  const surAccent = enAvant ? styles.surAccent : undefined;
+  const surAccentDoux = enAvant ? styles.surAccentDoux : undefined;
 
   return (
-    <Carte ton={enAvant ? 'or' : 'elevee'}>
-      <Texte variante="surtitre" style={surOr}>
+    <Carte ton={enAvant ? 'accent' : 'elevee'}>
+      <Texte variante="surtitre" style={surAccent}>
         Ensemble depuis
       </Texte>
 
@@ -48,28 +53,28 @@ export function CompteurCarte({ compact, enAvant }: Props) {
           variante="afficheXl"
           numberOfLines={1}
           adjustsFontSizeToFit
-          style={[styles.nombre, surOr]}
+          style={[styles.nombre, surAccent]}
         >
           {formaterJours(jours)}
         </Texte>
-        <Texte variante="sousTitre" style={[styles.unite, surOrDoux]}>
+        <Texte variante="sousTitre" style={[styles.unite, surAccentDoux]}>
           jours
         </Texte>
       </View>
 
       {!compact ? (
-        <Texte variante="petit" style={surOrDoux}>
+        <Texte variante="petit" style={surAccentDoux}>
           Depuis le {dateLongue(depuis)}
         </Texte>
       ) : null}
 
-      <View style={[styles.jalon, enAvant && styles.jalonSurOr]}>
-        <Texte variante="meta" style={surOrDoux}>
+      <View style={[styles.jalon, enAvant && styles.jalonSurAccent]}>
+        <Texte variante="meta" style={surAccentDoux}>
           Prochain jalon
         </Texte>
-        <Texte variante="corps" style={[styles.jalonTexte, surOr]}>
+        <Texte variante="corps" style={[styles.jalonTexte, surAccent]}>
           {jalon.libelle}
-          <Texte variante="corps" style={surOrDoux}>
+          <Texte variante="corps" style={surAccentDoux}>
             {' '}
             · dans {jalon.joursRestants}{' '}
             {jalon.joursRestants > 1 ? 'jours' : 'jour'}
@@ -90,7 +95,7 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
   // `flexShrink` : au-delà de mille jours, le nombre doit se réduire plutôt
   // que pousser l'unité hors de la carte.
   nombre: { flexShrink: 1 },
-  // Sur la carte dorée, l'unité suit `surOrDoux` ; ailleurs elle reste douce.
+  // Sur la carte dorée, l'unité suit `surAccentDoux` ; ailleurs elle reste douce.
   unite: { color: colors.texteDoux },
   jalonTexte: { marginTop: espacements.xxs },
   jalon: {
@@ -99,15 +104,13 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.bordure,
   },
-  jalonSurOr: { borderTopColor: colors.bordureSurAccent },
-  surOr: { color: colors.texteSurAccent },
+  // Le filet d'or : la seule trace de l'accent secondaire sur cette carte.
+  jalonSurAccent: { borderTopColor: colors.or },
+  surAccent: { color: colors.texteInverse },
   /**
-   * Encre voilée, et non du blanc.
-   *
-   * Le blanc paraît le choix évident sur une couleur vive — il ne l'est pas
-   * ici. Le dégradé d'or est clair, dans les deux thèmes : un blanc à 86 %
-   * s'y délave et le texte se devine plus qu'il ne se lit. C'était le cas de
-   * « jours » et de la ligne du prochain jalon.
+   * Sur le bleu, c'est `texteInverse` qui se lit — blanc en mode clair, encre
+   * en mode sombre. Le voile se fait à l'opacité plutôt qu'avec une couleur
+   * fixe : une valeur en dur ne pourrait pas convenir aux deux thèmes.
    */
-  surOrDoux: { color: colors.texteSurAccentDoux },
+  surAccentDoux: { color: colors.texteInverse, opacity: 0.82 },
 }));

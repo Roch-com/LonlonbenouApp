@@ -2,14 +2,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   FlatList,
   Keyboard,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   StyleSheet,
   TextInput,
   View,
 } from 'react-native';
 import { useNavigation, useRouter } from 'expo-router';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton, Carte, EnTeteApp, Texte } from '@/components/ui';
 import {
@@ -204,8 +203,10 @@ export function ChatEcran() {
   return (
     <KeyboardAvoidingView
       style={styles.fond}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={marges.top}
+      // `padding` sur les deux plateformes : le contrôleur fournit la hauteur
+      // réelle du clavier, là où le comportement natif d'Android ne la donne
+      // plus depuis le passage au bord-à-bord.
+      behavior="padding"
     >
       <EnTeteApp titre={autre.prenom} surtitre="Nous deux" />
 

@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Animated,
-  Dimensions,
   ScrollView,
   View,
+  useWindowDimensions,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
@@ -47,10 +47,17 @@ export function Carrousel({ diapositives }: Props) {
   const [index, setIndex] = useState(0);
   const [manuel, setManuel] = useState(false);
 
-  const largeur = useMemo(() => {
-    const { width } = Dimensions.get('window');
-    return width - margeEcran * 2;
-  }, []);
+  /**
+   * `useWindowDimensions` et non `Dimensions.get`.
+   *
+   * Le premier suit les changements ; le second donne une valeur figée au
+   * premier rendu. Mesurée une fois pour toutes, la largeur restait celle du
+   * portrait après une rotation : les diapositives n'occupaient plus toute la
+   * largeur, et le pas de calage ne tombait plus juste — le carrousel semblait
+   * refuser de défiler.
+   */
+  const { width } = useWindowDimensions();
+  const largeur = width - margeEcran * 2;
 
   const pas = largeur + espacements.sm;
 
@@ -67,6 +74,15 @@ export function Carrousel({ diapositives }: Props) {
 
     return () => clearInterval(minuterie);
   }, [manuel, diapositives.length, pas]);
+
+  // Une rotation change le pas : on recale la position courante, sinon la
+  // diapositive affichée se retrouve à cheval entre deux.
+  useEffect(() => {
+    defilement.current?.scrollTo({ x: index * pas, animated: false });
+    // `index` volontairement absent : ce recalage suit la largeur, pas la
+    // navigation — l'inclure rejouerait un saut à chaque changement de carte.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pas]);
 
   const surDefilement = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const position = Math.round(e.nativeEvent.contentOffset.x / pas);

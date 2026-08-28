@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import {
   CormorantGaramond_500Medium_Italic,
   CormorantGaramond_600SemiBold,
@@ -53,57 +54,91 @@ function DispositionRacine() {
 
   return (
     <SafeAreaProvider>
-      <Ouverture prete={policesPretes}>
-        <StatusBar style={theme.mode === 'sombre' ? 'light' : 'dark'} />
-        <GardeVerrou>
-          <GardeOnboarding>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: colors.fond },
-              }}
-            >
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen
-                name="sos"
-                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-              />
-              <Stack.Screen
-                name="transparence-score"
-                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-              />
-              <Stack.Screen
-                name="reglages"
-                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-              />
-              <Stack.Screen
-                name="connexion"
-                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-              />
-              <Stack.Screen
-                name="appairage"
-                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-              />
-              <Stack.Screen
-                name="cycle"
-                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-              />
-              <Stack.Screen
-                name="notifications"
-                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-              />
-              <Stack.Screen
-                name="nous"
-                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-              />
-              <Stack.Screen
-                name="dissociation"
-                options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
-              />
-            </Stack>
-          </GardeOnboarding>
-        </GardeVerrou>
-      </Ouverture>
+      {/* Sous Android 15, le mode bord-à-bord empêche la fenêtre de se
+          redimensionner quand le clavier monte : `KeyboardAvoidingView` n'y a
+          plus aucun effet, et le champ de saisie disparaissait sous le clavier.
+          Ce fournisseur rend la hauteur réelle du clavier, quel que soit le
+          mode. */}
+      <KeyboardProvider>
+        <Ouverture prete={policesPretes}>
+          <StatusBar style={theme.mode === 'sombre' ? 'light' : 'dark'} />
+          <GardeVerrou>
+            <GardeOnboarding>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: colors.fond },
+                }}
+              >
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen
+                  name="sos"
+                  options={{
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+                <Stack.Screen
+                  name="transparence-score"
+                  options={{
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+                <Stack.Screen
+                  name="reglages"
+                  options={{
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+                <Stack.Screen
+                  name="connexion"
+                  options={{
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+                <Stack.Screen
+                  name="appairage"
+                  options={{
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+                <Stack.Screen
+                  name="cycle"
+                  options={{
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+                <Stack.Screen
+                  name="notifications"
+                  options={{
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+                <Stack.Screen
+                  name="nous"
+                  options={{
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+                <Stack.Screen
+                  name="dissociation"
+                  options={{
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+              </Stack>
+            </GardeOnboarding>
+          </GardeVerrou>
+        </Ouverture>
+      </KeyboardProvider>
     </SafeAreaProvider>
   );
 }

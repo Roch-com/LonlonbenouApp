@@ -5,7 +5,7 @@ import { useTheme } from '@/design/ThemeProvider';
 import { LinearGradient } from 'expo-linear-gradient';
 import { espacements, margeCarte, ombres, rayons } from '@/design/theme';
 
-type Ton = 'elevee' | 'discrete' | 'or' | 'tendresse';
+type Ton = 'elevee' | 'discrete' | 'accent' | 'or' | 'tendresse';
 
 interface Props extends ViewProps {
   /** Variante ivoire nuancée, pour poser une carte sur une carte. */
@@ -28,7 +28,7 @@ export function Carte({ discrete, ton, compacte, style, ...props }: Props) {
   const variante: Ton = ton ?? (discrete ? 'discrete' : 'elevee');
   const rembourrage = compacte ? espacements.md : margeCarte;
 
-  if (variante === 'or' || variante === 'tendresse') {
+  if (variante === 'accent' || variante === 'or' || variante === 'tendresse') {
     return (
       <View
         {...props}
