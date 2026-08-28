@@ -109,6 +109,39 @@ messages, un cycle, des confidences.
 Ce qui reste : le type d'erreur, la pile d'appels, le fichier, la ligne, l'écran
 où l'on se trouvait. C'est ce qui sert à corriger, et rien de plus.
 
+## 3 ter. L'envoi de courriel — Resend
+
+Nécessaire à la **réinitialisation de mot de passe**, et à elle seule pour
+l'instant. Sans configuration, le serveur démarre et l'annonce :
+
+    Aucun envoi de courriel configuré : les codes de réinitialisation
+    ne partiront pas.
+
+Le parcours fonctionne malgré tout de bout en bout — la demande est enregistrée,
+le code créé — mais personne ne le reçoit. C'est donc à faire avant de compter
+dessus.
+
+1. Créer un compte sur **resend.com** — palier gratuit, sans carte bancaire.
+2. Sans domaine à soi, utiliser l'adresse d'essai fournie
+   (`onboarding@resend.dev`) : elle n'envoie qu'à l'adresse du compte, ce qui
+   suffit à vérifier le parcours. Avec un domaine, le vérifier chez Resend et
+   expédier depuis lui.
+3. Poser chez Render : `RESEND_API_KEY` et `LONLONBENU_COURRIEL_EXPEDITEUR`
+   (par exemple `LONLONBENU <bonjour@votre-domaine>`).
+
+### Ce que le parcours garantit
+
+- **La réponse ne dit jamais si un compte existe.** Demander un code pour une
+  adresse inconnue rend exactement la même réponse que pour une adresse connue,
+  au caractère près. Distinguer les deux ferait de cette route un moyen de
+  savoir qui possède un compte — sur une application de couple, l'information
+  est déjà de trop.
+- **Un seul code valable à la fois.** Une nouvelle demande invalide la
+  précédente, sans quoi plusieurs codes circuleraient en parallèle.
+- **Trente minutes, un seul usage, cinq essais.** Le code est haché en base :
+  qui lirait la table n'y trouverait pas de quoi prendre un compte.
+- **L'ancien mot de passe cesse de fonctionner** dès le changement.
+
 ## 4. L'application autonome
 
 Une fois l'URL publique connue, la reporter dans `apps/mobile/eas.json`, profils

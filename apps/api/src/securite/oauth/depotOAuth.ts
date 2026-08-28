@@ -3,6 +3,8 @@
  * un port, deux adaptateurs, aucune logique ici.
  */
 
+import type { DemandeReinitialisation } from '@lonlonbenu/shared';
+
 export interface Compte {
   id: string;
   courriel: string;
@@ -49,6 +51,12 @@ export interface DepotOAuth {
     parEmpreinte(empreinte: string): Promise<JetonRafraichissement | undefined>;
     enregistrer(jeton: JetonRafraichissement): Promise<void>;
     revoquerLaFamille(famille: string, quand: string): Promise<void>;
+  };
+  reinitialisations: {
+    parEmpreinte(empreinte: string): Promise<DemandeReinitialisation | undefined>;
+    enregistrer(demande: DemandeReinitialisation): Promise<void>;
+    /** Invalide les demandes en cours d'un compte : une seule à la fois. */
+    invaliderPour(compteId: string, quand: string): Promise<void>;
   };
   revocations: {
     revoquer(jti: string, expireLe: string): Promise<void>;

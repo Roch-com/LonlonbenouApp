@@ -14,6 +14,7 @@ import { creerDepotOAuthPostgres } from './securite/oauth/depotOAuthPostgres.ts'
 import { appliquerLeSchema } from './db/migrations.ts';
 import { demarrerLePlanificateur } from './modules/rappels/planificateur.ts';
 import { creerTransportDepuisEnv } from './modules/notifications/transportDepuisEnv.ts';
+import { creerCourrierDepuisEnv } from './modules/courrier/courrier.ts';
 
 function requis(nom: string): string {
   const valeur = process.env[nom];
@@ -57,6 +58,13 @@ console.log(
     : 'Suivi des erreurs inactif (SENTRY_DSN absente).',
 );
 
+const { courrier, fournisseur } = creerCourrierDepuisEnv();
+console.log(
+  fournisseur === 'aucun'
+    ? 'Aucun envoi de courriel configuré : les codes de réinitialisation ne partiront pas.'
+    : `Envoi de courriel par ${fournisseur}.`,
+);
+
 const { transport, plateformes } = creerTransportDepuisEnv();
 if (plateformes.length === 0) {
   console.warn(
@@ -73,6 +81,7 @@ const { app, depot, expediteur } = await creerServeur({
   depotOAuth: creerDepotOAuthPostgres(pool),
   oauth: { emetteur, audience, clientsAutorises: clients, clePrivee, clePublique },
   transport,
+  courrier,
   ...(secretTaches ? { secretTaches } : {}),
 });
 

@@ -1,3 +1,4 @@
+import type { DemandeReinitialisation } from '@lonlonbenu/shared';
 import type {
   CodeAutorisation,
   Compte,
@@ -6,6 +7,7 @@ import type {
 } from './depotOAuth.ts';
 
 export function creerDepotOAuthMemoire(): DepotOAuth {
+  const reinitialisations = new Map<string, DemandeReinitialisation>();
   const comptes = new Map<string, Compte>();
   const codes = new Map<string, CodeAutorisation>();
   const rafraichissements = new Map<string, JetonRafraichissement>();
@@ -53,6 +55,23 @@ export function creerDepotOAuthMemoire(): DepotOAuth {
         }
       },
     },
+    reinitialisations: {
+      async parEmpreinte(empreinte) {
+        const trouvee = reinitialisations.get(empreinte);
+        return trouvee ? { ...trouvee } : undefined;
+      },
+      async enregistrer(demande) {
+        reinitialisations.set(demande.empreinte, { ...demande });
+      },
+      async invaliderPour(compteId, quand) {
+        for (const [cle, demande] of reinitialisations) {
+          if (demande.compteId === compteId && !demande.utiliseeLe) {
+            reinitialisations.set(cle, { ...demande, utiliseeLe: quand });
+          }
+        }
+      },
+    },
+
     revocations: {
       async revoquer(jti, expireLe) {
         revoques.set(jti, expireLe);

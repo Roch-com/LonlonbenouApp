@@ -141,6 +141,62 @@ export function creerDepotOAuthPostgres(pool: pg.Pool): DepotOAuth {
       },
     },
 
+    reinitialisations: {
+      async parEmpreinte(empreinte) {
+        const { rows } = await pool.query<{
+          empreinte: string;
+          compte_id: string;
+          demandee_le: Date;
+          expire_le: Date;
+          utilisee_le: Date | null;
+          essais: number;
+        }>(
+          `SELECT empreinte, compte_id, demandee_le, expire_le, utilisee_le, essais
+             FROM reinitialisations WHERE empreinte = $1`,
+          [empreinte],
+        );
+        const ligne = rows[0];
+        if (!ligne) return undefined;
+        return {
+          empreinte: ligne.empreinte,
+          compteId: ligne.compte_id,
+          demandeeLe: ligne.demandee_le.toISOString(),
+          expireLe: ligne.expire_le.toISOString(),
+          ...(ligne.utilisee_le
+            ? { utiliseeLe: ligne.utilisee_le.toISOString() }
+            : {}),
+          essais: ligne.essais,
+        };
+      },
+
+      async enregistrer(demande) {
+        await pool.query(
+          `INSERT INTO reinitialisations
+                 (empreinte, compte_id, demandee_le, expire_le, utilisee_le, essais)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (empreinte) DO UPDATE
+                  SET utilisee_le = EXCLUDED.utilisee_le,
+                      essais = EXCLUDED.essais`,
+          [
+            demande.empreinte,
+            demande.compteId,
+            demande.demandeeLe,
+            demande.expireLe,
+            demande.utiliseeLe ?? null,
+            demande.essais,
+          ],
+        );
+      },
+
+      async invaliderPour(compteId, quand) {
+        await pool.query(
+          `UPDATE reinitialisations SET utilisee_le = $2
+            WHERE compte_id = $1 AND utilisee_le IS NULL`,
+          [compteId, quand],
+        );
+      },
+    },
+
     revocations: {
       async revoquer(jti, expireLe) {
         await pool.query(

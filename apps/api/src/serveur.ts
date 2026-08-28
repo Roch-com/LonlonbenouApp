@@ -30,6 +30,11 @@ import {
 import { enregistrerRoutesOAuth } from './modules/oauth/oauth.routes.ts';
 import { creerAuthentification } from './securite/authentification.ts';
 import { optionsJournal } from './observabilite.ts';
+import {
+  creerCourrierFactice,
+  type Courrier,
+} from './modules/courrier/courrier.ts';
+import { enregistrerRoutesMotDePasse } from './modules/courrier/motDePasse.routes.ts';
 import { surveillerLeServeur } from './surveillance.ts';
 import { genererPaire } from './securite/oauth/cles.ts';
 import { creerDepotOAuthMemoire } from './securite/oauth/depotOAuthMemoire.ts';
@@ -40,6 +45,7 @@ export interface OptionsServeur {
   depot?: Depot;
   depotOAuth?: DepotOAuth;
   transport?: Transport;
+  courrier?: Courrier;
   /** Secret du déclencheur de tâches planifiées. Sans lui, la route n'existe pas. */
   secretTaches?: string;
   oauth?: {
@@ -72,6 +78,7 @@ export async function creerServeur(options: OptionsServeur = {}) {
   const depot = options.depot ?? creerDepotMemoire();
   const depotOAuth = options.depotOAuth ?? creerDepotOAuthMemoire();
   const transport = options.transport ?? creerTransportFactice();
+  const courrier = options.courrier ?? creerCourrierFactice();
 
   const paire = options.oauth ?? {
     emetteur: 'https://auth.lonlonbenu.local',
@@ -203,6 +210,7 @@ export async function creerServeur(options: OptionsServeur = {}) {
   surveillerLeServeur(app);
 
   enregistrerRoutesOAuth(app, autorisation, depot);
+  enregistrerRoutesMotDePasse(app, autorisation, depotOAuth, courrier);
   enregistrerRoutesCycle(app, cycle, authentifier);
   enregistrerRoutesConfidences(app, confidences, authentifier);
   enregistrerRoutesChat(app, chat, authentifier);
@@ -517,6 +525,7 @@ export async function creerServeur(options: OptionsServeur = {}) {
     depotOAuth,
     expediteur,
     transport,
+    courrier,
     autorisation,
     services: {
       axes,

@@ -52,6 +52,12 @@ services:
       # pas : le serveur démarre et l'annonce au journal.
       - key: SENTRY_DSN
         sync: false
+      # Envoi de courriel. Sans ces deux valeurs, la réinitialisation de mot
+      # de passe reste inopérante — le serveur le signale au démarrage.
+      - key: RESEND_API_KEY
+        sync: false
+      - key: LONLONBENU_COURRIEL_EXPEDITEUR
+        sync: false
       - key: LONLONBENU_OAUTH_AUDIENCE
         value: lonlonbenu-api
       - key: LONLONBENU_OAUTH_CLIENTS

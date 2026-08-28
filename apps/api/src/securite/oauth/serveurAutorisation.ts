@@ -72,6 +72,12 @@ export interface ServeurAutorisation {
   creerCompte(courriel: string, motDePasse: string): Promise<Compte>;
   /** Vrai si un compte porte déjà ce courriel, normalisation comprise. */
   compteExiste(courriel: string): Promise<boolean>;
+  /**
+   * Remplace le mot de passe d'un compte et **révoque toutes ses sessions**.
+   * Réinitialiser sans couper les sessions ouvertes laisserait un intrus déjà
+   * connecté à l'intérieur, ce qui vide l'opération de son sens.
+   */
+  remplacerLeMotDePasse(compteId: string, motDePasse: string): Promise<boolean>;
   /** Étape 1 : authentifier, puis rendre un code lié au défi PKCE. */
   autoriser(demande: {
     courriel: string;
@@ -171,6 +177,25 @@ export function creerServeurAutorisation(
   return {
     async compteExiste(courriel) {
       return !!(await depot.comptes.parCourriel(normaliser(courriel)));
+    },
+
+    async remplacerLeMotDePasse(compteId, motDePasse) {
+      const compte = await depot.comptes.parId(compteId);
+      if (!compte) return false;
+
+      const sel = randomBytes(16);
+      const derive = scrypt(motDePasse, sel, SCRYPT);
+      await depot.comptes.enregistrer({
+        ...compte,
+        verificateur: {
+          sel: encoderBase64(sel),
+          empreinte: encoderBase64(derive),
+          n: SCRYPT.N,
+          r: SCRYPT.r,
+          p: SCRYPT.p,
+        },
+      });
+      return true;
     },
 
     async creerCompte(courriel, motDePasse) {

@@ -92,6 +92,16 @@ export function ConnexionEcran() {
               setMode(mode === 'connexion' ? 'inscription' : 'connexion')
             }
           />
+
+          {/* Uniquement en mode connexion : proposer de réinitialiser à
+              quelqu'un qui crée son compte n'aurait aucun sens. */}
+          {mode === 'connexion' ? (
+            <Bouton
+              libelle="Mot de passe oublié"
+              ton="discret"
+              onPress={() => router.push('/mot-de-passe')}
+            />
+          ) : null}
         </View>
       </Carte>
 

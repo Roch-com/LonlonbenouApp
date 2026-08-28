@@ -29,3 +29,4 @@ export * from './score/gestes';
 export * from './score/score';
 export * from './croissance/miroir';
 export * from './confidences/confidences';
+export * from './motdepasse/reinitialisation';
