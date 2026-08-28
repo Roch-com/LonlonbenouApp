@@ -28,7 +28,7 @@ describe('prochainJalon', () => {
     // 360 jours écoulés : l'anniversaire (366 j, année bissextile) précède 400.
     const jalon = prochainJalon('2024-02-14', '2025-02-08');
     expect(jalon.type).toBe('anniversaire');
-    expect(jalon.libelle).toBe('1 an ensemble');
+    expect(jalon.libelle).toBe('1 an');
   });
 
   it('reste toujours dans le futur', () => {

@@ -48,7 +48,7 @@ export function prochainJalon(depuis: string, maintenant: string): JalonCompteur
       candidats.push({
         type: 'anniversaire',
         jour,
-        libelle: `${n} an${n > 1 ? 's' : ''} ensemble`,
+        libelle: `${n} an${n > 1 ? 's' : ''}`,
       });
       break;
     }
@@ -61,7 +61,12 @@ export function prochainJalon(depuis: string, maintenant: string): JalonCompteur
   return {
     type: gagnant.type,
     jour: gagnant.jour,
-    libelle: gagnant.libelle || `${gagnant.jour} jours ensemble`,
+    // `formaterJours` et non le nombre brut : sans lui, la carte affichait
+    // « 2 470 » d'un côté et « 2500 » de l'autre, à trois lignes d'écart.
+    // Le mot « ensemble » est retiré — il figure déjà dans le titre de la
+    // carte, et « 2 500 jours ensemble · dans 30 jours » répétait trois fois
+    // le même mot.
+    libelle: gagnant.libelle || `${formaterJours(gagnant.jour)} jours`,
     dateIso: ajouterJours(depuis, gagnant.jour),
     joursRestants: gagnant.jour - jours,
   };

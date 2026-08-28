@@ -57,9 +57,16 @@ export function CompteurCarte({ compact, enAvant }: Props) {
       ) : null}
 
       <View style={[styles.jalon, enAvant && styles.jalonSurOr]}>
-        <Texte variante="corpsDoux" style={surOrDoux}>
-          {jalon.libelle} · dans {jalon.joursRestants}{' '}
-          {jalon.joursRestants > 1 ? 'jours' : 'jour'}
+        <Texte variante="meta" style={surOrDoux}>
+          Prochain jalon
+        </Texte>
+        <Texte variante="corps" style={[styles.jalonTexte, surOr]}>
+          {jalon.libelle}
+          <Texte variante="corps" style={surOrDoux}>
+            {' '}
+            · dans {jalon.joursRestants}{' '}
+            {jalon.joursRestants > 1 ? 'jours' : 'jour'}
+          </Texte>
         </Texte>
       </View>
     </Carte>
@@ -76,15 +83,24 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
   // `flexShrink` : au-delà de mille jours, le nombre doit se réduire plutôt
   // que pousser l'unité hors de la carte.
   nombre: { flexShrink: 1 },
+  // Sur la carte dorée, l'unité suit `surOrDoux` ; ailleurs elle reste douce.
   unite: { color: colors.texteDoux },
+  jalonTexte: { marginTop: espacements.xxs },
   jalon: {
     marginTop: espacements.md,
     paddingTop: espacements.md,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.bordure,
   },
-  jalonSurOr: { borderTopColor: 'rgba(255, 255, 255, 0.32)' },
-  surOr: { color: colors.texteInverse },
-  // Blanc voilé plutôt qu'un gris : sur un fond or, un gris devient sale.
-  surOrDoux: { color: 'rgba(255, 255, 255, 0.86)' },
+  jalonSurOr: { borderTopColor: colors.bordureSurAccent },
+  surOr: { color: colors.texteSurAccent },
+  /**
+   * Encre voilée, et non du blanc.
+   *
+   * Le blanc paraît le choix évident sur une couleur vive — il ne l'est pas
+   * ici. Le dégradé d'or est clair, dans les deux thèmes : un blanc à 86 %
+   * s'y délave et le texte se devine plus qu'il ne se lit. C'était le cas de
+   * « jours » et de la ligne du prochain jalon.
+   */
+  surOrDoux: { color: colors.texteSurAccentDoux },
 }));

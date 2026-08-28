@@ -49,6 +49,18 @@ export const colors = {
   /** Surbrillance d'un élément pressé, sur fond clair. */
   effleurement: 'rgba(156, 122, 60, 0.10)',
 
+  /**
+   * Texte posé sur une surface dorée.
+   *
+   * Identique dans les deux thèmes, et c'est voulu : le dégradé d'or reste
+   * clair en mode sombre comme en mode clair. Y mettre du blanc — ce qui
+   * paraît naturel quand on pense « couleur vive » — donne un texte délavé,
+   * presque illisible. C'est l'encre qui tient sur l'or, pas la lumière.
+   */
+  texteSurAccent: palette.encre,
+  texteSurAccentDoux: 'rgba(43, 36, 32, 0.74)',
+  bordureSurAccent: 'rgba(43, 36, 32, 0.20)',
+
   /** Réservé au SOS. Jamais utilisé pour du décoratif. */
   urgence: '#C0392B',
 } as const;
@@ -240,6 +252,11 @@ export const colorsSombre = {
   bordureOr: 'rgba(212, 174, 106, 0.35)',
   voile: 'rgba(0, 0, 0, 0.70)',
   effleurement: 'rgba(212, 174, 106, 0.14)',
+
+  // Mêmes valeurs qu'en mode clair : l'or ne s'assombrit pas avec le thème.
+  texteSurAccent: palette.encre,
+  texteSurAccentDoux: 'rgba(43, 36, 32, 0.74)',
+  bordureSurAccent: 'rgba(43, 36, 32, 0.20)',
 
   /** Réservé au SOS. Éclairci pour rester lisible sur fond sombre. */
   urgence: '#E8574A',
