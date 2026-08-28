@@ -87,7 +87,7 @@ export function BulleMessage({
               <Feather
                 name={message.luLe ? 'check-circle' : 'check'}
                 size={12}
-                color={colors.texteSurAccent}
+                color={colors.texteInverse}
                 style={styles.accuse}
               />
             ) : null}
@@ -127,15 +127,18 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
     borderWidth: 1,
   },
   etiquetteDouce: { color: colors.tendresse },
-  // Sur l'or, c'est l'encre qui se lit — pas la lumière. Même règle que la
-  // carte du compteur.
-  texteMien: { color: colors.texteSurAccent },
+  /**
+   * Sur l'accent bleu, c'est `texteInverse` qui se lit : blanc en mode clair
+   * sur le bleu foncé, encre en mode sombre sur le bleu clair. L'inverse
+   * échouerait dans les deux cas — 8,4 et 6,8 de contraste contre 2,0 et 2,5.
+   */
+  texteMien: { color: colors.texteInverse },
   pied: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: espacements.xxs,
   },
-  metaMienne: { color: colors.texteSurAccentDoux },
+  metaMienne: { color: colors.texteInverse, opacity: 0.78 },
   accuse: { marginBottom: 1 },
 }));

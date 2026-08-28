@@ -5,20 +5,39 @@
  */
 
 export const palette = {
-  or: '#9C7A3C',
-  orFonce: '#6E5424',
+  /**
+   * Bleu d'encre. Le piège du bleu est de virer « application bancaire » ;
+   * ces valeurs tirent vers la nuit plutôt que vers l'azur, et le rose poudré
+   * conservé plus bas se charge de la chaleur.
+   */
+  bleu: '#1D4E89',
+  bleuFonce: '#123661',
+  bleuClair: '#7BA7DC',
+  encre: '#0F1D30',
+  encreDouce: '#4A5B72',
+  encreVoilee: '#7C8CA3',
+
+  /**
+   * Or, désormais accent secondaire. Il ne sert plus qu'aux moments rares —
+   * le compteur, les jalons — et c'est ce qui lui rend sa valeur : une couleur
+   * qu'on voit partout n'est plus un accent.
+   *
+   * `or` ne descend pas sous `#A98A4C` : en dessous, l'encre posée dessus
+   * tombe à 3,82 de contraste, sous le seuil des 4,5.
+   */
+  or: '#A98A4C',
+  orFonce: '#8A6E38',
   orClair: '#C9A96A',
-  rose: '#B85C6B',
-  roseClair: '#E3B7BE',
-  ivoire: '#FBF6EC',
-  ivoireOmbre: '#F2E9D8',
-  encre: '#2B2420',
-  encreDouce: '#6B5F55',
-  encreVoilee: '#9A8E84',
+
+  rose: '#A8455A',
+  roseClair: '#F0D9DE',
+
+  /** Fonds : des bleus si désaturés qu'on les prend pour du neutre. */
+  ivoire: '#F5F8FC',
+  ivoireOmbre: '#DEE8F4',
   blanc: '#FFFFFF',
-  /** Fond des surfaces posées sur l'ivoire, à peine détaché. */
-  creme: '#FDFAF4',
-  sable: '#EFE4CE',
+  creme: '#FAFCFE',
+  sable: '#E9F0F8',
 } as const;
 
 /** Couleurs sémantiques : ce que le code consomme au quotidien. */
@@ -26,40 +45,40 @@ export const colors = {
   fond: palette.ivoire,
   fondEleve: palette.blanc,
   fondNuance: palette.ivoireOmbre,
+  fondCreme: palette.creme,
 
   texte: palette.encre,
   texteDoux: palette.encreDouce,
-  texteInverse: palette.ivoire,
+  texteVoile: palette.encreVoilee,
+  /** Sur l'accent bleu foncé du mode clair, c'est le blanc qui se lit. */
+  texteInverse: palette.blanc,
 
-  accent: palette.or,
-  accentFonce: palette.orFonce,
-  accentDoux: palette.orClair,
+  accent: palette.bleu,
+  accentFonce: palette.bleuFonce,
+  accentDoux: palette.bleuClair,
+
+  /** Accent secondaire : réservé au compteur et aux jalons. */
+  or: palette.or,
+  orClair: palette.orClair,
+  orFonce: palette.orFonce,
 
   tendresse: palette.rose,
   tendresseDouce: palette.roseClair,
 
-  fondCreme: palette.creme,
-
-  texteVoile: palette.encreVoilee,
-
-  bordure: 'rgba(43, 36, 32, 0.10)',
-  bordureNette: 'rgba(43, 36, 32, 0.16)',
-  bordureOr: 'rgba(156, 122, 60, 0.28)',
-  voile: 'rgba(43, 36, 32, 0.55)',
-  /** Surbrillance d'un élément pressé, sur fond clair. */
-  effleurement: 'rgba(156, 122, 60, 0.10)',
-
   /**
-   * Texte posé sur une surface dorée.
-   *
-   * Identique dans les deux thèmes, et c'est voulu : le dégradé d'or reste
-   * clair en mode sombre comme en mode clair. Y mettre du blanc — ce qui
-   * paraît naturel quand on pense « couleur vive » — donne un texte délavé,
-   * presque illisible. C'est l'encre qui tient sur l'or, pas la lumière.
+   * Texte posé sur une surface dorée. L'or reste clair dans les deux thèmes :
+   * c'est l'encre qui tient dessus, pas la lumière. Mêmes valeurs de part et
+   * d'autre, et c'est voulu.
    */
-  texteSurAccent: palette.encre,
+  texteSurAccent: '#2B2420',
   texteSurAccentDoux: 'rgba(43, 36, 32, 0.74)',
   bordureSurAccent: 'rgba(43, 36, 32, 0.20)',
+
+  bordure: 'rgba(15, 29, 48, 0.10)',
+  bordureNette: 'rgba(15, 29, 48, 0.16)',
+  bordureOr: 'rgba(29, 78, 137, 0.28)',
+  voile: 'rgba(15, 29, 48, 0.55)',
+  effleurement: 'rgba(29, 78, 137, 0.10)',
 
   /** Réservé au SOS. Jamais utilisé pour du décoratif. */
   urgence: '#C0392B',
@@ -160,18 +179,20 @@ export const ombres = {
  * texte ni sur des éléments répétés, où l'effet devient bruit.
  */
 export const degrades = {
-  /** Fond général : ivoire qui se réchauffe vers le bas. */
-  fond: [palette.ivoire, palette.creme, palette.ivoireOmbre] as const,
-  /** En-tête d'application, sous le texte sombre. */
-  chrome: ['rgba(251,246,236,0.98)', 'rgba(242,233,216,0.92)'] as const,
-  /** Bouton et accents actifs. */
-  or: [palette.orClair, palette.or, palette.orFonce] as const,
-  /** Cartes de mise en avant. */
+  /** Fond général : bleu très pâle qui se réchauffe à peine vers le bas. */
+  fond: [palette.ivoire, palette.creme, palette.sable] as const,
+  chrome: ['rgba(245,248,252,0.98)', 'rgba(233,240,248,0.92)'] as const,
+  /** Boutons et surfaces actives : l'accent principal. */
+  accent: ['#2A63A8', palette.bleu, palette.bleuFonce] as const,
+  /**
+   * Le doré, réservé aux moments rares. Il ne descend pas sous `or` : plus
+   * sombre, l'encre posée dessus passerait sous le seuil de contraste.
+   */
+  or: [palette.orClair, '#BC9C5C', palette.or] as const,
   tendresse: [palette.roseClair, palette.rose] as const,
-  /** Voile du haut vers le bas, pour détacher une barre flottante. */
   estompeBas: [
-    'rgba(251,246,236,0)',
-    'rgba(251,246,236,0.9)',
+    'rgba(245,248,252,0)',
+    'rgba(245,248,252,0.9)',
     palette.ivoire,
   ] as const,
 } as const;
@@ -208,21 +229,32 @@ export const durees = {
  *    ces bruns très sombres gardent la chaleur de l'ivoire d'origine.
  */
 export const paletteSombre = {
+  /**
+   * Le bleu s'éclaircit franchement : à luminosité égale, `#1D4E89` sur fond
+   * nocturne devient une tache sourde qu'on distingue à peine du fond.
+   */
+  bleu: '#6FA8E8',
+  bleuFonce: '#9CC6F2',
+  bleuClair: '#33598C',
+
+  encre: '#E7EDF6',
+  encreDouce: '#A6B4C8',
+  encreVoilee: '#77869B',
+
+  /** L'or s'éclaircit pour la même raison, et reste lisible sous l'encre. */
   or: '#D4AE6A',
   orFonce: '#B08E4E',
   orClair: '#E8CE9B',
-  rose: '#D98595',
-  roseClair: '#8A4E58',
-  /** Fond principal — brun d'encre, jamais un gris. */
-  ivoire: '#1A1512',
-  /** Surface légèrement détachée du fond. */
-  ivoireOmbre: '#251E1A',
-  encre: '#EDE4D6',
-  encreDouce: '#B5A899',
-  encreVoilee: '#7D7268',
-  blanc: '#221B17',
-  creme: '#1F1915',
-  sable: '#2E2620',
+
+  rose: '#DE8B9B',
+  roseClair: '#5C2F38',
+
+  /** Fonds : bleus nocturnes, jamais des gris — le gris trahirait la marque. */
+  ivoire: '#0B1320',
+  ivoireOmbre: '#1B2739',
+  blanc: '#141F30',
+  creme: '#0F1826',
+  sable: '#22304A',
 } as const;
 
 /** Couleurs sémantiques du mode sombre, mêmes clés que le mode clair. */
@@ -235,31 +267,34 @@ export const colorsSombre = {
   texte: paletteSombre.encre,
   texteDoux: paletteSombre.encreDouce,
   texteVoile: paletteSombre.encreVoilee,
-  /** Sur fond doré : reste sombre, pour rester lisible. */
+  /** Sur le bleu clair du mode sombre, c'est l'encre qui se lit. */
   texteInverse: palette.encre,
 
-  accent: paletteSombre.or,
-  accentFonce: paletteSombre.orClair,
-  accentDoux: paletteSombre.orFonce,
+  accent: paletteSombre.bleu,
+  accentFonce: paletteSombre.bleuFonce,
+  accentDoux: paletteSombre.bleuClair,
+
+  or: paletteSombre.or,
+  orClair: paletteSombre.orClair,
+  orFonce: paletteSombre.orFonce,
 
   tendresse: paletteSombre.rose,
   tendresseDouce: paletteSombre.roseClair,
 
-  // Les séparateurs s'éclaircissent au lieu de s'assombrir : sur fond sombre,
-  // une bordure noire est invisible.
-  bordure: 'rgba(237, 228, 214, 0.12)',
-  bordureNette: 'rgba(237, 228, 214, 0.20)',
-  bordureOr: 'rgba(212, 174, 106, 0.35)',
-  voile: 'rgba(0, 0, 0, 0.70)',
-  effleurement: 'rgba(212, 174, 106, 0.14)',
-
   // Mêmes valeurs qu'en mode clair : l'or ne s'assombrit pas avec le thème.
-  texteSurAccent: palette.encre,
+  texteSurAccent: '#2B2420',
   texteSurAccentDoux: 'rgba(43, 36, 32, 0.74)',
   bordureSurAccent: 'rgba(43, 36, 32, 0.20)',
 
+  // Sur fond sombre, une bordure noire est invisible : elles s'éclaircissent.
+  bordure: 'rgba(231, 237, 246, 0.12)',
+  bordureNette: 'rgba(231, 237, 246, 0.20)',
+  bordureOr: 'rgba(111, 168, 232, 0.35)',
+  voile: 'rgba(0, 0, 0, 0.70)',
+  effleurement: 'rgba(111, 168, 232, 0.14)',
+
   /** Réservé au SOS. Éclairci pour rester lisible sur fond sombre. */
-  urgence: '#E8574A',
+  urgence: '#F0665A',
 } as const;
 
 /** Dégradés du mode sombre. */
@@ -269,12 +304,13 @@ export const degradesSombre = {
     paletteSombre.creme,
     paletteSombre.ivoireOmbre,
   ] as const,
-  chrome: ['rgba(26,21,18,0.98)', 'rgba(37,30,26,0.92)'] as const,
+  chrome: ['rgba(11,19,32,0.98)', 'rgba(27,39,57,0.92)'] as const,
+  accent: [paletteSombre.bleuFonce, paletteSombre.bleu, '#5290CE'] as const,
   or: [paletteSombre.orClair, paletteSombre.or, paletteSombre.orFonce] as const,
   tendresse: [paletteSombre.roseClair, paletteSombre.rose] as const,
   estompeBas: [
-    'rgba(26,21,18,0)',
-    'rgba(26,21,18,0.9)',
+    'rgba(11,19,32,0)',
+    'rgba(11,19,32,0.9)',
     paletteSombre.ivoire,
   ] as const,
 } as const;

@@ -5,12 +5,12 @@ import { useTheme } from '@/design/ThemeProvider';
 import { LinearGradient } from 'expo-linear-gradient';
 import { espacements, margeCarte, ombres, rayons } from '@/design/theme';
 
-type Ton = 'elevee' | 'discrete' | 'accent' | 'tendresse';
+type Ton = 'elevee' | 'discrete' | 'or' | 'tendresse';
 
 interface Props extends ViewProps {
   /** Variante ivoire nuancée, pour poser une carte sur une carte. */
   discrete?: boolean;
-  /** Mise en avant : dégradé de marque, texte clair. */
+  /** Mise en avant dorée : l'accent secondaire, réservé aux moments rares. */
   ton?: Ton;
   /** Rembourrage resserré, pour les cartes qui contiennent une liste. */
   compacte?: boolean;
@@ -28,16 +28,14 @@ export function Carte({ discrete, ton, compacte, style, ...props }: Props) {
   const variante: Ton = ton ?? (discrete ? 'discrete' : 'elevee');
   const rembourrage = compacte ? espacements.md : margeCarte;
 
-  if (variante === 'accent' || variante === 'tendresse') {
+  if (variante === 'or' || variante === 'tendresse') {
     return (
       <View
         {...props}
         style={[styles.base, styles.enRelief, { padding: 0 }, style]}
       >
         <LinearGradient
-          colors={
-            variante === 'accent' ? [...degrades.or] : [...degrades.tendresse]
-          }
+          colors={variante === 'or' ? [...degrades.or] : [...degrades.tendresse]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={[styles.degrade, { padding: rembourrage }]}

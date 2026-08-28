@@ -38,7 +38,7 @@ export function CompteurCarte({ compact, enAvant }: Props) {
   const surOrDoux = enAvant ? styles.surOrDoux : undefined;
 
   return (
-    <Carte ton={enAvant ? 'accent' : 'elevee'}>
+    <Carte ton={enAvant ? 'or' : 'elevee'}>
       <Texte variante="surtitre" style={surOr}>
         Ensemble depuis
       </Texte>

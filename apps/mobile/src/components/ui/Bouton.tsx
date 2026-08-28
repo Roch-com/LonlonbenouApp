@@ -28,9 +28,8 @@ interface Props extends Omit<PressableProps, 'style'> {
 /**
  * Bouton de l'app.
  *
- * Le ton principal est en dégradé plutôt qu'en aplat : c'est le seul endroit
- * où l'or apparaît en grand, et un aplat de 52 px de haut paraît plat là où un
- * dégradé donne de la matière.
+ * Le ton principal est en dégradé plutôt qu'en aplat : un aplat de 52 px de
+ * haut paraît mort là où un dégradé donne de la matière.
  *
  * L'enfoncement est animé plutôt que binaire. Un changement d'opacité instantané
  * se lit comme un défaut d'affichage ; un retrait d'échelle sur 150 ms se lit
@@ -98,7 +97,7 @@ export function Bouton({
       >
         {ton === 'principal' ? (
           <LinearGradient
-            colors={[...degrades.or]}
+            colors={[...degrades.accent]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
