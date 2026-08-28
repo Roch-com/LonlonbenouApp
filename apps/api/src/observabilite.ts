@@ -78,6 +78,5 @@ export function optionsJournal(): FastifyServerOptions {
     // l'hébergeur. Sans cela, toutes les requêtes semblent venir de la même
     // adresse interne, et la limitation de débit devient inopérante.
     trustProxy: true,
-    disableRequestLogging: false,
   };
 }

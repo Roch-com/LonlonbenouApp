@@ -22,7 +22,7 @@ const MOT_DE_PASSE = 'un-mot-de-passe-assez-long';
 async function monter() {
   const depot = await creerDepotDeTest();
   const depotOAuth = await creerDepotOAuthDeTest();
-  const { app } = creerServeur({
+  const { app } = await creerServeur({
     depot,
     depotOAuth,
     transport: creerTransportFactice(),
@@ -309,7 +309,7 @@ describe('401 : ce qui ne vaut pas jeton', () => {
     const { app } = await monter();
 
     // Un serveur monté sur sa propre paire éphémère : son jeton ne vaut rien ici.
-    const etranger = creerServeur({ transport: creerTransportFactice() });
+    const etranger = await creerServeur({ transport: creerTransportFactice() });
     await etranger.app.inject({
       method: 'POST',
       url: '/comptes',

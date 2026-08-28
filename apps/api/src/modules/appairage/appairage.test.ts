@@ -8,7 +8,7 @@ import { CONFIG_OAUTH, entete, GAELLE, ROCHAMBEAU } from '../../tests/aide.ts';
 
 async function monter() {
   const depot = await creerDepotDeTest();
-  const { app } = creerServeur({
+  const { app } = await creerServeur({
     depot,
     transport: creerTransportFactice(),
     oauth: CONFIG_OAUTH,

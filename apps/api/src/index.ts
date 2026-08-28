@@ -68,7 +68,7 @@ if (plateformes.length === 0) {
   console.log(`Transport push gréé pour : ${plateformes.join(', ')}`);
 }
 
-const { app, depot, expediteur } = creerServeur({
+const { app, depot, expediteur } = await creerServeur({
   depot: creerDepotPostgres(pool),
   depotOAuth: creerDepotOAuthPostgres(pool),
   oauth: { emetteur, audience, clientsAutorises: clients, clePrivee, clePublique },

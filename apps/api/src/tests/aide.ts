@@ -103,7 +103,7 @@ export async function monterServeur(
     });
   }
 
-  const serveur = creerServeur({
+  const serveur = await creerServeur({
     depot,
     transport,
     oauth: CONFIG_OAUTH,

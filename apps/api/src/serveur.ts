@@ -68,7 +68,7 @@ const CODES: Record<string, number> = {
   code_incorrect: 401,
 };
 
-export function creerServeur(options: OptionsServeur = {}) {
+export async function creerServeur(options: OptionsServeur = {}) {
   const depot = options.depot ?? creerDepotMemoire();
   const depotOAuth = options.depotOAuth ?? creerDepotOAuthMemoire();
   const transport = options.transport ?? creerTransportFactice();
@@ -103,7 +103,7 @@ export function creerServeur(options: OptionsServeur = {}) {
    * `contentSecurityPolicy` est désactivée : elle ne régit que du HTML, et sa
    * valeur par défaut ajouterait un en-tête inutile à chaque réponse.
    */
-  void app.register(helmet, { contentSecurityPolicy: false });
+  await app.register(helmet, { contentSecurityPolicy: false });
 
   /**
    * Limitation de débit.
@@ -117,13 +117,24 @@ export function creerServeur(options: OptionsServeur = {}) {
    * couvrir un usage normal : personne n'envoie cent requêtes par minute en
    * consultant son agenda.
    */
-  void app.register(limiteDebit, {
+  // `await` et non `void` : sans attendre le chargement du plugin, ses crochets
+  // s'installent APRÈS l'enregistrement des routes, et la limitation ne
+  // s'applique alors à aucune d'entre elles. Le serveur démarre, les en-têtes
+  // n'apparaissent pas, et rien ne signale que le garde-fou est inerte.
+  await app.register(limiteDebit, {
     max: Number(process.env['LONLONBENU_LIMITE_REQUETES'] ?? 120),
     timeWindow: '1 minute',
     // Les tests injectent des centaines de requêtes depuis la même origine.
     enableDraftSpec: true,
     allowList: () => process.env['NODE_ENV'] === 'test',
+    // L'objet rendu ici est **levé** par le plugin, pas simplement sérialisé :
+    // sans `statusCode`, Fastify le traite en erreur inattendue et répond 500.
+    // Le client verrait une panne serveur là où il a seulement été freiné.
+    // `contexte.after` est formaté en anglais par le plugin : on n'expose pas
+    // « 58 seconds » dans une application francophone. La fenêtre étant fixe,
+    // une phrase constante dit la même chose sans mélanger les langues.
     errorResponseBuilder: () => ({
+      statusCode: 429,
       motif: 'trop_de_requetes',
       message: 'Trop de tentatives. Réessayez dans une minute.',
     }),
