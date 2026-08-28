@@ -28,7 +28,12 @@ export function demarrerLaSurveillance(): boolean {
 
   // Sans DSN — en développement, ou tant que le compte n'existe pas — on
   // n'initialise rien plutôt que d'accumuler des événements sans destination.
-  if (!dsn) return false;
+  //
+  // Le test porte sur la forme et pas seulement sur la présence : EAS refuse
+  // une variable vide, donc la clé est absente d'`eas.json` tant qu'il n'y a
+  // pas de compte. Le jour où on l'ajoutera, une valeur d'attente du genre
+  // « à-remplir » ne doit pas faire lever Sentry au lancement de l'app.
+  if (!dsn?.trim() || !dsn.trim().startsWith('http')) return false;
 
   Sentry.init({
     dsn,
