@@ -160,6 +160,44 @@ export async function creerServeur(options: OptionsServeur = {}) {
     },
   );
 
+  /**
+   * Dernier rempart avant le client.
+   *
+   * Sans lui, une erreur non rattrapée part telle quelle : un doublon en base
+   * répondait `duplicate key value violates unique constraint
+   * "comptes_courriel_key"` — nom de table et de contrainte compris. C'est deux
+   * problèmes à la fois. Pour qui utilise l'app, un message technique en
+   * anglais ne dit rien de ce qu'il faut faire ; pour qui l'attaque, il dessine
+   * gratuitement le schéma de la base.
+   *
+   * Les erreurs déjà qualifiées — celles qui portent un code HTTP inférieur à
+   * 500, posées volontairement par une route — passent inchangées. Seules les
+   * autres sont remplacées par un message neutre, le détail restant au journal.
+   */
+  app.setErrorHandler((brute, requete, reponse) => {
+    const erreur = brute as {
+      statusCode?: number;
+      code?: string;
+      message?: string;
+      motif?: string;
+    };
+    const statut = erreur.statusCode ?? 500;
+
+    if (statut < 500) {
+      return reponse.code(statut).send({
+        motif: erreur.motif ?? erreur.code,
+        message: erreur.message,
+      });
+    }
+
+    requete.log.error({ err: brute }, 'erreur non rattrapée');
+
+    return reponse.code(500).send({
+      motif: 'erreur_serveur',
+      message: 'Quelque chose n’a pas fonctionné de notre côté. Réessayez.',
+    });
+  });
+
   // Après les plugins, avant les routes : le gestionnaire doit être en place
   // quand la première d'entre elles lève.
   surveillerLeServeur(app);

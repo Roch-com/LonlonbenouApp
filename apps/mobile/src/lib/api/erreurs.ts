@@ -44,10 +44,26 @@ export function genreDepuisStatut(statut: number): GenreErreur {
   return 'serveur';
 }
 
-/** Message affichable, sans jargon technique ni code d'erreur. */
+/**
+ * Message affichable, sans jargon technique ni code d'erreur.
+ *
+ * Quand le serveur a pris la peine d'expliquer — « Un compte existe déjà avec
+ * cette adresse. Connectez-vous. » — c'est son message qui passe : il connaît
+ * la situation précise, là où une catégorie générique ne dit que la famille de
+ * l'erreur. On ne le fait que pour les erreurs de client (4xx) : au-delà, le
+ * détail relève du diagnostic interne et n'aiderait personne.
+ */
 export function messageLisible(erreur: unknown): string {
   if (!(erreur instanceof ErreurApi)) {
     return 'Quelque chose n’a pas fonctionné. Réessayez dans un instant.';
+  }
+
+  const duServeur = erreur.message?.trim();
+  const estClient = erreur.statut !== undefined && erreur.statut < 500;
+  // Un message utile se reconnaît à ce qu'il forme une phrase : les codes
+  // techniques du genre `invalid_grant` ou `HTTP 409` n'ont rien à afficher.
+  if (estClient && duServeur && /\s/.test(duServeur) && !/^HTTP /.test(duServeur)) {
+    return duServeur;
   }
   switch (erreur.genre) {
     case 'hors_ligne':

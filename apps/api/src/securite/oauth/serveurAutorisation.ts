@@ -70,6 +70,8 @@ export interface Jetons {
 
 export interface ServeurAutorisation {
   creerCompte(courriel: string, motDePasse: string): Promise<Compte>;
+  /** Vrai si un compte porte déjà ce courriel, normalisation comprise. */
+  compteExiste(courriel: string): Promise<boolean>;
   /** Étape 1 : authentifier, puis rendre un code lié au défi PKCE. */
   autoriser(demande: {
     courriel: string;
@@ -108,6 +110,15 @@ function memeChaine(a: string, b: string): boolean {
   const ta = Buffer.from(a);
   const tb = Buffer.from(b);
   return ta.length === tb.length && timingSafeEqual(ta, tb);
+}
+
+/**
+ * Un courriel est la même adresse quelles que soient sa casse et ses espaces
+ * de bordure. La normaliser en un seul endroit évite qu'une comparaison
+ * l'oublie, et qu'on se retrouve avec deux comptes pour une même personne.
+ */
+function normaliser(courriel: string): string {
+  return courriel.trim().toLowerCase();
 }
 
 export function creerServeurAutorisation(
@@ -158,12 +169,16 @@ export function creerServeurAutorisation(
   }
 
   return {
+    async compteExiste(courriel) {
+      return !!(await depot.comptes.parCourriel(normaliser(courriel)));
+    },
+
     async creerCompte(courriel, motDePasse) {
       const sel = randomBytes(16);
       const derive = scrypt(motDePasse, sel, SCRYPT);
       const compte: Compte = {
         id: randomUUID(),
-        courriel: courriel.trim().toLowerCase(),
+        courriel: normaliser(courriel),
         verificateur: {
           sel: encoderBase64(sel),
           empreinte: encoderBase64(derive),
@@ -185,7 +200,7 @@ export function creerServeurAutorisation(
     }) {
       if (!clientConnu(clientId)) return { ok: false, motif: 'client_inconnu' };
 
-      const compte = await depot.comptes.parCourriel(courriel.trim().toLowerCase());
+      const compte = await depot.comptes.parCourriel(normaliser(courriel));
       if (!compte) {
         // Dérivation malgré tout : sans elle, l'écart de durée révélerait
         // quels courriels existent.

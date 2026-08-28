@@ -43,6 +43,18 @@ export function enregistrerRoutesOAuth(
       });
     }
 
+    // Un courriel déjà pris n'est pas une panne : c'est le cas le plus banal
+    // qui soit, et il doit se dire. Sans ce contrôle, la contrainte d'unicité
+    // de la base remontait en 500, avec son nom en clair dans la réponse — et
+    // la personne, devant un « le serveur n'a pas pu répondre », n'avait aucun
+    // moyen de deviner qu'il lui suffisait de se connecter.
+    if (await autorisation.compteExiste(corps.courriel)) {
+      return reponse.code(409).send({
+        motif: 'courriel_deja_pris',
+        message: 'Un compte existe déjà avec cette adresse. Connectez-vous.',
+      });
+    }
+
     const compte = await autorisation.creerCompte(corps.courriel, corps.motDePasse);
     return reponse
       .code(201)
