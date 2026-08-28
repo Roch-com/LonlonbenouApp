@@ -9,7 +9,7 @@ import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStor
 import { CarteCycle } from '@/features/intimite/components/CarteCycle';
 import { BandeauSos } from '../components/BandeauSos';
 import { CarteDuPartenaire } from '../components/CarteDuPartenaire';
-import { CompteurCarte } from '../components/CompteurCarte';
+import { BandeauAccueil } from '../components/BandeauAccueil';
 import { SelecteurStatut } from '../components/SelecteurStatut';
 import { useChat, useMessagesNonLus } from '../stores/chatStore';
 
@@ -32,7 +32,9 @@ export function AccueilEcran() {
       />
 
       <BandeauSos />
-      <CompteurCarte compact enAvant />
+
+      <BandeauAccueil />
+
       <CarteDuPartenaire />
 
       <SelecteurStatut />
