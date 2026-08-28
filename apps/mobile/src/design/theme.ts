@@ -40,55 +40,71 @@ export {
 
 export const polices = typography.familles;
 
-/** Style de texte prêt à l'emploi, pour éviter les combinaisons approximatives. */
+/**
+ * Couleur de chaque variante, par clé de palette. Résolue à l'exécution : c'est
+ * ce qui permet au même style de servir en clair comme en sombre.
+ */
+export const couleurParVariante = {
+  afficheXl: 'texte',
+  affiche: 'texte',
+  titre: 'texte',
+  sousTitre: 'texte',
+  corps: 'texte',
+  corpsDoux: 'texteDoux',
+  petit: 'texteDoux',
+  meta: 'texteDoux',
+  surtitre: 'accent',
+} as const;
+
+/**
+ * Styles de texte — **police, taille, interligne, rien d'autre**.
+ *
+ * La couleur en est délibérément absente. Elle y était, et c'est ce qui rendait
+ * tout le texte illisible en mode sombre : cet objet est construit au
+ * chargement du module, avec la palette claire, et figeait donc l'encre sombre
+ * dans chaque variante. `Texte` applique la couleur à l'exécution, depuis le
+ * thème actif.
+ */
 export const textes = {
   afficheXl: {
     fontFamily: polices.titre,
     fontSize: tailles.afficheXl,
     lineHeight: interlignes.afficheXl,
-    color: colors.texte,
   },
   affiche: {
     fontFamily: polices.titre,
     fontSize: tailles.affiche,
     lineHeight: interlignes.affiche,
-    color: colors.texte,
   },
   titre: {
     fontFamily: polices.titre,
     fontSize: tailles.titre,
     lineHeight: interlignes.titre,
-    color: colors.texte,
   },
   sousTitre: {
     fontFamily: polices.corpsMoyen,
     fontSize: tailles.sousTitre,
     lineHeight: interlignes.sousTitre,
-    color: colors.texte,
   },
   corps: {
     fontFamily: polices.corps,
     fontSize: tailles.corps,
     lineHeight: interlignes.corps,
-    color: colors.texte,
   },
   corpsDoux: {
     fontFamily: polices.corps,
     fontSize: tailles.corps,
     lineHeight: interlignes.corps,
-    color: colors.texteDoux,
   },
   petit: {
     fontFamily: polices.corps,
     fontSize: tailles.petit,
     lineHeight: interlignes.petit,
-    color: colors.texteDoux,
   },
   meta: {
     fontFamily: polices.corps,
     fontSize: tailles.minuscule,
     lineHeight: interlignes.minuscule,
-    color: colors.texteDoux,
   },
   surtitre: {
     fontFamily: polices.corpsFort,
@@ -96,6 +112,5 @@ export const textes = {
     lineHeight: interlignes.minuscule,
     letterSpacing: typography.interlettrage.capitales,
     textTransform: 'uppercase',
-    color: colors.accent,
   },
 } as const;

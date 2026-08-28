@@ -35,9 +35,7 @@ export function AccueilEcran() {
       <CompteurCarte compact enAvant />
       <CarteDuPartenaire />
 
-      <Carte>
-        <SelecteurStatut />
-      </Carte>
+      <SelecteurStatut />
 
       <CarteCycle />
 

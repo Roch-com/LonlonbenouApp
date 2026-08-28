@@ -66,7 +66,11 @@ export function Bouton({
       {icone ? <Feather name={icone} size={18} color={teinte} /> : null}
       <Texte
         variante="sousTitre"
-        numberOfLines={1}
+        // Deux lignes, pas une. Sur un téléphone réglé en grande police, un
+        // libellé d'une seule ligne se coupait au milieu — « Contin… » pour
+        // « Continuer » — ce qui est pire que tout : le bouton ne dit plus ce
+        // qu'il fait. Mieux vaut un bouton plus haut qu'un bouton muet.
+        numberOfLines={2}
         style={[tonTexte, styles.libelle]}
       >
         {libelle}
@@ -114,12 +118,20 @@ const styles = stylesDynamiques(() => ({
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 52,
+    // Pas de hauteur fixe : un libellé sur deux lignes doit pouvoir
+    // agrandir le bouton plutôt que d'être rogné.
     overflow: 'hidden',
   },
   pleineLargeur: { alignSelf: 'stretch' },
-  contenu: { flexDirection: 'row', alignItems: 'center', gap: espacements.xs },
-  // `flexShrink` : un libellé long se tronque plutôt que d'élargir le bouton
-  // au-delà de son conteneur.
+  contenu: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: espacements.xs,
+    // Occupe la largeur disponible : sans cela, la rangée se dimensionnait sur
+    // son contenu et le texte se retrouvait à l'étroit sans raison.
+    flex: 1,
+  },
   libelle: { flexShrink: 1, textAlign: 'center' },
   inactif: { opacity: 0.45 },
 }));

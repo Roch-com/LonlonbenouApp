@@ -5,14 +5,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Texte } from './Texte';
-import {
-  chrome,
-  colors,
-  espacements,
-  margeEcran,
-  ombres,
-  rayons,
-} from '@/design/theme';
+import { useCouleurs } from '@/design/ThemeProvider';
+import { chrome, espacements, margeEcran, ombres, rayons } from '@/design/theme';
 
 interface ActionEnTete {
   icone: keyof typeof Feather.glyphMap;
@@ -44,6 +38,7 @@ interface Props {
  * deux fois la même chose.
  */
 export function EnTeteApp({ titre, surtitre, actions = [], onRetour }: Props) {
+  const colors = useCouleurs();
   const marges = useSafeAreaInsets();
 
   return (

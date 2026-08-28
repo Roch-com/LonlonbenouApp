@@ -2,14 +2,8 @@ import { Tabs } from 'expo-router';
 import { Platform, StyleSheet, View, type ColorValue } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  chrome,
-  colors,
-  espacements,
-  ombres,
-  polices,
-  rayons,
-} from '@/design/theme';
+import { useCouleurs } from '@/design/ThemeProvider';
+import { chrome, espacements, ombres, polices, rayons } from '@/design/theme';
 import { useMoi } from '@/features/reglages/stores/sessionStore';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 import { useMessagesNonLus } from '@/features/presence/stores/chatStore';
@@ -24,6 +18,7 @@ import { useConfidencesNonLues } from '@/features/croissance/stores/confidencesS
  * censée donner. Cinq est la limite haute reconnue, et c'est déjà beaucoup.
  */
 export default function DispositionOnglets() {
+  const colors = useCouleurs();
   const marges = useSafeAreaInsets();
   const moi = useMoi();
   const partenaireId = useSessionServeur((e) => e.partenaireId);
@@ -125,8 +120,18 @@ function Icone({
   color: ColorValue;
   focused: boolean;
 }) {
+  const couleurs = useCouleurs();
+
   return (
-    <View style={[styles.icone, focused && styles.iconeActive]}>
+    <View
+      style={[
+        styles.icone,
+        // La pastille de l'onglet actif suit le thème : dans une feuille
+        // statique, elle gardait l'ivoire du mode clair et formait une tache
+        // pâle sur la barre sombre.
+        focused && { backgroundColor: couleurs.fondNuance },
+      ]}
+    >
       <Feather name={nom} color={color} size={20} />
     </View>
   );
@@ -140,5 +145,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconeActive: { backgroundColor: colors.fondNuance },
 });

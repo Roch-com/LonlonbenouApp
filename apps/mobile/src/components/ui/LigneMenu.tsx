@@ -43,7 +43,8 @@ export function LigneMenu({
         <View style={styles.titreRangee}>
           <Texte
             variante="corps"
-            numberOfLines={1}
+            // Deux lignes : un libellé de menu tronqué ne dit plus où il mène.
+            numberOfLines={2}
             style={[styles.titre, grave && { color: colors.urgence }]}
           >
             {libelle}
