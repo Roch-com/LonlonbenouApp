@@ -48,7 +48,7 @@ export function CycleEcran() {
   if (etatSession === 'anonyme') {
     return (
       <EcranModale section="Cycle">
-        <EnTete surtitre="Cycle" titre="Un module qui vit sur le serveur" />
+        <EnTete titre="Un module qui vit sur le serveur" />
         <Carte>
           <Texte variante="corpsDoux">
             Le cycle se suit sur son propre appareil, et c’est le serveur qui décide
@@ -69,7 +69,7 @@ export function CycleEcran() {
   if (etatSession === 'connecte' && !coupleId) {
     return (
       <EcranModale section="Cycle">
-        <EnTete surtitre="Cycle" titre={`Il manque ${autre.prenom}`} />
+        <EnTete titre={`Il manque ${autre.prenom}`} />
         <Carte>
           <Texte variante="corpsDoux">
             Votre compte n’est encore relié à personne. L’appairage se fait une
@@ -105,7 +105,6 @@ export function CycleEcran() {
   return (
     <EcranModale section="Cycle">
       <EnTete
-        surtitre="Cycle"
         titre={
           vue?.role === 'porteuse' ? 'Mon cycle' : `Le cycle de ${autre.prenom}`
         }

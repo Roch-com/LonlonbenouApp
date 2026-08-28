@@ -410,6 +410,69 @@ export async function creerServeur(options: OptionsServeur = {}) {
     },
   );
 
+  /**
+   * Date d'origine du couple.
+   *
+   * Le serveur la fixe au jour de l'appairage, faute de mieux — mais un couple
+   * ne commence pas le jour où il installe une application. Sans ce correctif,
+   * le compteur affiche une durée fausse, et c'est le premier chiffre que les
+   * deux voient en ouvrant l'app.
+   *
+   * Chacun peut la modifier, sans validation de l'autre : c'est une donnée
+   * commune, pas une donnée personnelle, et exiger un accord à deux pour
+   * corriger une faute de saisie serait de la cérémonie.
+   */
+  app.put(
+    '/couples/:coupleId/depuis',
+    { preHandler: authentifier },
+    async (requete, reponse) => {
+      const { coupleId } = requete.params as { coupleId: string };
+      const corps = requete.body as { depuis?: string };
+
+      if (!corps?.depuis || !/^\d{4}-\d{2}-\d{2}$/.test(corps.depuis)) {
+        return reponse
+          .code(400)
+          .send({
+            motif: 'date_invalide',
+            message: 'Format attendu : AAAA-MM-JJ.',
+          });
+      }
+
+      const jour = new Date(`${corps.depuis}T00:00:00.000Z`);
+      if (Number.isNaN(jour.getTime())) {
+        return reponse
+          .code(400)
+          .send({ motif: 'date_invalide', message: 'Cette date n’existe pas.' });
+      }
+      // Une date future donnerait un compteur négatif : mieux vaut refuser que
+      // d'afficher « ensemble depuis -12 jours ».
+      if (jour.getTime() > Date.now()) {
+        return reponse.code(400).send({
+          motif: 'date_future',
+          message: 'Cette date n’est pas encore arrivée.',
+        });
+      }
+
+      const couple = await depot.couples.parId(coupleId);
+      if (!couple || couple.dissocieLe) {
+        return reponse.code(410).send({ motif: 'couple_dissocie' });
+      }
+      // L'appartenance se vérifie contre le dépôt, jamais contre le corps de
+      // la requête : c'est la règle suivie par toutes les autres routes.
+      const membre = couple.couple.partenaires.some(
+        (p) => p.id === requete.identite!.partenaireId,
+      );
+      if (!membre) return reponse.code(403).send({ motif: 'non_membre' });
+
+      await depot.couples.enregistrer({
+        ...couple,
+        couple: { ...couple.couple, depuis: corps.depuis },
+      });
+
+      return { depuis: corps.depuis };
+    },
+  );
+
   // ---------------------------------------------------- exigence 2 : dissociation
 
   app.post(

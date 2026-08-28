@@ -6,6 +6,7 @@ import { Carte, Texte } from '@/components/ui';
 import { espacements } from '@/design/theme';
 import { dateLongue } from '@/lib/temps';
 import { useSession } from '@/features/reglages/stores/sessionStore';
+import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 
 interface Props {
   compact?: boolean;
@@ -21,7 +22,13 @@ interface Props {
  * ensemble est ce qui mérite d'être vu en premier, le reste se lit ensuite.
  */
 export function CompteurCarte({ compact, enAvant }: Props) {
-  const depuis = useSession((e) => e.couple.depuis);
+  const depuisLocal = useSession((e) => e.couple.depuis);
+  const depuisServeur = useSessionServeur((e) => e.depuis);
+
+  // Le serveur fait autorité dès qu'il connaît le couple. La valeur locale
+  // n'est qu'un repli d'amorçage : c'est elle qui affichait une date de
+  // démonstration — et donc une durée fausse — une fois les comptes reliés.
+  const depuis = depuisServeur ?? depuisLocal;
   const maintenant = new Date().toISOString();
 
   const jours = joursEnsemble(depuis, maintenant);

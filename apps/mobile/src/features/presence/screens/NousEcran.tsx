@@ -16,6 +16,7 @@ import { useNotifications } from '@/features/reglages/stores/notificationsStore'
 import { ConsentementServeur } from '@/features/reglages/components/ConsentementServeur';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 import { CompteurCarte } from '../components/CompteurCarte';
+import { DateDuCouple } from '@/features/reglages/components/DateDuCouple';
 
 /**
  * Pôle ① — Compteur, plus le strict minimum du pôle ⑥ nécessaire pour que le
@@ -53,6 +54,8 @@ export function NousEcran() {
       </Carte>
 
       <CompteurCarte />
+
+      <DateDuCouple />
 
       <Carte>
         <Texte variante="surtitre">Ce que vous partagez</Texte>

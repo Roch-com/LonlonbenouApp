@@ -35,16 +35,28 @@ interface ReponseJetons {
   expires_in: number;
 }
 
+interface PartenaireServeur {
+  id: string;
+  prenom: string;
+  initiales: string;
+}
+
 interface EtatSessionStore {
   etat: EtatSessionServeur;
   partenaireId?: string;
   coupleId?: string;
+  /** Date d'origine du couple, telle que le serveur la connaît. */
+  depuis?: string;
+  /** Prénoms venus de l'appairage : le serveur fait autorité, pas le local. */
+  partenaires?: PartenaireServeur[];
   jetonAcces?: string;
   /** Dernier message d'erreur affichable, remis à zéro à chaque tentative. */
   erreur?: string;
   enCours: boolean;
 
   restaurer: () => Promise<void>;
+  /** Corrige la date d'origine du couple. Rend vrai si le serveur l'a acceptée. */
+  corrigerLaDate: (depuis: string) => Promise<boolean>;
   sInscrire: (courriel: string, motDePasse: string) => Promise<boolean>;
   seConnecter: (courriel: string, motDePasse: string) => Promise<boolean>;
   seDeconnecter: () => Promise<void>;
@@ -216,6 +228,22 @@ export const useSessionServeur = create<EtatSessionStore>()((set, get) => {
         partenaireId: undefined,
         coupleId: undefined,
       });
+    },
+
+    async corrigerLaDate(depuis) {
+      const coupleId = get().coupleId;
+      if (!coupleId) return false;
+      try {
+        await appeler(`/couples/${coupleId}/depuis`, {
+          methode: 'PUT',
+          corps: { depuis },
+        });
+        set({ depuis });
+        return true;
+      } catch (erreur) {
+        set({ erreur: messageLisible(erreur) });
+        return false;
+      }
     },
 
     async rafraichirLeCouple() {

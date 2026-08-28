@@ -16,7 +16,6 @@ export function CroissanceEcran() {
   return (
     <EcranOnglet section="Croissance">
       <EnTete
-        surtitre="Croissance"
         titre="Se dire les choses"
         sousTitre={SOUS_TITRES[onglet](autre.prenom)}
       />

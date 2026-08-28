@@ -50,7 +50,7 @@ export function ViePratiqueEcran() {
   if (etat === 'anonyme' || (etat === 'connecte' && !coupleId)) {
     return (
       <EcranOnglet section="Vie pratique">
-        <EnTete surtitre="Vie pratique" titre="S’organiser à deux" />
+        <EnTete titre="S’organiser à deux" />
         <Carte>
           <Texte variante="corpsDoux">
             Un agenda commun, des projets communs : il faut deux comptes reliés pour
@@ -71,11 +71,7 @@ export function ViePratiqueEcran() {
 
   return (
     <EcranOnglet section="Vie pratique">
-      <EnTete
-        surtitre="Vie pratique"
-        titre="S’organiser à deux"
-        sousTitre={SOUS_TITRES[onglet]}
-      />
+      <EnTete titre="S’organiser à deux" sousTitre={SOUS_TITRES[onglet]} />
 
       <Segments
         etiquette="Sections de la vie pratique"

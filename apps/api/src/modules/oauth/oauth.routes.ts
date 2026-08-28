@@ -176,9 +176,20 @@ export function enregistrerRoutesOAuth(
     if (!charge) return reponse.code(401).send({ motif: 'non_authentifie' });
 
     const couple = await depot.couples.parPartenaire(charge.partenaireId);
+    const actif = couple && !couple.dissocieLe ? couple : undefined;
+
     return {
       partenaireId: charge.partenaireId,
-      coupleId: couple?.dissocieLe ? undefined : couple?.id,
+      coupleId: actif?.id,
+      // Le mobile affichait jusqu'ici une date de démonstration codée en dur,
+      // faute de connaître celle du couple. Les prénoms suivent : ils viennent
+      // de l'appairage, et chaque appareil les redemandait à l'autre.
+      depuis: actif?.couple.depuis,
+      partenaires: actif?.couple.partenaires.map((p) => ({
+        id: p.id,
+        prenom: p.prenom,
+        initiales: p.initiales,
+      })),
     };
   });
 }

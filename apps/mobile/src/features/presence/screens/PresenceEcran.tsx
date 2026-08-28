@@ -27,7 +27,6 @@ export function PresenceEcran() {
   return (
     <EcranOnglet section="Présence">
       <EnTete
-        surtitre="Présence"
         titre="Où en êtes-vous"
         sousTitre="Chacun partage ce qu’il souhaite, quand il le souhaite."
       />
