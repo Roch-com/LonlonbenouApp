@@ -1,6 +1,7 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { ActivityIndicator, AppState, View } from 'react-native';
 import { colors } from '@/design/theme';
+import { useHydratation } from '@/lib/useHydratation';
 import { EcranVerrou } from './EcranVerrou';
 import { useAppVerrouillee, useVerrou } from '../stores/verrouStore';
 
@@ -14,12 +15,9 @@ export function GardeVerrou({ children }: { children: ReactNode }) {
   const signalerMasquage = useVerrou((e) => e.signalerMasquage);
   const signalerRetour = useVerrou((e) => e.signalerRetour);
 
-  const [pret, setPret] = useState(() => useVerrou.persist.hasHydrated());
-
-  useEffect(() => {
-    if (pret) return;
-    return useVerrou.persist.onFinishHydration(() => setPret(true));
-  }, [pret]);
+  // Hook plutôt qu'un `useState` + `useEffect` écrits ici : la course entre
+  // l'état initial et l'abonnement bloquait cet écran pour de bon.
+  const pret = useHydratation(useVerrou);
 
   useEffect(() => {
     const abonnement = AppState.addEventListener('change', (etat) => {

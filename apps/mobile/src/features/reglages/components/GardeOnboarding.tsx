@@ -1,6 +1,7 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { colors } from '@/design/theme';
+import { useHydratation } from '@/lib/useHydratation';
 import { OnboardingEcran } from '../screens/OnboardingEcran';
 import { useSession } from '../stores/sessionStore';
 
@@ -10,12 +11,9 @@ import { useSession } from '../stores/sessionStore';
  */
 export function GardeOnboarding({ children }: { children: ReactNode }) {
   const fait = useSession((e) => e.onboardingFait);
-  const [pret, setPret] = useState(() => useSession.persist.hasHydrated());
-
-  useEffect(() => {
-    if (pret) return;
-    return useSession.persist.onFinishHydration(() => setPret(true));
-  }, [pret]);
+  // Hook plutôt qu'un `useState` + `useEffect` écrits ici : la course entre
+  // l'état initial et l'abonnement bloquait cet écran pour de bon.
+  const pret = useHydratation(useSession);
 
   if (!pret) {
     return (
