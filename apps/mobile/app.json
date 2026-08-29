@@ -37,7 +37,7 @@
         "expo-notifications",
         {
           "icon": "./assets/android-icon-monochrome.png",
-          "color": "#9C7A3C"
+          "color": "#1D4E89"
         }
       ],
       "@sentry/react-native",

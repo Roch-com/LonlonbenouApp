@@ -14,18 +14,23 @@ import { themeClair, type Theme } from '@lonlonbenu/shared';
  *
  * ## Ce qui est fait à la place
  *
- * La fabrique est conservée telle quelle et la feuille n'est construite qu'au
- * premier accès, contre le thème courant, puis mémorisée par mode. L'objet
- * rendu est un mandataire : `styles.carte` déclenche la construction si elle
- * n'a pas eu lieu, et rend ensuite la valeur en cache.
+ * La fabrique est conservée telle quelle et la feuille construite à la
+ * demande, contre le thème courant, puis mémorisée par mode. L'objet rendu
+ * expose un accesseur par clé, qui résout à la lecture.
+ *
+ * Une première version employait un `Proxy`. Elle marchait, jusqu'à ce qu'elle
+ * ne marche plus : les règles d'invariance d'un `Proxy` sont strictes — une
+ * clé rapportée par `ownKeys` sans exister sur la cible, un descripteur non
+ * configurable, un `Object.freeze` appliqué par React Native en développement —
+ * et leur violation lève une `TypeError` à l'exécution, loin de sa cause. Des
+ * accesseurs ordinaires n'ont aucune de ces contraintes et font le même
+ * travail.
  *
  * ## Ce que cela suppose
  *
  * Que l'arbre soit remonté au changement de thème — c'est le rôle de la clé
- * posée par `FournisseurTheme`. Sans elle, un composant qui ne consomme pas le
- * contexte garderait ses anciennes couleurs jusqu'à son prochain rendu. Le
- * changement de thème étant un geste rare et délibéré, une remontée complète
- * est un prix négligeable pour quarante-six fichiers laissés intacts.
+ * posée par `FournisseurTheme`. Sans elle, un composant qui ne consomme pas ce
+ * contexte garderait ses anciennes couleurs jusqu'à son prochain rendu.
  */
 let themeCourant: Theme = themeClair;
 
@@ -50,11 +55,16 @@ export function stylesDynamiques<T extends StyleSheet.NamedStyles<T>>(
     return construite;
   };
 
-  return new Proxy({} as T, {
-    get: (_cible, propriete) => resoudre()[propriete as keyof T],
-    has: (_cible, propriete) => propriete in resoudre(),
-    ownKeys: () => Reflect.ownKeys(resoudre()),
-    getOwnPropertyDescriptor: (_cible, propriete) =>
-      Object.getOwnPropertyDescriptor(resoudre(), propriete),
-  });
+  // Les clés sont les mêmes quel que soit le thème : une seule résolution
+  // suffit à les connaître, et elle sert aussi de cache pour le mode courant.
+  const expose = {} as T;
+  for (const cle of Object.keys(resoudre()) as (keyof T)[]) {
+    Object.defineProperty(expose, cle, {
+      enumerable: true,
+      configurable: true,
+      get: () => resoudre()[cle],
+    });
+  }
+
+  return expose;
 }
