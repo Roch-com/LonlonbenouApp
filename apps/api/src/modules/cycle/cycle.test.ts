@@ -13,7 +13,11 @@ import {
 type App = Awaited<ReturnType<typeof monterServeur>>['app'];
 
 /** Gaëlle porte le cycle ; Rochambeau est le partenaire. */
-async function monterCycle(niveau?: string) {
+async function monterCycle(
+  niveau?: string,
+  /** Carnet vide : le cycle est déclaré, mais aucune règle n’est saisie. */
+  options?: { sansRegles?: boolean },
+) {
   const serveur = await monterServeur();
   const { app } = serveur;
 
@@ -26,19 +30,26 @@ async function monterCycle(niveau?: string) {
 
   // Un cycle démarré il y a quatre jours : phase menstruelle.
   const debut = new Date(Date.now() - 4 * 86_400_000).toISOString().slice(0, 10);
-  await app.inject({
-    method: 'POST',
-    url: `/couples/${COUPLE_ID}/cycle/regles`,
-    headers: entete(GAELLE),
-    payload: { debutLe: debut },
-  });
+  if (!options?.sansRegles) {
+    await app.inject({
+      method: 'POST',
+      url: `/couples/${COUPLE_ID}/cycle/regles`,
+      headers: entete(GAELLE),
+      payload: { debutLe: debut },
+    });
 
-  await app.inject({
-    method: 'POST',
-    url: `/couples/${COUPLE_ID}/cycle/symptomes`,
-    headers: entete(GAELLE),
-    payload: { date: debut, type: 'crampes', intensite: 3, note: 'nuit difficile' },
-  });
+    await app.inject({
+      method: 'POST',
+      url: `/couples/${COUPLE_ID}/cycle/symptomes`,
+      headers: entete(GAELLE),
+      payload: {
+        date: debut,
+        type: 'crampes',
+        intensite: 3,
+        note: 'nuit difficile',
+      },
+    });
+  }
 
   if (niveau) {
     await app.inject({
@@ -95,7 +106,34 @@ describe('le brut ne quitte jamais le serveur', () => {
     const { app } = await monterCycle('aucun');
     const vu = await lire(app, ROCHAMBEAU);
 
-    expect(vu.json().vue).toEqual({ niveau: 'aucun', partage: false });
+    expect(vu.json().vue).toEqual({
+      niveau: 'aucun',
+      partage: false,
+      raison: 'sans_partage',
+    });
+  });
+
+  it('distingue « non déclaré » de « déclaré sans partage »', async () => {
+    // Les deux ne montrent rien, mais confondre les deux ferait proposer au
+    // partenaire de se déclarer alors que la personne concernée l’est déjà.
+    const vierge = await monterServeur();
+    expect((await lire(vierge.app, ROCHAMBEAU)).json().vue.raison).toBe(
+      'non_declare',
+    );
+
+    const { app } = await monterCycle('aucun');
+    expect((await lire(app, ROCHAMBEAU)).json().vue.raison).toBe('sans_partage');
+  });
+
+  it('dit « sans données » quand le partage est ouvert mais le carnet vide', async () => {
+    const { app } = await monterCycle('phases', { sansRegles: true });
+    const vu = await lire(app, ROCHAMBEAU);
+
+    expect(vu.json().vue).toEqual({
+      niveau: 'aucun',
+      partage: false,
+      raison: 'sans_donnees',
+    });
   });
 
   it('rend la phase et des gestes concrets au niveau « phases »', async () => {
@@ -234,6 +272,7 @@ describe('niveaux et validation', () => {
       expect((await lire(app, qui)).json().vue).toEqual({
         niveau: 'aucun',
         partage: false,
+        raison: 'non_declare',
       });
     }
   });

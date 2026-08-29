@@ -36,6 +36,39 @@ describe('respect strict du niveau', () => {
     expect(vuePartenaire(undefined, 'phases').partage).toBe(false);
   });
 
+  it('dit pourquoi il n’y a rien, sans jamais en dire plus', () => {
+    // Ne rien montrer est correct ; laisser croire que le module n’est pas
+    // configuré alors qu’il l’est ne l’est pas.
+    expect(vuePartenaire(etatMenstruel, 'aucun', false)).toEqual({
+      niveau: 'aucun',
+      partage: false,
+      raison: 'non_declare',
+    });
+    expect(vuePartenaire(etatMenstruel, 'aucun')).toEqual({
+      niveau: 'aucun',
+      partage: false,
+      raison: 'sans_partage',
+    });
+    expect(vuePartenaire(undefined, 'phases')).toEqual({
+      niveau: 'aucun',
+      partage: false,
+      raison: 'sans_donnees',
+    });
+  });
+
+  it('ne décrit l’absence par aucune donnée du cycle', () => {
+    // La raison est un mot fixe : trois valeurs possibles, et rien qui vienne
+    // de l’état réel. Un « sans_donnees » ne doit pas trahir une phase.
+    for (const vue of [
+      vuePartenaire(etatMenstruel, 'aucun', false),
+      vuePartenaire(etatMenstruel, 'aucun'),
+    ]) {
+      const contenu = JSON.stringify(vue);
+      expect(contenu).not.toContain('menstruelle');
+      expect(Object.keys(vue).sort()).toEqual(['niveau', 'partage', 'raison']);
+    }
+  });
+
   it('ne nomme aucune phase au niveau discret', () => {
     const vue = vuePartenaire(etatMenstruel, 'discret');
     const contenu = JSON.stringify(vue);

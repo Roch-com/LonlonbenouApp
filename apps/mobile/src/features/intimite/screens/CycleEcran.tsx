@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
+import { useCallback } from 'react';
 import { View } from 'react-native';
 import type { Theme } from '@lonlonbenu/shared';
 import { stylesDynamiques } from '@/design/stylesDynamiques';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Bouton, Carte, EnTete, Texte } from '@/components/ui';
 import { EcranModale } from '@/components/chrome';
 import { espacements } from '@/design/theme';
@@ -39,11 +39,15 @@ export function CycleEcran() {
   const charger = useCycle((e) => e.charger);
   const declarer = useCycle((e) => e.declarer);
 
-  useEffect(() => {
-    if (connecte && coupleId && partenaireId) {
-      void charger(coupleId, partenaireId);
-    }
-  }, [connecte, coupleId, partenaireId, charger]);
+  // Au retour sur l’écran, pas seulement au montage : le niveau de partage se
+  // change depuis l’autre téléphone, et rien ici ne l’apprendrait autrement.
+  useFocusEffect(
+    useCallback(() => {
+      if (connecte && coupleId && partenaireId) {
+        void charger(coupleId, partenaireId);
+      }
+    }, [connecte, coupleId, partenaireId, charger]),
+  );
 
   if (etatSession === 'anonyme') {
     return (
@@ -97,21 +101,26 @@ export function CycleEcran() {
     );
   }
 
-  // Personne n'est déclaré : les deux voient la même absence, et l'un comme
-  // l'autre peut désigner qui suit son cycle — mais une fois désignée, seule
-  // la personne concernée peut revenir dessus.
-  const rienDeclare = vue?.role === 'partenaire' && !vue.vue.partage;
+  // Trois absences bien distinctes, et une seule autorise à se déclarer.
+  const raison =
+    vue?.role === 'partenaire' && !vue.vue.partage ? vue.vue.raison : undefined;
 
   return (
     <EcranModale section="Cycle">
       <EnTete
         titre={
-          vue?.role === 'porteuse' ? 'Mon cycle' : `Le cycle de ${autre.prenom}`
+          vue?.role === 'porteuse'
+            ? 'Mon cycle'
+            : raison === 'non_declare'
+              ? 'Cycle'
+              : `Le cycle de ${autre.prenom}`
         }
         sousTitre={
           vue?.role === 'porteuse'
             ? 'Ce que vous saisissez, et ce que vous choisissez d’en partager.'
-            : 'Ce que vous en voyez dépend entièrement de son choix.'
+            : raison === 'non_declare'
+              ? 'Personne ne suit encore de cycle ici.'
+              : 'Ce que vous en voyez dépend entièrement de son choix.'
         }
       />
 
@@ -133,7 +142,7 @@ export function CycleEcran() {
         </Carte>
       ) : null}
 
-      {rienDeclare ? (
+      {raison === 'non_declare' ? (
         <Carte>
           <Texte variante="titre">Qui suit un cycle ?</Texte>
           <Texte variante="corpsDoux" style={styles.intro}>
@@ -150,6 +159,32 @@ export function CycleEcran() {
               téléphone — pas à vous de le faire à sa place.
             </Texte>
           </View>
+        </Carte>
+      ) : null}
+
+      {raison === 'sans_partage' ? (
+        <Carte>
+          <Texte variante="titre">{autre.prenom} suit son cycle ici</Texte>
+          <Texte variante="corpsDoux" style={styles.intro}>
+            Elle n’a pas choisi d’en partager quelque chose pour l’instant. Ce
+            réglage n’appartient qu’à elle, et elle peut le reprendre quand elle
+            le souhaite depuis son propre téléphone.
+          </Texte>
+          <Texte variante="meta" style={styles.intro}>
+            Rien ne vous est caché sans que vous le sachiez : vous voyez ici son
+            niveau, même quand il ne montre rien.
+          </Texte>
+        </Carte>
+      ) : null}
+
+      {raison === 'sans_donnees' ? (
+        <Carte>
+          <Texte variante="titre">Rien à afficher pour l’instant</Texte>
+          <Texte variante="corpsDoux" style={styles.intro}>
+            {autre.prenom} partage son cycle, mais aucune date n’a encore été
+            saisie — il n’y a donc rien à calculer. Cet écran se remplira tout
+            seul.
+          </Texte>
         </Carte>
       ) : null}
 

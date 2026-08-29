@@ -164,10 +164,16 @@ export function creerServiceCycle(depot: Depot): ServiceCycle {
 
       const partage = await depot.cycle.partage(coupleId);
       if (!partage) {
-        // Rien n'est déclaré : les deux voient la même absence.
+        // Rien n’est déclaré : les deux voient la même absence, et elle est
+        // dite pour ce qu’elle est. Un écran qui confondrait ce cas avec
+        // « déclaré mais non partagé » proposerait au partenaire de se
+        // déclarer à la place de la personne concernée.
         return {
           ok: true,
-          vue: { role: 'partenaire', vue: { niveau: 'aucun', partage: false } },
+          vue: {
+            role: 'partenaire',
+            vue: vuePartenaire(undefined, 'aucun', false),
+          },
         };
       }
 

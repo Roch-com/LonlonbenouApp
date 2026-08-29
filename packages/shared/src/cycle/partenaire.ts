@@ -22,8 +22,29 @@ import {
 } from '../types/cycle';
 import type { EtatCycle } from './calcul';
 
+/**
+ * Pourquoi il n’y a rien à montrer. Sans cette précision, le niveau `aucun`
+ * confond trois situations que le partenaire doit pouvoir distinguer :
+ * personne ne suit de cycle ici, la personne concernée n’en partage rien, ou
+ * elle en partage mais n’a encore rien saisi. Les confondre laisse croire que
+ * le module n’est pas configuré alors qu’il l’est, et conduit à proposer à
+ * l’autre de se déclarer à la place de la personne concernée.
+ *
+ * Le dire n’est pas une entorse à la règle du pôle : le niveau courant a
+ * toujours été lisible par les deux, précisément pour que personne ne croie
+ * voir plus qu’il ne voit. On ne cache pas l’état, on ne commente pas les
+ * changements — ce sont deux choses différentes.
+ */
+export type RaisonSansPartage =
+  /** Personne n’a déclaré suivre un cycle dans ce couple. */
+  | 'non_declare'
+  /** Le cycle est suivi ; le niveau de partage est resté à `aucun`. */
+  | 'sans_partage'
+  /** Le niveau autorise un partage, mais aucune règle n’est encore saisie. */
+  | 'sans_donnees';
+
 export type VuePartenaire =
-  | { niveau: 'aucun'; partage: false }
+  | { niveau: 'aucun'; partage: false; raison: RaisonSansPartage }
   | {
       niveau: 'discret';
       partage: true;
@@ -52,8 +73,15 @@ const PHASES_ATTENTIONNEES: readonly CodePhase[] = ['menstruelle', 'spm'];
 export function vuePartenaire(
   etat: EtatCycle | undefined,
   niveau: NiveauCycle,
+  /** Faux quand personne n’a encore été déclaré comme suivant son cycle. */
+  declare = true,
 ): VuePartenaire {
-  if (niveau === 'aucun' || !etat) return { niveau: 'aucun', partage: false };
+  if (!declare) return { niveau: 'aucun', partage: false, raison: 'non_declare' };
+  if (niveau === 'aucun') {
+    return { niveau: 'aucun', partage: false, raison: 'sans_partage' };
+  }
+  // Le niveau autorise quelque chose, mais il n’y a rien à projeter encore.
+  if (!etat) return { niveau: 'aucun', partage: false, raison: 'sans_donnees' };
 
   if (niveau === 'discret') {
     const jourAttentionne = PHASES_ATTENTIONNEES.includes(etat.phase);
