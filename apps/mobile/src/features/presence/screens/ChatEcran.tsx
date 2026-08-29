@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  AppState,
   FlatList,
   Keyboard,
   Pressable,
@@ -8,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { useNavigation, useRouter } from 'expo-router';
+import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bouton, Carte, EnTeteApp, Texte } from '@/components/ui';
@@ -174,6 +175,44 @@ export function ChatEcran() {
     chargerPresence,
     marquerLus,
   ]);
+  /**
+   * Relecture régulière tant que la conversation est à l'écran.
+   *
+   * Le fil ne se chargeait qu'au montage : un message envoyé par l'autre
+   * n'apparaissait qu'en quittant l'écran et en y revenant. D'où l'impression
+   * de messages qui mettent « deux minutes » — ils étaient là depuis le début,
+   * personne n'était allé les chercher.
+   *
+   * Quatre secondes : assez pour qu'une conversation vive se sente immédiate,
+   * assez peu pour ne pas transformer chaque discussion en salve de requêtes.
+   * Ce n'est pas du temps réel — un canal ouvert le ferait mieux et coûterait
+   * moins — mais c'est ce qui donne le plus de confort pour le moins de travail
+   * à ce stade.
+   *
+   * Le sondage s'arrête dès que l'écran perd le premier plan, et dès que
+   * l'application passe en arrière-plan : interroger le serveur toutes les
+   * quatre secondes dans la poche de quelqu'un userait sa batterie pour rien.
+   */
+  useFocusEffect(
+    useCallback(() => {
+      if (!connecte || !coupleId || !partenaireId) return;
+
+      let vivant = true;
+      const relire = () => {
+        if (vivant && AppState.currentState === 'active') {
+          void charger(coupleId, partenaireId);
+        }
+      };
+
+      relire();
+      const minuterie = setInterval(relire, 4000);
+
+      return () => {
+        vivant = false;
+        clearInterval(minuterie);
+      };
+    }, [connecte, coupleId, partenaireId, charger]),
+  );
 
   if (etat === 'anonyme' || (etat === 'connecte' && !coupleId)) {
     return (

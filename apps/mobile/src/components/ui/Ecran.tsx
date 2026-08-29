@@ -1,11 +1,11 @@
 import type { ReactNode } from 'react';
 import {
   RefreshControl,
-  ScrollView,
   StyleSheet,
   View,
   type ScrollViewProps,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { chrome, espacements, margeEcran } from '@/design/theme';
@@ -80,7 +80,13 @@ export function Ecran({
   return (
     <View style={styles.fond}>
       {fond}
-      <ScrollView
+      {/* `KeyboardAwareScrollView` et non `ScrollView` : depuis le passage au
+          bord-à-bord d'Android, la fenêtre ne se redimensionne plus quand le
+          clavier monte, et il recouvrait le bouton de validation de chaque
+          formulaire — la date d'origine du couple, la connexion, l'appairage.
+          Celui-ci fait remonter le champ actif au-dessus du clavier. */}
+      <KeyboardAwareScrollView
+        bottomOffset={espacements.xl}
         style={styles.defilement}
         contentContainerStyle={[
           styles.contenu,
@@ -103,7 +109,7 @@ export function Ecran({
         {...scrollProps}
       >
         {children}
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </View>
   );
 }

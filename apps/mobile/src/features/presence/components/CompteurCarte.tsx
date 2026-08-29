@@ -6,7 +6,6 @@ import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useCouleurs } from '@/design/ThemeProvider';
 import { espacements, rayons } from '@/design/theme';
 import { dateLongue } from '@/lib/temps';
-import { useSession } from '@/features/reglages/stores/sessionStore';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 
 interface Props {
@@ -36,13 +35,39 @@ interface Props {
  */
 export function CompteurCarte({ compact, enAvant }: Props) {
   const colors = useCouleurs();
-  const depuisLocal = useSession((e) => e.couple.depuis);
-  const depuisServeur = useSessionServeur((e) => e.depuis);
 
-  // Le serveur fait autorité dès qu'il connaît le couple ; la valeur locale
-  // n'est qu'un repli d'amorçage.
-  const depuis = depuisServeur ?? depuisLocal;
+  /**
+   * **Seule la date du serveur compte.**
+   *
+   * Une date locale de démonstration servait de repli. Elle s'affichait donc à
+   * chaque lancement tant que `/moi` n'avait pas répondu — soit jusqu'à
+   * quarante secondes quand l'hébergement gratuit doit réveiller le serveur —
+   * et le couple voyait « 2 470 jours depuis 2019 » avant de voir sa vraie
+   * durée. Corriger la date ne servait à rien : elle revenait à l'ouverture
+   * suivante.
+   *
+   * Un repli inventé est pire qu'une absence : il se présente comme un fait.
+   */
+  const depuis = useSessionServeur((e) => e.depuis);
   const maintenant = new Date().toISOString();
+
+  // Sans date connue, on le dit plutôt que d'inventer un chiffre.
+  if (!depuis) {
+    return (
+      <Carte ton={enAvant ? 'accent' : 'elevee'}>
+        <Texte variante="surtitre" style={enAvant ? styles.surAccent : undefined}>
+          Ensemble depuis
+        </Texte>
+        <Texte
+          variante="corps"
+          style={[styles.attente, enAvant ? styles.surAccentDoux : undefined]}
+        >
+          Indiquez votre date d’origine dans « Notre espace » pour que le compteur
+          ait un sens.
+        </Texte>
+      </Carte>
+    );
+  }
 
   const jours = joursEnsemble(depuis, maintenant);
   const jalon = prochainJalon(depuis, maintenant);
@@ -127,6 +152,7 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
   nombre: { flexShrink: 1 },
   unite: { color: colors.texteDoux, flexShrink: 0 },
 
+  attente: { marginTop: espacements.sm },
   progression: { marginTop: espacements.md, gap: espacements.xs },
   rail: {
     height: 4,
