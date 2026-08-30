@@ -1,0 +1,13 @@
+-- Durée de cycle annoncée par la personne concernée.
+--
+-- Fichier séparé, et non une ligne ajoutée à 004 : le lanceur enregistre
+-- chaque migration appliquée et ne la rejoue jamais. Compléter un fichier déjà
+-- passé ne s'exécute donc nulle part — ni sur une base de test, ni en
+-- production — tout en donnant l'impression d'avoir corrigé quelque chose.
+--
+-- Le piège que cette colonne répare : le dépôt en mémoire range l'objet
+-- entier, l'adaptateur SQL n'écrit que les colonnes qu'il nomme. Un champ
+-- ajouté au type et oublié ici compile, passe les tests en mémoire, et se perd
+-- silencieusement à chaque écriture réelle. Le réglage paraît accepté, puis
+-- revient à sa valeur d'avant sans qu'aucune erreur n'apparaisse.
+ALTER TABLE cycle_partage ADD COLUMN IF NOT EXISTS duree_declaree SMALLINT;

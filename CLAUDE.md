@@ -83,6 +83,14 @@ Légende : **P0** = MVP obligatoire · **P1** = V1.1 · **P2** = évolution ult�
 - Nommage des dossiers par pôle : `features/presence`, `features/croissance`, `features/vie-pratique`, `features/intimite`, `features/memoire`, `features/reglages`
 - Toute entité sensible (position, cycle, confidences, messages) porte un champ de visibilité explicite en base — ne jamais faire de requête qui contourne ce filtre
 - Tests obligatoires sur la logique de réciprocité avant de merger un module sensible
+- **Toute modification du schéma ou d'un type persisté doit être vérifiée contre PostgreSQL**, pas seulement en mémoire :
+
+  ```
+  LONLONBENU_TEST_DATABASE_URL=<url> npx vitest run apps/api
+  ```
+
+  Le dépôt en mémoire range l'objet entier ; l'adaptateur SQL n'écrit que les colonnes qu'il nomme, et la base porte des contraintes que la mémoire ignore. Un champ ajouté à un type et oublié dans la migration compile, passe toute la suite en mémoire, et se perd **silencieusement** à chaque écriture réelle. C'est arrivé deux fois : `dureeDeclaree` du cycle, et le module `activite` absent du `CHECK` de `partages`.
+- Ne jamais compléter une migration déjà appliquée : le lanceur l'enregistre et ne la rejoue nulle part. Toujours un nouveau fichier numéroté.
 
 ## État actuel du projet
 
