@@ -19,7 +19,19 @@ import type { PartenaireId } from '../types/couple';
 
 /** Modules soumis au partage réciproque. */
 export type ModuleSensible =
-  'position' | 'cycle' | 'croissance' | 'score' | 'confidences';
+  | 'position'
+  | 'cycle'
+  | 'croissance'
+  | 'score'
+  | 'confidences'
+  /**
+   * « En ligne », « vu il y a… », « écrit… » dans la conversation.
+   *
+   * Ici plutôt qu'allumé par défaut : savoir quand l'autre s'est connecté
+   * pour la dernière fois se retourne facilement en reproche. Le passer par
+   * le consentement réciproque garantit qu'on ne le voit qu'en le montrant.
+   */
+  | 'activite';
 
 export interface Consentement {
   partenaireId: PartenaireId;
@@ -109,6 +121,7 @@ const LIBELLES_MODULE: Record<ModuleSensible, string> = {
   croissance: 'les axes de croissance',
   score: 'le score d’implication',
   confidences: 'l’espace de confidences',
+  activite: 'la présence dans la conversation',
 };
 
 function texteNotification(

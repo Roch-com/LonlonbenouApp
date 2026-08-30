@@ -8,6 +8,8 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
 import { Feather } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation, useRouter } from 'expo-router';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
@@ -29,11 +31,15 @@ import {
 } from '@/features/reglages/stores/sessionServeurStore';
 import { useAutre } from '@/features/reglages/stores/sessionStore';
 import { cleDuJour, jourLisible } from '@/lib/temps';
+import { ActionsMessage, type ActionMessage } from '../components/ActionsMessage';
 import { BulleMessage } from '../components/BulleMessage';
+import { LignePresence } from '../components/LignePresence';
+import { PointsDeSaisie } from '../components/PointsDeSaisie';
 import { SelecteurEmoji } from '../components/SelecteurEmoji';
 import { SelecteurHumeur } from '../components/SelecteurHumeur';
 import { useFilLisible } from '../hooks/useLecturesDechiffrees';
 import { useChat, useNombreDeVerification } from '../stores/chatStore';
+import { useActivite } from '../stores/activiteStore';
 import { usePresence } from '../stores/presenceStore';
 import type { Theme } from '@lonlonbenu/shared';
 import { stylesDynamiques } from '@/design/stylesDynamiques';
@@ -44,6 +50,9 @@ import { stylesDynamiques } from '@/design/stylesDynamiques';
  * Le serveur achemine des enveloppes qu'il ne peut pas ouvrir. Le clair
  * n'apparaît qu'ici, après déchiffrement local.
  */
+/** Hauteur approchée de la barre de saisie, pour poser le bouton au-dessus. */
+const HAUTEUR_BARRE_SAISIE = 64;
+
 export function ChatEcran() {
   const marges = useSafeAreaInsets();
   const router = useRouter();
@@ -62,6 +71,8 @@ export function ChatEcran() {
   const envoyer = useChat((e) => e.envoyer);
   const marquerLus = useChat((e) => e.marquerLus);
   const chargerPresence = usePresence((e) => e.charger);
+  const activiteAutre = useActivite((e) => e.autre);
+  const battre = useActivite((e) => e.battre);
 
   const fil = useFilLisible();
   const nombre = useNombreDeVerification();
@@ -69,6 +80,31 @@ export function ChatEcran() {
   const [brouillon, setBrouillon] = useState('');
   const [verificationOuverte, setVerificationOuverte] = useState(false);
   const liste = useRef<FlatList>(null);
+
+  /**
+   * « J'écris », en référence plutôt qu'en état.
+   *
+   * Chaque frappe changerait l'état et redessinerait toute la conversation —
+   * une liste entière rerendue à chaque lettre. La référence est lue par le
+   * battement, qui part de toute façon toutes les vingt secondes.
+   */
+  const ecritRef = useRef(false);
+
+  /**
+   * Vrai quand la vue est à quelques lignes du bas.
+   *
+   * Sert à décider si l'arrivée d'un message doit faire défiler. Sans cette
+   * condition, la liste sautait en bas à chaque changement de contenu — y
+   * compris pendant qu'on relisait une conversation d'il y a trois jours, ce
+   * qui rendait la remontée dans l'historique proprement impossible.
+   */
+  const [presDuBas, setPresDuBas] = useState(true);
+  const presDuBasRef = useRef(true);
+
+  /** Message sur lequel la feuille d'actions est ouverte. */
+  const [visee, setVisee] = useState<(typeof fil)[number] | undefined>();
+  /** Message auquel le brouillon répond, s'il y en a un. */
+  const [reponseA, setReponseA] = useState<(typeof fil)[number] | undefined>();
 
   const [clavierOuvert, setClavierOuvert] = useState(false);
   const [emojisOuverts, setEmojisOuverts] = useState(false);
@@ -158,6 +194,33 @@ export function ChatEcran() {
     return resultat;
   }, [fil]);
 
+  /**
+   * Ce qu'affiche chaque bulle qui répond à une autre.
+   *
+   * Résolu une fois pour tout le fil plutôt qu'à chaque bulle : chercher le
+   * message cité dans `renderItem` referait un parcours complet de la liste
+   * à chaque ligne rendue, donc à chaque image du défilement.
+   */
+  const citations = useMemo(() => {
+    const parId = new Map(fil.map((m) => [m.id, m]));
+    const table = new Map<string, { auteurEstMoi: boolean; texte: string }>();
+
+    for (const message of fil) {
+      if (!message.repondA) continue;
+      const source = parId.get(message.repondA);
+      // Le message cité peut avoir été envoyé avant une réinstallation, et
+      // rester illisible : on n'affiche pas un rappel vide.
+      if (!source || source.illisible) continue;
+
+      table.set(message.id, {
+        auteurEstMoi: source.auteurId === partenaireId,
+        texte: source.texte,
+      });
+    }
+
+    return table;
+  }, [fil, partenaireId]);
+
   useEffect(() => {
     if (!connecte || !coupleId || !partenaireId) return;
     void (async () => {
@@ -214,6 +277,44 @@ export function ChatEcran() {
     }, [connecte, coupleId, partenaireId, charger]),
   );
 
+  /**
+   * Battement de présence, tant que la conversation est à l'écran.
+   *
+   * Vingt secondes pour un seuil « en ligne » d'une minute : deux battements
+   * peuvent se perdre sans que l'autre nous croie parti. C'est ce qui évite
+   * le clignotement sur une connexion hésitante.
+   *
+   * Le battement est émis **ici et pas dans le store** : seul l'écran sait
+   * qu'il est visible, et se signaler présent depuis une app rangée dans une
+   * poche serait un mensonge — exactement celui que le seuil doit éviter.
+   */
+  useFocusEffect(
+    useCallback(() => {
+      if (!connecte || !coupleId) return;
+
+      let vivant = true;
+      const signaler = () => {
+        if (vivant && AppState.currentState === 'active') {
+          void battre(coupleId, ecritRef.current);
+        }
+      };
+
+      signaler();
+      const minuterie = setInterval(signaler, 20_000);
+
+      return () => {
+        vivant = false;
+        clearInterval(minuterie);
+        // Quitter l'écran, c'est cesser d'écrire. Sans ce dernier signal,
+        // « écrit… » resterait affiché chez l'autre jusqu'à l'échéance.
+        if (ecritRef.current && coupleId) {
+          ecritRef.current = false;
+          void battre(coupleId, false);
+        }
+      };
+    }, [connecte, coupleId, battre]),
+  );
+
   if (etat === 'anonyme' || (etat === 'connecte' && !coupleId)) {
     return (
       <View style={[styles.fond, styles.centre, { paddingTop: marges.top }]}>
@@ -238,9 +339,42 @@ export function ChatEcran() {
     );
   }
 
+  /**
+   * Actions de la feuille. Rien de destructif : supprimer un message chez
+   * l'autre demanderait au serveur d'effacer une enveloppe qu'il ne sait pas
+   * lire, et surtout de décider à la place des deux. On copie, on répond.
+   */
+  const actionsSurMessage: ActionMessage[] = visee
+    ? [
+        ...(visee.illisible
+          ? []
+          : [
+              {
+                icone: 'corner-up-left' as const,
+                libelle: 'Répondre',
+                onPress: () => setReponseA(visee),
+              },
+              {
+                icone: 'copy' as const,
+                libelle: 'Copier le texte',
+                onPress: () => void Clipboard.setStringAsync(visee.texte),
+              },
+            ]),
+      ]
+    : [];
+
   const envoyerLe = async (type: 'texte' | 'note_douce' = 'texte') => {
     if (!brouillon.trim() || !coupleId || !partenaireId) return;
-    if (await envoyer(coupleId, partenaireId, brouillon, type)) setBrouillon('');
+    if (await envoyer(coupleId, partenaireId, brouillon, type, reponseA?.id)) {
+      setBrouillon('');
+      setReponseA(undefined);
+      // Le message est parti : on n'écrit plus. Sans ce signal, « écrit… »
+      // s'afficherait encore chez l'autre au-dessus du message reçu.
+      if (ecritRef.current) {
+        ecritRef.current = false;
+        void battre(coupleId, false);
+      }
+    }
   };
 
   return (
@@ -251,7 +385,13 @@ export function ChatEcran() {
       // plus depuis le passage au bord-à-bord.
       behavior="padding"
     >
-      <EnTeteApp titre={autre.prenom} surtitre="Nous deux" />
+      <EnTeteApp
+        titre={autre.prenom}
+        surtitre="Nous deux"
+        sousTitre={
+          <LignePresence activite={activiteAutre} />
+        }
+      />
 
       <FlatList
         ref={liste}
@@ -351,14 +491,88 @@ export function ChatEcran() {
               deMoi={item.message.auteurId === partenaireId}
               suiteDuPrecedent={item.suiteDuPrecedent}
               dernierDuGroupe={item.dernierDuGroupe}
+              cite={citations.get(item.message.id)}
+              onAppuiLong={() => {
+                // Un retour tactile confirme que l'appui long a été compris,
+                // avant même que la feuille n'apparaisse.
+                void Haptics.selectionAsync();
+                setVisee(item.message);
+              }}
             />
           )
         }
-        onContentSizeChange={() => liste.current?.scrollToEnd({ animated: true })}
+        ListFooterComponent={
+          // Dans le fil et pas seulement dans l'en-tête : c'est là que le
+          // regard se trouve quand on attend une réponse.
+          activiteAutre?.ecrit ? (
+            <View style={styles.saisieBulle}>
+              <PointsDeSaisie taille={6} />
+            </View>
+          ) : null
+        }
+        onScroll={({ nativeEvent }) => {
+          const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+          const restant =
+            contentSize.height - layoutMeasurement.height - contentOffset.y;
+          // Une hauteur d'écran de tolérance : on considère qu'on « suit » la
+          // conversation sans exiger d'être collé au dernier pixel.
+          const proche = restant < layoutMeasurement.height * 0.5;
+          presDuBasRef.current = proche;
+          if (proche !== presDuBas) setPresDuBas(proche);
+        }}
+        scrollEventThrottle={64}
+        onContentSizeChange={() => {
+          if (presDuBasRef.current) {
+            liste.current?.scrollToEnd({ animated: true });
+          }
+        }}
       />
 
       {/* La barre d'onglets est en position absolue : sans sa hauteur ajoutée
           ici, le champ de saisie disparaissait derrière elle. */}
+      {!presDuBas ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Revenir aux derniers messages"
+          onPress={() => liste.current?.scrollToEnd({ animated: true })}
+          style={({ pressed }) => [
+            styles.retourBas,
+            {
+              // Même calcul que la barre de saisie : sans cela le bouton
+              // resterait à sa place quand le clavier monte et la barre
+              // passerait par-dessus.
+              bottom:
+                (clavierOuvert ? 0 : marges.bottom + chrome.barreOnglets) +
+                HAUTEUR_BARRE_SAISIE,
+            },
+            pressed && styles.envoiPresse,
+          ]}
+        >
+          <Feather name="chevron-down" size={20} color={colors.texte} />
+        </Pressable>
+      ) : null}
+
+      {reponseA ? (
+        <View style={styles.reponse}>
+          <View style={styles.reponseTexte}>
+            <Texte variante="meta">
+              Réponse à {reponseA.auteurId === partenaireId ? 'vous' : autre.prenom}
+            </Texte>
+            <Texte variante="petit" numberOfLines={1}>
+              {reponseA.texte}
+            </Texte>
+          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Annuler la réponse"
+            hitSlop={10}
+            onPress={() => setReponseA(undefined)}
+          >
+            <Feather name="x" size={18} color={colors.texteDoux} />
+          </Pressable>
+        </View>
+      ) : null}
+
       <View
         style={[
           styles.barre,
@@ -397,7 +611,17 @@ export function ChatEcran() {
           placeholder="Écrire à deux…"
           placeholderTextColor={colors.texteDoux}
           value={brouillon}
-          onChangeText={setBrouillon}
+          onChangeText={(texte) => {
+            setBrouillon(texte);
+            // Première lettre : on le dit tout de suite plutôt que d'attendre
+            // le prochain battement, sinon « écrit… » arriverait après le
+            // message pour un mot vite tapé. Le champ vidé coupe le signal.
+            const ecrit = texte.trim().length > 0;
+            if (ecrit !== ecritRef.current) {
+              ecritRef.current = ecrit;
+              if (coupleId) void battre(coupleId, ecrit);
+            }
+          }}
           multiline
         />
         <Pressable
@@ -416,6 +640,12 @@ export function ChatEcran() {
           </Texte>
         </Pressable>
       </View>
+
+      <ActionsMessage
+        visible={!!visee}
+        onFermer={() => setVisee(undefined)}
+        actions={actionsSurMessage}
+      />
 
       {emojisOuverts ? (
         <View style={{ paddingBottom: marges.bottom }}>
@@ -440,6 +670,50 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
     gap: espacements.sm,
   },
   nombre: { marginTop: espacements.xs, letterSpacing: 2 },
+  /** Bulle vide à gauche, aux dimensions d'un message court. */
+  /**
+   * Bouton de retour en bas. Au-dessus de la barre de saisie et aligné à
+   * droite, là où le pouce l'atteint sans changer la prise du téléphone.
+   */
+  retourBas: {
+    position: 'absolute',
+    right: margeEcran,
+    width: 40,
+    height: 40,
+    borderRadius: rayons.rond,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.fondEleve,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.bordure,
+    ...ombres.flottant,
+  },
+  /** Rappel du message auquel on répond, juste au-dessus du champ. */
+  reponse: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espacements.sm,
+    marginHorizontal: margeEcran,
+    marginBottom: espacements.xxs,
+    paddingVertical: espacements.sm,
+    paddingHorizontal: espacements.md,
+    borderRadius: rayons.md,
+    backgroundColor: colors.fondNuance,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.accent,
+  },
+  reponseTexte: { flex: 1, minWidth: 0, gap: 1 },
+  saisieBulle: {
+    alignSelf: 'flex-start',
+    marginTop: espacements.sm,
+    paddingVertical: espacements.sm + 2,
+    paddingHorizontal: espacements.md,
+    borderRadius: rayons.lg,
+    borderBottomLeftRadius: rayons.sm,
+    backgroundColor: colors.fondEleve,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.bordure,
+  },
   jour: {
     alignSelf: 'center',
     marginVertical: espacements.md,

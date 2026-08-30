@@ -833,6 +833,41 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
       },
     },
 
+    activite: {
+      async parCouple(coupleId) {
+        const { rows } = await pool.query<{
+          partenaire_id: string;
+          vu_le: Date;
+          saisit_jusqua: Date | null;
+        }>(
+          `SELECT partenaire_id, vu_le, saisit_jusqua
+             FROM activite WHERE couple_id = $1`,
+          [coupleId],
+        );
+        return rows.map((r) => ({
+          partenaireId: r.partenaire_id,
+          vuLe: isoRequis(r.vu_le),
+          saisitJusqua: iso(r.saisit_jusqua),
+        }));
+      },
+
+      async signaler(coupleId, brute) {
+        // Écrasement : une seule ligne par personne, aucun historique gardé.
+        await pool.query(
+          `INSERT INTO activite (couple_id, partenaire_id, vu_le, saisit_jusqua)
+                VALUES ($1, $2, $3, $4)
+           ON CONFLICT (couple_id, partenaire_id) DO UPDATE
+                   SET vu_le = EXCLUDED.vu_le,
+                       saisit_jusqua = EXCLUDED.saisit_jusqua`,
+          [coupleId, brute.partenaireId, brute.vuLe, brute.saisitJusqua ?? null],
+        );
+      },
+
+      async effacerPourCouple(coupleId) {
+        await pool.query('DELETE FROM activite WHERE couple_id = $1', [coupleId]);
+      },
+    },
+
     presence: {
       async statuts(coupleId) {
         const { rows } = await pool.query<{

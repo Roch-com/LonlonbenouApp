@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import type { Theme } from '@lonlonbenu/shared';
 import { stylesDynamiques } from '@/design/stylesDynamiques';
@@ -15,6 +15,9 @@ interface Props {
   suiteDuPrecedent?: boolean;
   /** Vrai si le suivant vient d'un autre auteur — ou s'il n'y en a plus. */
   dernierDuGroupe?: boolean;
+  /** Message cité, déjà résolu par l'appelant. */
+  cite?: { auteurEstMoi: boolean; texte: string };
+  onAppuiLong?: () => void;
 }
 
 /**
@@ -39,6 +42,8 @@ export function BulleMessage({
   deMoi,
   suiteDuPrecedent,
   dernierDuGroupe = true,
+  cite,
+  onAppuiLong,
 }: Props) {
   const colors = useCouleurs();
   const douce = message.type === 'note_douce';
@@ -51,15 +56,40 @@ export function BulleMessage({
         suiteDuPrecedent ? styles.serree : styles.espacee,
       ]}
     >
-      <View
-        style={[
+      <Pressable
+        onLongPress={onAppuiLong}
+        delayLongPress={280}
+        disabled={!onAppuiLong}
+        accessibilityRole={onAppuiLong ? 'button' : undefined}
+        accessibilityLabel={onAppuiLong ? 'Actions sur ce message' : undefined}
+        style={({ pressed }) => [
           styles.bulle,
           deMoi ? styles.mienne : styles.sienne,
           // Le coin pointu marque la fin du bloc, comme une signature.
           dernierDuGroupe && (deMoi ? styles.finMienne : styles.finSienne),
           douce && styles.douce,
+          pressed && onAppuiLong ? styles.pressee : undefined,
         ]}
       >
+        {cite ? (
+          <View style={[styles.cite, deMoi && styles.citeMienne]}>
+            <Texte
+              variante="meta"
+              numberOfLines={1}
+              style={deMoi ? styles.metaMienne : undefined}
+            >
+              {cite.auteurEstMoi ? 'Vous' : 'En réponse'}
+            </Texte>
+            <Texte
+              variante="petit"
+              numberOfLines={2}
+              style={deMoi ? styles.metaMienne : undefined}
+            >
+              {cite.texte}
+            </Texte>
+          </View>
+        ) : null}
+
         {douce ? (
           <Texte variante="surtitre" style={styles.etiquetteDouce}>
             Note douce
@@ -94,7 +124,7 @@ export function BulleMessage({
             ) : null}
           </View>
         ) : null}
-      </View>
+      </Pressable>
     </View>
   );
 }
@@ -149,4 +179,21 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
    */
   illisible: { fontStyle: 'italic', opacity: 0.55 },
   accuse: { marginBottom: 1 },
+  pressee: { opacity: 0.72 },
+  /**
+   * Rappel du message cité, dans la bulle et au-dessus du texte.
+   *
+   * Le filet à gauche plutôt qu'un cadre complet : c'est la convention des
+   * messageries, et un cadre fermé dans une bulle déjà arrondie fait deux
+   * boîtes emboitées qui alourdissent la lecture.
+   */
+  cite: {
+    gap: 1,
+    marginBottom: espacements.xxs,
+    paddingLeft: espacements.sm,
+    borderLeftWidth: 2,
+    borderLeftColor: colors.accentDoux,
+    opacity: 0.92,
+  },
+  citeMienne: { borderLeftColor: colors.texteInverse },
 }));

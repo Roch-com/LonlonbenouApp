@@ -8,6 +8,7 @@
  */
 
 import type {
+  ActiviteBrute,
   AxeCroissance,
   CategorieNotification,
   Confidence,
@@ -178,6 +179,15 @@ export interface Depot {
     ): Promise<void>;
     effacerPourCouple(coupleId: string): Promise<void>;
   };
+  /**
+   * Signal d'activité. Une ligne par personne, écrasée à chaque battement :
+   * aucun historique n'est conservé, volontairement.
+   */
+  activite: {
+    parCouple(coupleId: string): Promise<ActiviteBrute[]>;
+    signaler(coupleId: string, activite: ActiviteBrute): Promise<void>;
+    effacerPourCouple(coupleId: string): Promise<void>;
+  };
   presence: {
     statuts(coupleId: string): Promise<StatutServeur[]>;
     definirStatut(coupleId: string, statut: StatutServeur): Promise<void>;
@@ -238,4 +248,5 @@ export const MODULES_SENSIBLES: readonly ModuleSensible[] = [
   'croissance',
   'score',
   'confidences',
+  'activite',
 ];

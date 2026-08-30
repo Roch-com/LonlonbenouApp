@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { Theme } from '@lonlonbenu/shared';
 import { stylesDynamiques } from '@/design/stylesDynamiques';
@@ -19,6 +20,11 @@ interface ActionEnTete {
 interface Props {
   titre: string;
   surtitre?: string;
+  /**
+   * Ligne sous le titre. Un nœud et non une chaîne : la présence dans la
+   * conversation y anime trois points pendant que l'autre écrit.
+   */
+  sousTitre?: ReactNode;
   actions?: ActionEnTete[];
   /** Flèche de retour à gauche, à la place de la marque. */
   onRetour?: () => void;
@@ -37,7 +43,13 @@ interface Props {
  * vit dans le défilement, pas ici. Superposer les deux reviendrait à annoncer
  * deux fois la même chose.
  */
-export function EnTeteApp({ titre, surtitre, actions = [], onRetour }: Props) {
+export function EnTeteApp({
+  titre,
+  surtitre,
+  sousTitre,
+  actions = [],
+  onRetour,
+}: Props) {
   const colors = useCouleurs();
   const marges = useSafeAreaInsets();
 
@@ -71,6 +83,7 @@ export function EnTeteApp({ titre, surtitre, actions = [], onRetour }: Props) {
           <Texte variante="titre" numberOfLines={1} style={styles.titre}>
             {titre}
           </Texte>
+          {sousTitre}
         </View>
 
         <View style={styles.actions}>

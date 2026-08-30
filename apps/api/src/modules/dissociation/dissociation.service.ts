@@ -83,6 +83,7 @@ export function creerServiceDissociation(
       await depot.confidences.effacerPourCouple(coupleId);
       await depot.chat.effacerPourCouple(coupleId);
       await depot.presence.effacerPourCouple(coupleId);
+      await depot.activite.effacerPourCouple(coupleId);
       await depot.viePratique.effacerPourCouple(coupleId);
 
       // 3. L'annonce, aux deux. L'expéditeur délie lui-même les appareils une

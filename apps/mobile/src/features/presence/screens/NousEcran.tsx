@@ -48,8 +48,9 @@ export function NousEcran() {
               {p.id === moi.id ? (
                 <Texte variante="meta">connecté·e ici</Texte>
               ) : null}
-            </View>
-          ))}
+              </View>
+            ),
+          )}
         </View>
       </Carte>
 
@@ -65,18 +66,19 @@ export function NousEcran() {
             bien que chaque téléphone n'y voyait que son propre consentement et
             annonçait à tort que l'autre n'avait rien activé. */}
         <View style={styles.partages}>
-          {(['position', 'croissance', 'score'] as const).map((module, index) => (
-            <View key={module}>
-              {index > 0 ? <View style={styles.separateur} /> : null}
-              {coupleId ? (
-                <ConsentementServeur
-                  coupleId={coupleId}
-                  module={module}
-                  prenomAutre={autre.prenom}
-                />
-              ) : (
-                <ReglagePartage module={module} sansTitre={false} />
-              )}
+          {(['position', 'activite', 'croissance', 'score'] as const).map(
+            (module, index) => (
+              <View key={module}>
+                {index > 0 ? <View style={styles.separateur} /> : null}
+                {coupleId ? (
+                  <ConsentementServeur
+                    coupleId={coupleId}
+                    module={module}
+                    prenomAutre={autre.prenom}
+                  />
+                ) : (
+                  <ReglagePartage module={module} sansTitre={false} />
+                )}
             </View>
           ))}
         </View>

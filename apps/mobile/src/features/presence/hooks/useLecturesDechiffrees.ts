@@ -49,6 +49,8 @@ export interface MessageLisible {
   texte: string;
   envoyeLe: string;
   luLe?: string;
+  /** Message auquel celui-ci répond. Vient du chiffré, jamais du serveur. */
+  repondA?: string;
   /** L'enveloppe n'a pas pu être ouverte avec la clé courante. */
   illisible: boolean;
 }
@@ -63,16 +65,19 @@ export function useFilLisible(): MessageLisible[] {
         const clair = ouvrir(cle, m.enveloppe);
         let type: TypeMessage = 'texte';
         let texte = clair ?? '';
+        let repondA: string | undefined;
 
         if (clair) {
           try {
             const charge = JSON.parse(clair) as {
               type?: TypeMessage;
               texte?: string;
+              repondA?: string;
             };
             if (charge?.texte !== undefined) {
               type = charge.type ?? 'texte';
               texte = charge.texte;
+              repondA = charge.repondA;
             }
           } catch {
             // Message d'une version antérieure : le clair est le texte.
@@ -86,6 +91,7 @@ export function useFilLisible(): MessageLisible[] {
           texte,
           envoyeLe: m.envoyeLe,
           luLe: m.luLe,
+          repondA,
           illisible: clair === undefined,
         };
       }),

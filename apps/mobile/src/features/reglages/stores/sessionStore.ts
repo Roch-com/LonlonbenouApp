@@ -70,6 +70,11 @@ export const LIBELLES_PARTAGE: Record<string, { titre: string; detail: string }>
     detail:
       'Un repère commun sur vos gestes récents. Un seul score, le même pour vous deux.',
   },
+  activite: {
+    titre: 'Présence dans la conversation',
+    detail:
+      '« En ligne », « vu il y a… » et « écrit… ». Vous ne le voyez que si vous le montrez.',
+  },
 };
 
 function partagesInitiaux(couple: Couple): Record<string, PartageReciproque> {

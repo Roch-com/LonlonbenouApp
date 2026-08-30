@@ -9,6 +9,7 @@
 
 import {
   PREFERENCES_PAR_DEFAUT,
+  type ActiviteBrute,
   type AxeCroissance,
   type Confidence,
   type Evenement,
@@ -48,6 +49,7 @@ export function creerDepotMemoire(): Depot {
   const rappelsEmis = new Map<string, string[]>();
   const clesPubliques = new Map<string, string>();
   const messages = new Map<string, MessageScelle[]>();
+  const activite = new Map<string, ActiviteBrute[]>();
   const statuts = new Map<string, StatutServeur[]>();
   const checkIns = new Map<string, CheckInServeur[]>();
   const alertes = new Map<string, AlerteServeur[]>();
@@ -234,6 +236,23 @@ export function creerDepotMemoire(): Depot {
       },
       async effacerPourCouple(coupleId) {
         messages.delete(coupleId);
+      },
+    },
+
+    activite: {
+      async parCouple(coupleId) {
+        return copie(activite.get(coupleId) ?? []);
+      },
+      async signaler(coupleId, brute) {
+        // Écrasement pur : une seule ligne par personne, aucun historique.
+        const liste = (activite.get(coupleId) ?? []).filter(
+          (a) => a.partenaireId !== brute.partenaireId,
+        );
+        liste.push(copie(brute));
+        activite.set(coupleId, liste);
+      },
+      async effacerPourCouple(coupleId) {
+        activite.delete(coupleId);
       },
     },
 

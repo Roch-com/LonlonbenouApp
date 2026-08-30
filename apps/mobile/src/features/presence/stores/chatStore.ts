@@ -51,6 +51,8 @@ interface EtatChat {
     moiId: string,
     texte: string,
     type?: TypeMessage,
+    /** Identifiant du message auquel on répond, s'il y en a un. */
+    repondA?: string,
   ) => Promise<boolean>;
   marquerLus: (coupleId: string) => Promise<void>;
   vider: () => void;
@@ -108,7 +110,7 @@ export const useChat = create<EtatChat>()(
           }
         },
 
-        async envoyer(coupleId, moiId, texte, type = 'texte') {
+        async envoyer(coupleId, moiId, texte, type = 'texte', repondA) {
           const propre = texte.trim();
           if (!propre) return false;
 
@@ -125,9 +127,12 @@ export const useChat = create<EtatChat>()(
           try {
             const cle = await cleDeMessages(cles.autre);
             const nonce = Crypto.getRandomBytes(LONGUEUR_NONCE);
-            // Le type entre dans l'enveloppe : le serveur n'a pas a savoir si
-            // c'est une note douce ou un message ordinaire.
-            const charge = JSON.stringify({ type, texte: propre });
+            // Le type et la référence de réponse entrent dans l'enveloppe : le
+            // serveur n'a pas à savoir si c'est une note douce, ni quel
+            // message répond à quel autre. Cette dernière information paraît
+            // anodine — un simple identifiant — mais elle dessine la
+            // structure de la conversation, qui se lit sans le texte.
+            const charge = JSON.stringify({ type, texte: propre, repondA });
             // Le clair ne sort jamais d'ici : c'est l'enveloppe qui part.
             await envoyerEnveloppe(coupleId, scellerMessage(cle, nonce, charge));
             await relire(coupleId, moiId);
