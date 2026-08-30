@@ -10,6 +10,8 @@ import {
   evenementsAVenir,
   evenementsPasses,
   grouperParJour,
+  horodatage,
+  normaliserHeure,
   quand,
   type CategorieEvenement,
 } from '@lonlonbenu/shared';
@@ -43,11 +45,21 @@ export function SectionAgenda() {
   const aVenir = grouperParJour(evenementsAVenir(evenements, maintenant));
   const passes = evenementsPasses(evenements, maintenant).slice(0, 5);
 
+  // À vide, l'heure vaut 19:00 ; sinon elle doit être lisible. `padStart`
+  // complétait « 9 » en « 00009 » et fabriquait une date que l'affichage ne
+  // savait plus relire — l'application se fermait à chaque ouverture ensuite.
+  const heureNormalisee = heureSaisie.trim()
+    ? normaliserHeure(heureSaisie)
+    : '19:00';
+  const heureLisible = journeeEntiere || heureNormalisee !== undefined;
+  const dateLisible = /^\d{4}-\d{2}-\d{2}$/.test(date);
+  const complet = !!titre.trim() && dateLisible && heureLisible;
+
   const valider = () => {
-    if (!titre.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
-    const debut = journeeEntiere
-      ? date
-      : `${date}T${(heureSaisie || '19:00').padStart(5, '0')}:00`;
+    if (!complet) return;
+    const debut = journeeEntiere ? date : horodatage(date, heureNormalisee);
+    // Ceinture et bretelles : rien de douteux ne part vers le serveur.
+    if (!debut) return;
 
     void ajouterEvenement(coupleId!, partenaireId!, {
       titre,
@@ -104,13 +116,21 @@ export function SectionAgenda() {
             </View>
 
             {!journeeEntiere ? (
-              <Champ
-                etiquette="Heure"
-                placeholder="19:00"
-                value={heureSaisie}
-                onChangeText={setHeureSaisie}
-                keyboardType="numbers-and-punctuation"
-              />
+              <>
+                <Champ
+                  etiquette="Heure"
+                  placeholder="19:00"
+                  value={heureSaisie}
+                  onChangeText={setHeureSaisie}
+                  keyboardType="numbers-and-punctuation"
+                />
+                {!heureLisible ? (
+                  <Texte variante="petit" style={styles.aide}>
+                    Cette heure ne se lit pas. « 9 », « 9h30 » ou « 21:00 »
+                    conviennent.
+                  </Texte>
+                ) : null}
+              </>
             ) : null}
 
             <Champ
@@ -139,7 +159,7 @@ export function SectionAgenda() {
             <Bouton
               libelle="Ajouter à notre agenda"
               onPress={valider}
-              disabled={!titre.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(date)}
+              disabled={!complet}
             />
             <Bouton
               libelle="Annuler"
@@ -229,6 +249,7 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
     marginTop: espacements.sm,
   },
   champs: { gap: espacements.sm, marginTop: espacements.md },
+  aide: { color: colors.tendresse },
   ligne: { flexDirection: 'row', alignItems: 'center', gap: espacements.md },
   ligneTexte: { flex: 1 },
   journee: { marginTop: espacements.md, gap: espacements.md },

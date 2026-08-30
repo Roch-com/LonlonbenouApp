@@ -131,6 +131,20 @@ export interface ServiceViePratique {
 
 const FORMAT_JOUR = /^\d{4}-\d{2}-\d{2}$/;
 
+/**
+ * Un début d'événement doit être relisible — sinon il ferme les écrans.
+ *
+ * Le client envoyait `2026-08-30T00009:00` quand l'heure saisie n'était pas
+ * au format attendu, et le serveur l'acceptait : seule sa présence était
+ * vérifiée. La donnée restait ensuite dans la base et rejouait le défaut à
+ * chaque lecture. Un client corrigé ne suffit pas : les deux téléphones ne se
+ * mettent pas à jour au même instant, et rien n'oblige un client à être à jour.
+ */
+function debutValide(debut: string, journeeEntiere: boolean): boolean {
+  if (journeeEntiere) return FORMAT_JOUR.test(debut);
+  return FORMAT_JOUR.test(debut.slice(0, 10)) && !Number.isNaN(Date.parse(debut));
+}
+
 async function autoriser(
   depot: Depot,
   coupleId: string,
@@ -171,6 +185,12 @@ export function creerServiceViePratique(depot: Depot): ServiceViePratique {
     ajouterEvenement: (coupleId, moiId, brouillon) =>
       avecAcces(coupleId, moiId, async () => {
         if (!brouillon.titre.trim() || !brouillon.debut) {
+          return { ok: false, motif: 'donnees_invalides' };
+        }
+        if (!debutValide(brouillon.debut, brouillon.journeeEntiere)) {
+          return { ok: false, motif: 'donnees_invalides' };
+        }
+        if (brouillon.fin !== undefined && Number.isNaN(Date.parse(brouillon.fin))) {
           return { ok: false, motif: 'donnees_invalides' };
         }
 

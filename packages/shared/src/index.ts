@@ -24,6 +24,7 @@ export * from './onboarding/invitation';
 export * from './onboarding/espace';
 export * from './notifications/preferences';
 export * from './temps/jours';
+export * from './temps/heures';
 export * from './compteur/compteur';
 export * from './score/gestes';
 export * from './score/score';

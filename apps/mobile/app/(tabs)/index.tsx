@@ -1,1 +1,4 @@
-export { AccueilEcran as default } from '@/features/presence/screens/AccueilEcran';
+import { ecranProtege } from '@/components/chrome';
+import { AccueilEcran } from '@/features/presence/screens/AccueilEcran';
+
+export default ecranProtege(AccueilEcran, 'Accueil');

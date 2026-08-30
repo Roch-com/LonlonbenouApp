@@ -9,11 +9,53 @@
 import { joursEntre, jourUtc } from '../temps/jours';
 import type { Evenement } from '../types/calendrier';
 
-/** Instant de début, que l'événement soit horodaté ou sur la journée. */
+/** `YYYY-MM-DD` — la seule forme de jour civil acceptée ici. */
+const FORMAT_JOUR = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Clé de regroupement des événements dont la date est illisible.
+ *
+ * Un horodatage que personne ne sait relire ne doit pas faire disparaître
+ * l'événement de l'écran : c'est là, et seulement là, qu'on peut le corriger
+ * ou le supprimer. Le cacher rendrait la donnée fautive indélogeable.
+ */
+export const JOUR_ILLISIBLE = 'date-illisible';
+
+/**
+ * Instant de début. **Ne lève jamais** : rend `NaN` sur un horodatage
+ * illisible, ce qui range l'événement du côté des à venir plutôt que de
+ * l'escamoter.
+ */
 export function debutEnMs(evenement: Evenement): number {
-  return evenement.journeeEntiere
-    ? jourUtc(evenement.debut)
-    : Date.parse(evenement.debut);
+  if (evenement.journeeEntiere) {
+    const jour = evenement.debut.slice(0, 10);
+    return FORMAT_JOUR.test(jour) ? jourUtc(jour) : Number.NaN;
+  }
+  return Date.parse(evenement.debut);
+}
+
+/**
+ * Jour civil d'un événement, `YYYY-MM-DD`, ou {@link JOUR_ILLISIBLE}.
+ *
+ * `new Date(x).toISOString()` lève un `RangeError` sur un horodatage
+ * illisible. Ce jet-là traversait tout l'écran de la vie pratique et fermait
+ * l'application à chaque ouverture — indéfiniment, puisque la donnée fautive
+ * était déjà enregistrée sur le serveur. La validation à la saisie évite d'en
+ * créer de nouvelles ; elle ne répare pas celles déjà écrites.
+ *
+ * On retombe sur les dix premiers caractères avant d'abandonner : un
+ * `2026-08-30T0009:00` garde ainsi son bon jour.
+ */
+export function jourDeLEvenement(evenement: Evenement): string {
+  const brut = evenement.debut ?? '';
+
+  if (!evenement.journeeEntiere) {
+    const ms = Date.parse(brut);
+    if (!Number.isNaN(ms)) return new Date(ms).toISOString().slice(0, 10);
+  }
+
+  const jour = brut.slice(0, 10);
+  return FORMAT_JOUR.test(jour) ? jour : JOUR_ILLISIBLE;
 }
 
 export function estPasse(evenement: Evenement, maintenant: string): boolean {
@@ -21,6 +63,9 @@ export function estPasse(evenement: Evenement, maintenant: string): boolean {
   // l'instant courant la ferait basculer dans le passé dès minuit passé.
   if (evenement.journeeEntiere) {
     const dernierJour = (evenement.fin ?? evenement.debut).slice(0, 10);
+    // Illisible : on le laisse à venir. Le classer dans le passé le
+    // reléguerait aux « derniers passés », où rien ne permet de l'effacer.
+    if (!FORMAT_JOUR.test(dernierJour)) return false;
     return joursEntre(dernierJour, maintenant) > 0;
   }
 
@@ -62,9 +107,7 @@ export function grouperParJour(evenements: readonly Evenement[]): JourneeAgenda[
   const parJour = new Map<string, Evenement[]>();
 
   for (const evenement of trierParDebut(evenements)) {
-    const jour = evenement.journeeEntiere
-      ? evenement.debut.slice(0, 10)
-      : new Date(evenement.debut).toISOString().slice(0, 10);
+    const jour = jourDeLEvenement(evenement);
     const existants = parJour.get(jour);
     if (existants) existants.push(evenement);
     else parJour.set(jour, [evenement]);
@@ -77,6 +120,10 @@ export function grouperParJour(evenements: readonly Evenement[]): JourneeAgenda[
 
 /** Libellé relatif doux : « aujourd'hui », « demain », « dans 4 jours ». */
 export function quand(jour: string, maintenant: string): string {
+  // Total : `quand` reçoit aussi des échéances et des dates de sortie venues
+  // du serveur. Une seule d'entre elles illisible fermait l'application.
+  if (!FORMAT_JOUR.test(jour.slice(0, 10))) return 'date à préciser';
+
   const ecart = joursEntre(maintenant.slice(0, 10), jour);
 
   if (ecart === 0) return 'aujourd’hui';

@@ -84,6 +84,43 @@ describe('agenda partagé', () => {
     const reponse = await ajouterEvenement(app, GAELLE, { categorie: 'autre' });
     expect(reponse.statusCode).toBe(400);
   });
+
+  it('refuse un horodatage que personne ne saura relire', async () => {
+    // Le client complétait « 9 » en « 00009 » ; le serveur ne vérifiait que
+    // la présence du champ. L'événement partait en base et fermait ensuite le
+    // pôle à chaque lecture, sans moyen d'aller le supprimer.
+    const { app } = await monterServeur();
+
+    for (const debut of ['2026-08-30T00009:00', '2026-08-30T0020h:00', 'demain']) {
+      const reponse = await ajouterEvenement(app, GAELLE, {
+        titre: 'Dîner',
+        categorie: 'a_deux',
+        debut,
+        journeeEntiere: false,
+      });
+      expect(reponse.statusCode).toBe(400);
+      expect(reponse.json().motif).toBe('donnees_invalides');
+    }
+  });
+
+  it('accepte toujours un horodatage correct', async () => {
+    const { app } = await monterServeur();
+    const horodate = await ajouterEvenement(app, GAELLE, {
+      titre: 'Dîner',
+      categorie: 'a_deux',
+      debut: '2026-08-30T19:00:00',
+      journeeEntiere: false,
+    });
+    expect(horodate.statusCode).toBe(201);
+
+    const journee = await ajouterEvenement(app, GAELLE, {
+      titre: 'Anniversaire',
+      categorie: 'a_deux',
+      debut: '2026-08-30',
+      journeeEntiere: true,
+    });
+    expect(journee.statusCode).toBe(201);
+  });
 });
 
 describe('projets et jalons', () => {

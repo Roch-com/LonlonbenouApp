@@ -20,7 +20,13 @@ export function ilYA(iso: string, maintenant: Date = new Date()): string {
 }
 
 export function heure(iso: string): string {
-  return new Date(iso).toLocaleTimeString('fr-FR', {
+  const instant = new Date(iso);
+  // « Invalid Date » en toutes lettres au milieu d'un agenda ne dit rien à
+  // personne. Des événements enregistrés avant la validation de l'heure
+  // portent encore un horodatage illisible.
+  if (Number.isNaN(instant.getTime())) return 'heure à préciser';
+
+  return instant.toLocaleTimeString('fr-FR', {
     hour: '2-digit',
     minute: '2-digit',
   });
