@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { View } from 'react-native';
+import { AppState, View } from 'react-native';
 import type { Theme } from '@lonlonbenu/shared';
 import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -22,6 +22,9 @@ import { useCycle } from '../stores/cycleStore';
  * C'est le serveur qui décide de la forme de la réponse selon qui demande.
  * L'écran ne choisit pas ce qu'il montre : il rend ce qu'il a reçu.
  */
+/** Assez court pour que le partenaire suive, assez long pour la batterie. */
+const INTERVALLE_RELECTURE_MS = 20_000;
+
 export function CycleEcran() {
   const router = useRouter();
   const autre = useAutre();
@@ -39,13 +42,30 @@ export function CycleEcran() {
   const charger = useCycle((e) => e.charger);
   const declarer = useCycle((e) => e.declarer);
 
-  // Au retour sur l’écran, pas seulement au montage : le niveau de partage se
-  // change depuis l’autre téléphone, et rien ici ne l’apprendrait autrement.
+  // Relecture tant que l’écran est ouvert, et pas seulement au montage : la
+  // phase avance, le niveau de partage se change depuis l’autre téléphone, et
+  // rien ici ne l’apprendrait autrement.
+  //
+  // Un cycle ne bouge pas à la seconde : un intervalle long suffit, et
+  // interroger le serveur plus souvent ne coûterait que de la batterie. La
+  // boucle s’arrête dès qu’on quitte l’écran ou que l’app passe derrière.
   useFocusEffect(
     useCallback(() => {
-      if (connecte && coupleId && partenaireId) {
-        void charger(coupleId, partenaireId);
-      }
+      if (!connecte || !coupleId || !partenaireId) return;
+
+      let vivant = true;
+      const relire = () => {
+        if (vivant && AppState.currentState === 'active') {
+          void charger(coupleId, partenaireId);
+        }
+      };
+
+      relire();
+      const minuterie = setInterval(relire, INTERVALLE_RELECTURE_MS);
+      return () => {
+        vivant = false;
+        clearInterval(minuterie);
+      };
     }, [connecte, coupleId, partenaireId, charger]),
   );
 

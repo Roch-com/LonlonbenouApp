@@ -59,23 +59,26 @@ export function NousEcran() {
 
       <Carte>
         <Texte variante="surtitre">Ce que vous partagez</Texte>
+        {/* Les trois partages vivent sur le serveur dès qu'un compte est
+            relié : on affiche l'état qui fait autorité, jamais une copie
+            locale. La position et le score étaient restés sur cette copie, si
+            bien que chaque téléphone n'y voyait que son propre consentement et
+            annonçait à tort que l'autre n'avait rien activé. */}
         <View style={styles.partages}>
-          <ReglagePartage module="position" sansTitre={false} />
-          <View style={styles.separateur} />
-          {/* La croissance vit sur le serveur dès qu'un compte est relié : on
-              affiche l'état qui fait autorité, pas une copie locale qui
-              divergerait sans prévenir. */}
-          {coupleId ? (
-            <ConsentementServeur
-              coupleId={coupleId}
-              module="croissance"
-              prenomAutre={autre.prenom}
-            />
-          ) : (
-            <ReglagePartage module="croissance" sansTitre={false} />
-          )}
-          <View style={styles.separateur} />
-          <ReglagePartage module="score" sansTitre={false} />
+          {(['position', 'croissance', 'score'] as const).map((module, index) => (
+            <View key={module}>
+              {index > 0 ? <View style={styles.separateur} /> : null}
+              {coupleId ? (
+                <ConsentementServeur
+                  coupleId={coupleId}
+                  module={module}
+                  prenomAutre={autre.prenom}
+                />
+              ) : (
+                <ReglagePartage module={module} sansTitre={false} />
+              )}
+            </View>
+          ))}
         </View>
         <Texte variante="meta" style={styles.mention}>
           Un partage n’est actif que si vous l’activez tous les deux, et chacun peut

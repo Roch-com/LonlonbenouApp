@@ -278,6 +278,68 @@ describe('niveaux et validation', () => {
   });
 });
 
+describe('durée de cycle annoncée', () => {
+  const definirDuree = (app: App, qui: string, duree: number | null) =>
+    app.inject({
+      method: 'PUT',
+      url: `/couples/${COUPLE_ID}/cycle/duree`,
+      headers: entete(qui),
+      payload: { duree },
+    });
+
+  it('sert à la personne concernée et se relit', async () => {
+    const { app } = await monterCycle('phases');
+    expect((await definirDuree(app, GAELLE, 30)).statusCode).toBe(200);
+
+    // La porteuse reçoit l'objet à plat ; seul le partenaire a un champ `vue`.
+    const vu = await lire(app, GAELLE);
+    expect(vu.json().dureeDeclaree).toBe(30);
+  });
+
+  it('refuse le partenaire, comme pour le niveau', async () => {
+    // Elle décrit le corps de la personne concernée : l'autre n'a rien à y
+    // écrire, même en étant membre du couple.
+    const { app } = await monterCycle('phases');
+    expect((await definirDuree(app, ROCHAMBEAU, 30)).statusCode).toBe(403);
+  });
+
+  it('refuse une durée aberrante', async () => {
+    const { app } = await monterCycle('phases');
+    for (const duree of [3, 400, 28.5]) {
+      const reponse = await definirDuree(app, GAELLE, duree);
+      expect(reponse.statusCode).toBe(400);
+      expect(reponse.json().motif).toBe('donnees_invalides');
+    }
+  });
+
+  it('rend la main au calcul observé sur null', async () => {
+    const { app } = await monterCycle('phases');
+    await definirDuree(app, GAELLE, 30);
+    expect((await definirDuree(app, GAELLE, null)).statusCode).toBe(200);
+    expect((await lire(app, GAELLE)).json().dureeDeclaree).toBeUndefined();
+  });
+
+  it('ne fuite pas la durée vers le partenaire', async () => {
+    // Elle ne figure dans aucun niveau : `vuePartenaire` décide seule de la
+    // forme, et la durée n'en fait pas partie.
+    const { app } = await monterCycle('phases');
+    await definirDuree(app, GAELLE, 30);
+
+    const vu = await lire(app, ROCHAMBEAU);
+    expect(vu.body).not.toContain('dureeDeclaree');
+    // La projection ne porte que ce que le niveau autorise, rien de plus.
+    expect(Object.keys(vu.json().vue).sort()).toEqual([
+      'attentions',
+      'lecture',
+      'libellePhase',
+      'niveau',
+      'partage',
+      'phase',
+      'rappel',
+    ]);
+  });
+});
+
 describe('contrôles d’accès', () => {
   it('refuse un étranger au couple', async () => {
     const { app } = await monterCycle('phases');

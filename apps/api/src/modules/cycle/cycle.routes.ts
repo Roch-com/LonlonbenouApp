@@ -66,6 +66,34 @@ export function enregistrerRoutesCycle(
   );
 
   app.put(
+    '/couples/:coupleId/cycle/duree',
+    { preHandler: authentifier },
+    async (requete, reponse) => {
+      const { coupleId } = requete.params as { coupleId: string };
+      const corps = requete.body as { duree?: number | null };
+
+      // `null` explicite = revenir au calcul observé. L'absence du champ est
+      // une requête mal formée, pas une demande d'effacement : confondre les
+      // deux effacerait un réglage sur un simple corps vide.
+      if (corps === undefined || !('duree' in (corps ?? {}))) {
+        return reponse.code(400).send({ motif: 'champs_manquants' });
+      }
+
+      const resultat = await cycle.definirDuree(
+        coupleId,
+        requete.identite!.partenaireId,
+        corps.duree ?? undefined,
+      );
+      if (!resultat.ok) {
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
+      }
+      return { partage: resultat.partage };
+    },
+  );
+
+  app.put(
     '/couples/:coupleId/cycle/niveau',
     { preHandler: authentifier },
     async (requete, reponse) => {

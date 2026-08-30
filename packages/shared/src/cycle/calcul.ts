@@ -37,6 +37,8 @@ export interface Estimations {
   cyclesObserves: number;
   /** Faux tant qu'il n'y a pas assez d'historique pour parler de prévision. */
   fiable: boolean;
+  /** Vrai quand `dureeCycle` vient de la personne et non des observations. */
+  dureeAnnoncee: boolean;
 }
 
 function borner(valeur: number, min: number, max: number): number {
@@ -53,7 +55,16 @@ export function reglesTriees(regles: readonly Regles[]): Regles[] {
   return [...regles].sort((a, b) => b.debutLe.localeCompare(a.debutLe));
 }
 
-export function estimer(regles: readonly Regles[]): Estimations {
+/**
+ * @param dureeDeclaree Durée annoncée par la personne concernée, si elle en a
+ * donné une. Elle **prime** sur la moyenne observée : l'app n'a pas à
+ * contredire quelqu'un sur son propre cycle, et avec une seule date saisie il
+ * n'y a de toute façon aucun intervalle à moyenner.
+ */
+export function estimer(
+  regles: readonly Regles[],
+  dureeDeclaree?: number,
+): Estimations {
   const triees = reglesTriees(regles);
 
   // Intervalles entre deux débuts successifs, sur les six derniers cycles :
@@ -71,14 +82,23 @@ export function estimer(regles: readonly Regles[]): Estimations {
     .map((r) => joursEntre(r.debutLe, r.finLe!) + 1)
     .filter((d) => d >= DUREE_REGLES_MIN && d <= DUREE_REGLES_MAX);
 
-  const dureeCycle = Math.round(moyenne(intervalles) ?? DUREE_CYCLE_DEFAUT);
+  const annoncee =
+    dureeDeclaree !== undefined && Number.isFinite(dureeDeclaree)
+      ? borner(Math.round(dureeDeclaree), DUREE_CYCLE_MIN, DUREE_CYCLE_MAX)
+      : undefined;
+
+  const dureeCycle =
+    annoncee ?? Math.round(moyenne(intervalles) ?? DUREE_CYCLE_DEFAUT);
   const dureeRegles = Math.round(moyenne(durees) ?? DUREE_REGLES_DEFAUT);
 
   return {
     dureeCycle: borner(dureeCycle, DUREE_CYCLE_MIN, DUREE_CYCLE_MAX),
     dureeRegles: borner(dureeRegles, DUREE_REGLES_MIN, DUREE_REGLES_MAX),
     cyclesObserves: intervalles.length,
-    fiable: intervalles.length >= CYCLES_POUR_FIABILITE,
+    // Une durée annoncée vaut appui : on cesse d'afficher « repère indicatif »
+    // à quelqu'un qui vient précisément de nous dire son cycle.
+    fiable: annoncee !== undefined || intervalles.length >= CYCLES_POUR_FIABILITE,
+    dureeAnnoncee: annoncee !== undefined,
   };
 }
 
@@ -128,11 +148,12 @@ export interface EtatCycle {
 export function etatDuCycle(
   regles: readonly Regles[],
   maintenant: string = new Date().toISOString(),
+  dureeDeclaree?: number,
 ): EtatCycle | undefined {
   const dernieres = reglesTriees(regles)[0];
   if (!dernieres) return undefined;
 
-  const estimations = estimer(regles);
+  const estimations = estimer(regles, dureeDeclaree);
   const ecoules = joursEntre(dernieres.debutLe, maintenant);
   if (ecoules < 0) return undefined;
 

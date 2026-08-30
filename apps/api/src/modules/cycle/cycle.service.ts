@@ -17,6 +17,8 @@
 import { randomUUID } from 'node:crypto';
 import {
   definirNiveauCycle,
+  DUREE_CYCLE_MAX,
+  DUREE_CYCLE_MIN,
   estLaPorteuse,
   etatDuCycle,
   niveauxDisponibles,
@@ -46,6 +48,8 @@ export type RefusCycle =
 export interface VuePorteuse {
   role: 'porteuse';
   niveau: NiveauCycle;
+  /** Durée annoncée, si la personne concernée en a fixé une. */
+  dureeDeclaree?: number;
   regles: Regles[];
   symptomes: Symptome[];
   etat?: ReturnType<typeof etatDuCycle>;
@@ -73,6 +77,12 @@ export interface ServiceCycle {
     coupleId: string,
     auteurId: PartenaireId,
     niveau: NiveauCycle,
+  ): Promise<{ ok: boolean; motif?: RefusCycle; partage?: PartageCycle }>;
+  /** Durée annoncée, ou `undefined` pour revenir au calcul observé. */
+  definirDuree(
+    coupleId: string,
+    auteurId: PartenaireId,
+    duree: number | undefined,
   ): Promise<{ ok: boolean; motif?: RefusCycle; partage?: PartageCycle }>;
   enregistrerRegles(
     coupleId: string,
@@ -185,9 +195,10 @@ export function creerServiceCycle(depot: Depot): ServiceCycle {
           vue: {
             role: 'porteuse',
             niveau: partage.niveau,
+            dureeDeclaree: partage.dureeDeclaree,
             regles,
             symptomes: await depot.cycle.symptomes(coupleId),
-            etat: etatDuCycle(regles),
+            etat: etatDuCycle(regles, undefined, partage.dureeDeclaree),
           },
         };
       }
@@ -198,7 +209,10 @@ export function creerServiceCycle(depot: Depot): ServiceCycle {
         ok: true,
         vue: {
           role: 'partenaire',
-          vue: vuePartenaire(etatDuCycle(regles), partage.niveau),
+          vue: vuePartenaire(
+            etatDuCycle(regles, undefined, partage.dureeDeclaree),
+            partage.niveau,
+          ),
         },
       };
     },
@@ -214,6 +228,30 @@ export function creerServiceCycle(depot: Depot): ServiceCycle {
       // `definirNiveauCycle` lève si l'auteur n'est pas la personne concernée :
       // la règle vit dans le modèle partagé, le serveur ne la réécrit pas.
       const partage = definirNiveauCycle(acces.partage, auteurId, niveau);
+      await depot.cycle.definirPartage(coupleId, partage);
+      return { ok: true, partage };
+    },
+
+    async definirDuree(coupleId, auteurId, duree) {
+      // Même garde que le niveau : la durée décrit le corps de la personne
+      // concernée, l'autre n'a rien à y écrire.
+      const acces = await autoriserEcriture(depot, coupleId, auteurId);
+      if ('motif' in acces) return { ok: false, motif: acces.motif };
+
+      if (
+        duree !== undefined &&
+        (!Number.isInteger(duree) ||
+          duree < DUREE_CYCLE_MIN ||
+          duree > DUREE_CYCLE_MAX)
+      ) {
+        return { ok: false, motif: 'donnees_invalides' };
+      }
+
+      const partage: PartageCycle = {
+        ...acces.partage,
+        dureeDeclaree: duree,
+        majLe: new Date().toISOString(),
+      };
       await depot.cycle.definirPartage(coupleId, partage);
       return { ok: true, partage };
     },

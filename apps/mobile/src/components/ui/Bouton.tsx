@@ -61,7 +61,7 @@ export function Bouton({
   const contenu = enCours ? (
     <ActivityIndicator color={teinte} size="small" />
   ) : (
-    <View style={styles.contenu}>
+    <View style={[styles.contenu, pleineLargeur && styles.contenuEtire]}>
       {icone ? <Feather name={icone} size={18} color={teinte} /> : null}
       <Texte
         variante="sousTitre"
@@ -127,10 +127,17 @@ const styles = stylesDynamiques(() => ({
     alignItems: 'center',
     justifyContent: 'center',
     gap: espacements.xs,
-    // Occupe la largeur disponible : sans cela, la rangée se dimensionnait sur
-    // son contenu et le texte se retrouvait à l'étroit sans raison.
-    flex: 1,
   },
+  /**
+   * Réservé aux boutons pleine largeur : sans cela la rangée se dimensionnait
+   * sur son contenu et le texte se retrouvait à l'étroit sans raison.
+   *
+   * Surtout pas sur un bouton ajusté au contenu (`pleineLargeur={false}`) :
+   * `flex: 1` y était résolu dans un parent sans taille définie et étirait le
+   * bouton en un grand bloc vide, qui déformait toute la carte autour — le
+   * « Retirer » du cycle et de l'agenda en particulier.
+   */
+  contenuEtire: { flex: 1 },
   libelle: { flexShrink: 1, textAlign: 'center' },
   inactif: { opacity: 0.45 },
 }));

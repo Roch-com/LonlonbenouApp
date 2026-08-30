@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Switch, View } from 'react-native';
 import type { Theme } from '@lonlonbenu/shared';
 import { stylesDynamiques } from '@/design/stylesDynamiques';
@@ -6,12 +6,10 @@ import { useCouleurs } from '@/design/ThemeProvider';
 import type { ModuleSensible } from '@lonlonbenu/shared';
 import { Texte } from '@/components/ui';
 import { espacements } from '@/design/theme';
-import { messageLisible } from '@/lib/api/erreurs';
 import {
-  basculerPartageServeur,
-  listerPartages,
-  type EtatPartageServeur,
-} from '../api/partages.api';
+  usePartageServeur,
+  usePartagesServeur,
+} from '../stores/partagesServeurStore';
 import { LIBELLES_PARTAGE } from '../stores/sessionStore';
 
 interface Props {
@@ -35,33 +33,22 @@ export function ConsentementServeur({
   onChange,
 }: Props) {
   const colors = useCouleurs();
-  const [etat, setEtat] = useState<EtatPartageServeur>();
-  const [erreur, setErreur] = useState<string>();
+  // État partagé : le même consentement s'affiche ailleurs, et basculer ici
+  // doit s'y voir sans recharger l'écran.
+  const etat = usePartageServeur(module);
+  const erreur = usePartagesServeur((e) => e.erreur);
+  const charger = usePartagesServeur((e) => e.charger);
+  const basculerServeur = usePartagesServeur((e) => e.basculer);
   const [enCours, setEnCours] = useState(false);
 
-  const charger = useCallback(async () => {
-    try {
-      const partages = await listerPartages(coupleId);
-      setEtat(partages.find((p) => p.module === module));
-      setErreur(undefined);
-    } catch (cause) {
-      setErreur(messageLisible(cause));
-    }
-  }, [coupleId, module]);
-
   useEffect(() => {
-    void charger();
-  }, [charger]);
+    void charger(coupleId);
+  }, [charger, coupleId]);
 
   const basculer = async (actif: boolean) => {
     setEnCours(true);
-    setErreur(undefined);
     try {
-      const misAJour = await basculerPartageServeur(coupleId, module, actif);
-      setEtat(misAJour);
-      onChange?.(misAJour.actif);
-    } catch (cause) {
-      setErreur(messageLisible(cause));
+      if (await basculerServeur(coupleId, module, actif)) onChange?.(actif);
     } finally {
       setEnCours(false);
     }

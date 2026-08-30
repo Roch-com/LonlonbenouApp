@@ -5,6 +5,8 @@ import { stylesDynamiques } from '@/design/stylesDynamiques';
 import {
   AVERTISSEMENT_MEDICAL,
   definitionPhase,
+  DUREE_CYCLE_MAX,
+  DUREE_CYCLE_MIN,
   frisePhases,
   INTENSITES,
   niveauxDisponibles,
@@ -21,6 +23,15 @@ import type { VuePorteuse as VuePorteuseServeur } from '../api/cycle.api';
 
 const aujourdhui = () => new Date().toISOString().slice(0, 10);
 
+/**
+ * Durées proposées d'un toucher. Elles couvrent l'immense majorité des cycles
+ * sans transformer le réglage en liste de vingt entrées ; le domaine complet
+ * reste borné par DUREE_CYCLE_MIN et DUREE_CYCLE_MAX côté serveur.
+ */
+const DUREES_PROPOSEES = [26, 27, 28, 29, 30, 31, 32].filter(
+  (j) => j >= DUREE_CYCLE_MIN && j <= DUREE_CYCLE_MAX,
+);
+
 interface Props {
   coupleId: string;
   moiId: string;
@@ -35,6 +46,7 @@ interface Props {
  */
 export function VuePorteuse({ coupleId, moiId, vue, lectureSeule }: Props) {
   const definirNiveau = useCycle((e) => e.definirNiveau);
+  const definirDuree = useCycle((e) => e.definirDuree);
   const enregistrerRegles = useCycle((e) => e.enregistrerRegles);
   const supprimerRegles = useCycle((e) => e.supprimerRegles);
   const noterSymptome = useCycle((e) => e.noterSymptome);
@@ -136,6 +148,44 @@ export function VuePorteuse({ coupleId, moiId, vue, lectureSeule }: Props) {
             ))}
           </View>
         ) : null}
+      </Carte>
+
+      <Carte>
+        <Texte variante="surtitre">La durée de mon cycle</Texte>
+        <Texte variante="petit" style={styles.mention}>
+          {vue.dureeDeclaree
+            ? `Les prévisions sont calculées sur ${vue.dureeDeclaree} jours, parce que vous l’avez indiqué.`
+            : 'Calculée sur vos cycles observés. Tant qu’il n’y en a qu’un, l’app suppose 28 jours — dites-lui plutôt le vôtre.'}
+        </Texte>
+
+        <View style={styles.puces}>
+          {DUREES_PROPOSEES.map((jours) => (
+            <Puce
+              key={jours}
+              libelle={`${jours} j`}
+              active={vue.dureeDeclaree === jours}
+              onPress={
+                lectureSeule
+                  ? undefined
+                  : () => void definirDuree(coupleId, moiId, jours)
+              }
+            />
+          ))}
+          <Puce
+            libelle="Calculer"
+            active={vue.dureeDeclaree === undefined}
+            onPress={
+              lectureSeule
+                ? undefined
+                : () => void definirDuree(coupleId, moiId, undefined)
+            }
+          />
+        </View>
+
+        <Texte variante="meta" style={styles.mention}>
+          Vous pouvez en changer quand vous voulez. « Calculer » rend la main à
+          la moyenne de vos cycles saisis.
+        </Texte>
       </Carte>
 
       <Carte>

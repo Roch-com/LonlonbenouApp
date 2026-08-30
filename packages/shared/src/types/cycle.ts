@@ -224,6 +224,17 @@ export interface PartageCycle {
   /** La personne concernée, seule à pouvoir écrire ce réglage. */
   porteuseId: PartenaireId;
   niveau: NiveauCycle;
+  /**
+   * Durée de cycle annoncée par la personne concernée, en jours.
+   *
+   * Elle prime sur la moyenne calculée. Quelqu'un qui sait son cycle de
+   * 30 jours n'a pas à attendre que l'app le déduise, et l'app n'a pas à le
+   * contredire : au début il n'y a qu'une seule date saisie, donc aucun
+   * intervalle observable, et tout était calculé sur 28 jours par défaut.
+   *
+   * Absente = on s'en remet aux cycles observés, comme avant.
+   */
+  dureeDeclaree?: number;
   majLe: string;
 }
 

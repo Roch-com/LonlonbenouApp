@@ -19,6 +19,8 @@ import { appeler } from '@/lib/api/client';
 export interface VuePorteuse {
   role: 'porteuse';
   niveau: NiveauCycle;
+  /** Durée annoncée par la personne concernée, si elle en a fixé une. */
+  dureeDeclaree?: number;
   regles: Regles[];
   symptomes: Symptome[];
   etat?: EtatCycle;
@@ -52,6 +54,18 @@ export function definirNiveauServeur(
   return appeler(`/couples/${coupleId}/cycle/niveau`, {
     methode: 'PUT',
     corps: { niveau },
+  });
+}
+
+/** `undefined` remet le calcul sur les cycles observés. */
+export function definirDureeServeur(
+  coupleId: string,
+  duree: number | undefined,
+): Promise<unknown> {
+  return appeler(`/couples/${coupleId}/cycle/duree`, {
+    methode: 'PUT',
+    // `null` explicite : un champ absent serait une requête mal formée.
+    corps: { duree: duree ?? null },
   });
 }
 

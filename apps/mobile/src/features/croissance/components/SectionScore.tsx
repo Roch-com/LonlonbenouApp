@@ -11,7 +11,10 @@ import {
 } from '@lonlonbenu/shared';
 import { Bouton, Carte, Texte } from '@/components/ui';
 import { espacements, rayons } from '@/design/theme';
+import { ConsentementServeur } from '@/features/reglages/components/ConsentementServeur';
 import { ReglagePartage } from '@/features/reglages/components/ReglagePartage';
+import { usePartageServeurActif } from '@/features/reglages/stores/partagesServeurStore';
+import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 import {
   useAutre,
   useMoi,
@@ -33,7 +36,13 @@ export function SectionScore() {
   const moi = useMoi();
   const autre = useAutre();
   const couple = useSession((e) => e.couple);
-  const actif = usePartageActif('score');
+  const coupleId = useSessionServeur((e) => e.coupleId);
+  // Dès que les comptes sont reliés, l'état qui compte est celui du serveur.
+  // La copie locale ne connaissait que le consentement de ce téléphone-ci et
+  // affirmait que l'autre n'avait rien activé, alors qu'il l'avait fait.
+  const actifServeur = usePartageServeurActif('score');
+  const actifLocal = usePartageActif('score');
+  const actif = coupleId ? actifServeur : actifLocal;
   const gestes = useGestes();
 
   if (!actif) {
@@ -55,7 +64,15 @@ export function SectionScore() {
           l’icône d’information ci-dessus.
         </Texte>
         <View style={styles.reglage}>
-          <ReglagePartage module="score" sansTitre />
+          {coupleId ? (
+            <ConsentementServeur
+              coupleId={coupleId}
+              module="score"
+              prenomAutre={autre.prenom}
+            />
+          ) : (
+            <ReglagePartage module="score" sansTitre />
+          )}
         </View>
       </Carte>
     );

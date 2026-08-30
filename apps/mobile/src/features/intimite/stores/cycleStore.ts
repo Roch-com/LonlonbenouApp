@@ -19,6 +19,7 @@ import { stockage } from '@/lib/stockage';
 import { ErreurApi, messageLisible } from '@/lib/api/erreurs';
 import {
   declarerPorteuse,
+  definirDureeServeur,
   definirNiveauServeur,
   enregistrerReglesServeur,
   lireCycle,
@@ -47,6 +48,11 @@ interface EtatCycleStore {
     coupleId: string,
     moiId: string,
     niveau: NiveauCycle,
+  ) => Promise<boolean>;
+  definirDuree: (
+    coupleId: string,
+    moiId: string,
+    duree: number | undefined,
   ) => Promise<boolean>;
   enregistrerRegles: (
     coupleId: string,
@@ -143,6 +149,9 @@ export const useCycle = create<EtatCycleStore>()(
 
         definirNiveau: (coupleId, moiId, niveau) =>
           ecrire(coupleId, moiId, () => definirNiveauServeur(coupleId, niveau)),
+
+        definirDuree: (coupleId, moiId, duree) =>
+          ecrire(coupleId, moiId, () => definirDureeServeur(coupleId, duree)),
 
         enregistrerRegles: (coupleId, moiId, debutLe, finLe) =>
           ecrire(coupleId, moiId, () =>

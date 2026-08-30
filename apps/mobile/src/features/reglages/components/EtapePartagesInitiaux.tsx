@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Bouton, Carte, Texte } from '@/components/ui';
 import { espacements } from '@/design/theme';
+import { ConsentementServeur } from './ConsentementServeur';
 import { ReglagePartage } from './ReglagePartage';
 import { useAutre } from '../stores/sessionStore';
 import { useSessionServeur } from '../stores/sessionServeurStore';
@@ -35,7 +36,17 @@ export function EtapePartagesInitiaux() {
           visible — ni pour vous, ni pour {autre.prenom}. Vous pourrez revenir
           là-dessus à tout moment, sans avoir à vous justifier.
         </Texte>
-        <ReglagePartage module="position" sansTitre />
+        {/* Sur le serveur dès que les comptes sont reliés : un consentement
+            donné ici et gardé en local n'aurait jamais atteint l'autre. */}
+        {coupleId ? (
+          <ConsentementServeur
+            coupleId={coupleId}
+            module="position"
+            prenomAutre={autre.prenom}
+          />
+        ) : (
+          <ReglagePartage module="position" sansTitre />
+        )}
       </Carte>
 
       <Carte>
