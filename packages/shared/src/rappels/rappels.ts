@@ -65,6 +65,11 @@ export function rappelsDus(
     if (evenement.rappelHeures === undefined) continue;
 
     const debut = debutEnMs(evenement);
+    // Horodatage illisible : on ne rappelle rien. `debutEnMs` rend `NaN`, et
+    // toute comparaison avec `NaN` étant fausse, la garde ci-dessous ne
+    // retenait pas l'événement — elle envoyait le rappel immédiatement.
+    if (!Number.isFinite(debut)) continue;
+
     const seuil = debut - evenement.rappelHeures * MS_PAR_HEURE;
     // Ni trop tôt, ni après coup.
     if (instant < seuil || instant >= debut) continue;

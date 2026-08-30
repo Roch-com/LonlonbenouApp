@@ -159,6 +159,33 @@ async function autoriser(
   return { couple: enregistrement };
 }
 
+/**
+ * Répare à la lecture les événements dont l'heure est illisible.
+ *
+ * Avant que la saisie ne soit validée, le client pouvait enregistrer
+ * `2026-08-30T00009:00` : le jour est intact, seule l'heure est perdue. Les
+ * clients déjà installés appellent `new Date(debut).toISOString()` dessus, ce
+ * qui lève et ferme l'application — y compris l'écran d'où l'on pourrait
+ * supprimer l'événement fautif. Ils ne peuvent pas se corriger eux-mêmes.
+ *
+ * On les rend donc en « toute la journée » : ce chemin-là ne parse rien et ne
+ * lève nulle part. C'est aussi tout ce qu'on sait honnêtement — deviner
+ * l'heure voulue serait inventer une donnée que personne n'a saisie.
+ *
+ * La réparation est faite à la lecture et non en base : elle vaut pour toutes
+ * les lignes déjà écrites, sans migration, et devient inerte dès qu'il n'y a
+ * plus rien à réparer.
+ */
+function reparerHorodatage(evenement: Evenement): Evenement {
+  if (evenement.journeeEntiere) return evenement;
+  if (!Number.isNaN(Date.parse(evenement.debut))) return evenement;
+
+  const jour = evenement.debut.slice(0, 10);
+  if (!FORMAT_JOUR.test(jour)) return evenement;
+
+  return { ...evenement, debut: jour, fin: undefined, journeeEntiere: true };
+}
+
 export function creerServiceViePratique(depot: Depot): ServiceViePratique {
   /** Enchaîne le contrôle d'accès et l'opération, pour ne pas l'oublier. */
   async function avecAcces<T>(
@@ -176,7 +203,9 @@ export function creerServiceViePratique(depot: Depot): ServiceViePratique {
       avecAcces(coupleId, lecteurId, async () => ({
         ok: true,
         valeur: {
-          evenements: await depot.viePratique.evenements(coupleId),
+          evenements: (await depot.viePratique.evenements(coupleId)).map(
+            reparerHorodatage,
+          ),
           projets: await depot.viePratique.projets(coupleId),
           initiatives: await depot.viePratique.initiatives(coupleId),
         },

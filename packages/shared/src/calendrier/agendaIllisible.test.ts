@@ -80,3 +80,25 @@ describe('un horodatage illisible ne ferme plus l’écran', () => {
     expect(quand('2026-08-30', MAINTENANT)).toBe('aujourd’hui');
   });
 });
+
+describe('le planificateur de rappels ne s’emballe pas', () => {
+  it('n’émet rien pour un événement dont la date est illisible', async () => {
+    const { rappelsDus } = await import('../rappels/rappels');
+
+    // `debutEnMs` rend `NaN`, et toute comparaison avec `NaN` est fausse : la
+    // garde « ni trop tôt, ni après coup » laissait passer l'événement et le
+    // rappel partait aussitôt, à chaque tour du planificateur.
+    const casse = evenement({ debut: 'pas une date', rappelHeures: 24 });
+    expect(rappelsDus({ evenements: [casse], projets: [], initiatives: [] },
+      ['a', 'b'], [], MAINTENANT)).toEqual([]);
+
+    // Un événement correct dans la fenêtre reste bien rappelé.
+    const bon = evenement({
+      id: 'e2',
+      debut: '2026-08-31T09:00:00.000Z',
+      rappelHeures: 24,
+    });
+    expect(rappelsDus({ evenements: [bon], projets: [], initiatives: [] },
+      ['a', 'b'], [], MAINTENANT)).toHaveLength(1);
+  });
+});
