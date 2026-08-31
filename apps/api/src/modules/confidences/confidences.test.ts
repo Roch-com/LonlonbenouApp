@@ -19,6 +19,11 @@ const envoyer = (app: App, qui: string, corps: Record<string, unknown>) =>
     payload: corps,
   });
 
+/** Enveloppes factices : seule leur forme compte côté serveur. */
+const SCELLE = 'm1.abcdefghijklmnopqrstuvwx.charge-scellee';
+const SCELLE_AUTRE = 'm1.zyxwvutsrqponmlkjihgfed.autre-charge';
+const SCELLE_TITRE = 'm1.aaaaaaaaaaaaaaaaaaaaaaaa.titre-scelle';
+
 const lister = (app: App, qui: string, type?: string) =>
   app.inject({
     method: 'GET',
@@ -32,8 +37,8 @@ describe('aucun brouillon ne parvient au serveur', () => {
 
     const reponse = await envoyer(app, GAELLE, {
       type: 'lettre',
-      titre: 'Un mot',
-      texte: 'Ce que je voulais te dire',
+      titre: SCELLE_TITRE,
+      texte: SCELLE,
       // Un client malveillant — ou simplement bogué — tenterait ceci.
       visibilite: 'prive',
       envoyeeLe: undefined,
@@ -52,7 +57,7 @@ describe('aucun brouillon ne parvient au serveur', () => {
   it('n’offre aucune route capable de créer ou modifier un brouillon', async () => {
     const { app } = await monterServeur();
     const envoyee = (
-      await envoyer(app, GAELLE, { type: 'lettre', texte: 'Un texte offert' })
+      await envoyer(app, GAELLE, { type: 'lettre', texte: SCELLE })
     ).json().confidence;
 
     // Ni brouillon, ni retrait, ni réécriture : la surface n'existe pas.
@@ -79,22 +84,49 @@ describe('aucun brouillon ne parvient au serveur', () => {
 });
 
 describe('l’envoi est irréversible et partagé', () => {
-  it('rend le texte lisible des deux côtés, à l’identique', async () => {
+  it('rend la même enveloppe des deux côtés', async () => {
+    // Le serveur achémine, il n'ouvre pas : les deux reçoivent exactement la
+    // même chaîne scellée, et c'est l'application qui la déchiffre.
     const { app } = await monterServeur();
-    const TEXTE = 'Merci d’avoir pris le relais hier';
-    await envoyer(app, GAELLE, { type: 'gratitude', texte: TEXTE });
+    await envoyer(app, GAELLE, { type: 'gratitude', texte: SCELLE });
 
     const vuParElle = await lister(app, GAELLE);
     const vuParLui = await lister(app, ROCHAMBEAU);
 
-    expect(vuParLui.body).toContain(TEXTE);
+    expect(vuParLui.body).toContain(SCELLE);
     expect(vuParElle.json().confidences).toEqual(vuParLui.json().confidences);
+  });
+
+  it('refuse un texte en clair', async () => {
+    // Le serveur ne peut pas vérifier qu'une enveloppe est bien chiffrée — il
+    // n'a aucune clé — mais il peut refuser ce qui n'en a pas la forme, et
+    // c'est ce qui empêche un texte offert d'entrer en clair dans la base.
+    const { app } = await monterServeur();
+    const reponse = await envoyer(app, GAELLE, {
+      type: 'gratitude',
+      texte: 'Merci d’avoir pris le relais hier',
+    });
+
+    expect(reponse.statusCode).toBe(400);
+    expect(reponse.json().motif).toBe('texte_non_scelle');
+  });
+
+  it('refuse un titre en clair sur une lettre scellée', async () => {
+    const { app } = await monterServeur();
+    const reponse = await envoyer(app, GAELLE, {
+      type: 'lettre',
+      titre: 'Un mot',
+      texte: SCELLE,
+    });
+
+    expect(reponse.statusCode).toBe(400);
+    expect(reponse.json().motif).toBe('texte_non_scelle');
   });
 
   it('filtre par type quand on le demande', async () => {
     const { app } = await monterServeur();
-    await envoyer(app, GAELLE, { type: 'gratitude', texte: 'Merci' });
-    await envoyer(app, ROCHAMBEAU, { type: 'lettre', texte: 'Une lettre' });
+    await envoyer(app, GAELLE, { type: 'gratitude', texte: SCELLE });
+    await envoyer(app, ROCHAMBEAU, { type: 'lettre', texte: SCELLE_AUTRE });
 
     expect((await lister(app, GAELLE, 'lettre')).json().confidences).toHaveLength(
       1,
@@ -110,7 +142,7 @@ describe('accusé de lecture', () => {
   it('n’est posé que par le destinataire', async () => {
     const { app } = await monterServeur();
     const envoyee = (
-      await envoyer(app, GAELLE, { type: 'lettre', texte: 'Pour toi' })
+      await envoyer(app, GAELLE, { type: 'lettre', texte: SCELLE })
     ).json().confidence;
 
     const parLauteur = await app.inject({
@@ -133,7 +165,7 @@ describe('accusé de lecture', () => {
   it('ne se remet pas à jour à chaque relecture', async () => {
     const { app } = await monterServeur();
     const envoyee = (
-      await envoyer(app, GAELLE, { type: 'lettre', texte: 'Pour toi' })
+      await envoyer(app, GAELLE, { type: 'lettre', texte: SCELLE })
     ).json().confidence;
 
     const chemin = `/couples/${COUPLE_ID}/confidences/${envoyee.id}/lecture`;
@@ -167,7 +199,7 @@ describe('contrôles d’accès', () => {
     const { app } = await monterServeur();
     expect((await lister(app, INTRUS)).statusCode).toBe(403);
     expect(
-      (await envoyer(app, INTRUS, { type: 'gratitude', texte: 'Bonjour' }))
+      (await envoyer(app, INTRUS, { type: 'gratitude', texte: SCELLE }))
         .statusCode,
     ).toBe(403);
   });
@@ -183,7 +215,7 @@ describe('contrôles d’accès', () => {
 
   it('ferme tout après dissociation, et efface les confidences', async () => {
     const { app, depot } = await monterServeur();
-    await envoyer(app, GAELLE, { type: 'gratitude', texte: 'Merci' });
+    await envoyer(app, GAELLE, { type: 'gratitude', texte: SCELLE });
 
     await app.inject({
       method: 'POST',

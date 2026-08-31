@@ -25,6 +25,7 @@ import { randomUUID } from 'node:crypto';
 import {
   confidencesVisiblesPar,
   envoyer,
+  estScelleMessage,
   type Confidence,
   type PartenaireId,
   type TypeConfidence,
@@ -36,6 +37,7 @@ export type RefusConfidence =
   | 'non_membre'
   | 'couple_dissocie'
   | 'texte_vide'
+  | 'texte_non_scelle'
   | 'type_inconnu'
   | 'introuvable'
   | 'pas_le_destinataire';
@@ -99,6 +101,19 @@ export function creerServiceConfidences(depot: Depot): ServiceConfidences {
 
       if (!TYPES.includes(type)) return { ok: false, motif: 'type_inconnu' };
       if (!texte.trim()) return { ok: false, motif: 'texte_vide' };
+
+      // Le serveur ne peut pas vérifier qu'une enveloppe est correctement
+      // chiffrée — il n'a aucune clé. Il peut en revanche refuser tout ce qui
+      // n'en a pas la forme, et c'est ce qui garantit qu'aucun texte offert
+      // n'entre plus en clair dans la base. Les confidences écrites avant ce
+      // changement y restent, faute de pouvoir être rattrapées : ni le serveur
+      // ni le client ne peuvent réécrire un texte déjà offert.
+      if (!estScelleMessage(texte.trim())) {
+        return { ok: false, motif: 'texte_non_scelle' };
+      }
+      if (titre?.trim() && !estScelleMessage(titre.trim())) {
+        return { ok: false, motif: 'texte_non_scelle' };
+      }
 
       const maintenant = new Date().toISOString();
       // `envoyer` du partagé pose la visibilité et l'horodatage : le client ne

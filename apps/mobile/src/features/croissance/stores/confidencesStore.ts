@@ -21,6 +21,11 @@ import { nonLues, type Confidence, type TypeConfidence } from '@lonlonbenu/share
 import { identifiant, stockage } from '@/lib/stockage';
 import { ErreurApi, messageLisible } from '@/lib/api/erreurs';
 import {
+  cleDuCouple,
+  ouvrirOuLaisser,
+  sceller,
+} from '../services/scellementConfidences';
+import {
   envoyerConfidence,
   listerConfidences,
   marquerLueServeur,
@@ -64,11 +69,27 @@ interface EtatConfidences {
   vider: () => void;
 }
 
+/**
+ * Sans clé de couple, rien ne part : le clair n'est jamais une solution de
+ * repli. Le message décrit ce qu'il faut faire plutôt que ce qui a échoué.
+ */
+const MESSAGE_SANS_CLE =
+  'Ouvrez la conversation une fois sur chacun de vos téléphones : c’est là que vos clés de chiffrement s’échangent, et elles servent aussi à vos confidences.';
+
 export const useConfidences = create<EtatConfidences>()(
   persist(
     (set, get) => {
       const relire = async (coupleId: string, moiId: string) => {
-        const confidences = await listerConfidences(coupleId);
+        const scellees = await listerConfidences(coupleId);
+        // Le clair n'existe qu'ici, après ouverture locale : ni le serveur ni
+        // le cache disque ne détiennent le texte offert.
+        const cle = await cleDuCouple();
+        const confidences = scellees.map((c) => ({
+          ...c,
+          texte: ouvrirOuLaisser(cle, c.texte),
+          titre: c.titre === undefined ? undefined : ouvrirOuLaisser(cle, c.titre),
+        }));
+
         set({
           confidences,
           cachePour: moiId,
@@ -119,8 +140,14 @@ export const useConfidences = create<EtatConfidences>()(
           if (!propre) return false;
 
           set({ erreur: undefined });
+          const cle = await cleDuCouple();
+          if (!cle) {
+            set({ erreur: MESSAGE_SANS_CLE });
+            return false;
+          }
+
           try {
-            await envoyerConfidence(coupleId, 'gratitude', propre);
+            await envoyerConfidence(coupleId, 'gratitude', sceller(cle, propre));
             await relire(coupleId, moiId);
             return true;
           } catch (erreur) {
@@ -174,12 +201,18 @@ export const useConfidences = create<EtatConfidences>()(
           if (!brouillon || !brouillon.texte.trim()) return false;
 
           set({ erreur: undefined });
+          const cle = await cleDuCouple();
+          if (!cle) {
+            set({ erreur: MESSAGE_SANS_CLE });
+            return false;
+          }
+
           try {
             await envoyerConfidence(
               coupleId,
               'lettre',
-              brouillon.texte,
-              brouillon.titre,
+              sceller(cle, brouillon.texte),
+              brouillon.titre ? sceller(cle, brouillon.titre) : undefined,
             );
             // Le brouillon ne disparaît qu'une fois l'envoi confirmé.
             set((e) => ({ brouillons: e.brouillons.filter((b) => b.id !== id) }));
