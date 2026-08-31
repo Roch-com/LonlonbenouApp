@@ -42,6 +42,12 @@ export interface DepotOAuth {
     parCourriel(courriel: string): Promise<Compte | undefined>;
     parId(id: string): Promise<Compte | undefined>;
     enregistrer(compte: Compte): Promise<void>;
+    /**
+     * Droit à l’effacement (RGPD). Supprime la ligne plutôt que de la marquer
+     * close : un compte « désactivé » garde le courriel et le vérificateur de
+     * mot de passe, ce qui n’est pas un effacement.
+     */
+    supprimer(id: string): Promise<void>;
   };
   codes: {
     parCode(code: string): Promise<CodeAutorisation | undefined>;

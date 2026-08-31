@@ -30,6 +30,9 @@ export function creerDepotOAuthMemoire(): DepotOAuth {
       async enregistrer(compte) {
         comptes.set(compte.id, copie(compte));
       },
+      async supprimer(id) {
+        comptes.delete(id);
+      },
     },
     codes: {
       async parCode(code) {

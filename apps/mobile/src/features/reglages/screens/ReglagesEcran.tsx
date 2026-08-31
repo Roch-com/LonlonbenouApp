@@ -9,6 +9,8 @@ import { EcranModale } from '@/components/chrome';
 import { espacements } from '@/design/theme';
 import { DefinitionPin } from '../components/DefinitionPin';
 import { ChoixTheme } from '../components/ChoixTheme';
+import { MesDonnees } from '../components/MesDonnees';
+import { VerrouDesModules } from '../components/VerrouDesModules';
 import { ReglagesNotifications } from '../components/ReglagesNotifications';
 import { DELAI_GRACE_MS, useVerrou } from '../stores/verrouStore';
 import { useSessionServeur } from '../stores/sessionServeurStore';
@@ -197,6 +199,25 @@ export function ReglagesEcran() {
           </>
         )}
       </Carte>
+
+      <VerrouDesModules />
+
+      <Carte>
+        <Texte variante="surtitre">Confidentialité</Texte>
+        <Texte variante="corps" style={styles.mention}>
+          Le récapitulatif de ce que vous partagez, et de ce qui est visible en
+          ce moment — des deux côtés.
+        </Texte>
+        <View style={styles.actions}>
+          <Bouton
+            libelle="Qui voit quoi"
+            ton="secondaire"
+            onPress={() => router.push('/qui-voit-quoi')}
+          />
+        </View>
+      </Carte>
+
+      <MesDonnees />
 
       <Carte>
         <Texte variante="surtitre">En cas de rupture</Texte>

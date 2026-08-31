@@ -7,6 +7,7 @@ import { EcranOnglet } from '@/components/chrome/EcranOnglet';
 import { espacements } from '@/design/theme';
 import { ilYA } from '@/lib/temps';
 import { useAutre, useSession } from '@/features/reglages/stores/sessionStore';
+import { GardeModuleSensible } from '@/features/reglages/components/GardeModuleSensible';
 import { BandeauSos } from '../components/BandeauSos';
 import { CarteDuPartenaire } from '../components/CarteDuPartenaire';
 import { CheckIn } from '../components/CheckIn';
@@ -31,9 +32,15 @@ export function PresenceEcran() {
         sousTitre="Chacun partage ce qu’il souhaite, quand il le souhaite."
       />
 
+      {/* Le SOS reste hors du verrou : une urgence ne doit pas attendre la
+          saisie d'un code. C'est la même exception que côté serveur, où une
+          alerte passe quel que soit l'état du partage. */}
       <BandeauSos />
-      <CarteDuPartenaire />
-      <CheckIn />
+
+      <GardeModuleSensible module="presence">
+        <CarteDuPartenaire />
+        <CheckIn />
+      </GardeModuleSensible>
 
       <Carte>
         <Texte variante="surtitre">Journal des présences</Texte>

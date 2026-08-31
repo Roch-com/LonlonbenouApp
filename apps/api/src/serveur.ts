@@ -9,6 +9,8 @@ import { creerServiceAxes } from './modules/axes/axes.service.ts';
 import { creerServiceAppairage } from './modules/appairage/appairage.service.ts';
 import { creerServiceDissociation } from './modules/dissociation/dissociation.service.ts';
 import { creerServicePartages } from './modules/partages/partages.service.ts';
+import { creerServiceCompte } from './modules/compte/compte.service.ts';
+import { enregistrerRoutesCompte } from './modules/compte/compte.routes.ts';
 import { enregistrerIdempotence } from './securite/idempotence.ts';
 import { creerServiceActivite } from './modules/activite/activite.service.ts';
 import { enregistrerRoutesActivite } from './modules/activite/activite.routes.ts';
@@ -95,6 +97,7 @@ export async function creerServeur(options: OptionsServeur = {}) {
   const axes = creerServiceAxes(depot);
   const appairage = creerServiceAppairage(depot);
   const dissociation = creerServiceDissociation(depot, expediteur);
+  const compte = creerServiceCompte(depot, depotOAuth, dissociation);
   const partages = creerServicePartages(depot, expediteur);
   const activite = creerServiceActivite(depot);
   const cycle = creerServiceCycle(depot);
@@ -219,6 +222,7 @@ export async function creerServeur(options: OptionsServeur = {}) {
 
   enregistrerRoutesOAuth(app, autorisation, depot);
   enregistrerRoutesMotDePasse(app, autorisation, depotOAuth, courrier);
+  enregistrerRoutesCompte(app, compte, authentifier);
   enregistrerRoutesActivite(app, activite, authentifier);
   enregistrerRoutesCycle(app, cycle, authentifier);
   enregistrerRoutesConfidences(app, confidences, authentifier);

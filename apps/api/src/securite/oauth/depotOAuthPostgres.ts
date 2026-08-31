@@ -37,6 +37,9 @@ export function creerDepotOAuthPostgres(pool: pg.Pool): DepotOAuth {
           [compte.id, compte.courriel, JSON.stringify(compte.verificateur)],
         );
       },
+      async supprimer(id) {
+        await pool.query('DELETE FROM comptes WHERE id = $1', [id]);
+      },
     },
 
     codes: {

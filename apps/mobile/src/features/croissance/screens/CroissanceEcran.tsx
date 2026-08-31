@@ -3,6 +3,7 @@ import { EnTete, Segments } from '@/components/ui';
 import { EcranOnglet } from '@/components/chrome/EcranOnglet';
 import { useAutre } from '@/features/reglages/stores/sessionStore';
 import { SectionAxes } from '../components/SectionAxes';
+import { GardeModuleSensible } from '@/features/reglages/components/GardeModuleSensible';
 import { SectionConfidences } from '../components/SectionConfidences';
 import { SectionScore } from '../components/SectionScore';
 
@@ -28,7 +29,11 @@ export function CroissanceEcran() {
       />
 
       {onglet === 'axes' ? <SectionAxes /> : null}
-      {onglet === 'confidences' ? <SectionConfidences /> : null}
+      {onglet === 'confidences' ? (
+        <GardeModuleSensible module="confidences">
+          <SectionConfidences />
+        </GardeModuleSensible>
+      ) : null}
       {onglet === 'elan' ? <SectionScore /> : null}
     </EcranOnglet>
   );
