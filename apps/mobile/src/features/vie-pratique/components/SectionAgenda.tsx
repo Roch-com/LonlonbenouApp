@@ -15,7 +15,7 @@ import {
   quand,
   type CategorieEvenement,
 } from '@lonlonbenu/shared';
-import { Bouton, Carte, Champ, Puce, Texte } from '@/components/ui';
+import { Bouton, Carte, Champ, ChampDate, Puce, Texte } from '@/components/ui';
 import { espacements } from '@/design/theme';
 import { heure } from '@/lib/temps';
 import { useSession } from '@/features/reglages/stores/sessionStore';
@@ -95,12 +95,11 @@ export function SectionAgenda() {
 
           <View style={styles.champs}>
             <Champ etiquette="Quoi ?" value={titre} onChangeText={setTitre} />
-            <Champ
-              etiquette="Date (AAAA-MM-JJ)"
-              placeholder="2026-04-12"
-              value={date}
-              onChangeText={setDate}
-              keyboardType="numbers-and-punctuation"
+            <ChampDate
+              etiquette="Quand ?"
+              valeur={date}
+              onChanger={setDate}
+              placeholder="Choisir une date"
             />
 
             <View style={styles.ligne}>
@@ -117,19 +116,13 @@ export function SectionAgenda() {
 
             {!journeeEntiere ? (
               <>
-                <Champ
-                  etiquette="Heure"
+                <ChampDate
+                  etiquette="À quelle heure ?"
+                  mode="heure"
+                  valeur={heureSaisie}
+                  onChanger={setHeureSaisie}
                   placeholder="19:00"
-                  value={heureSaisie}
-                  onChangeText={setHeureSaisie}
-                  keyboardType="numbers-and-punctuation"
                 />
-                {!heureLisible ? (
-                  <Texte variante="petit" style={styles.aide}>
-                    Cette heure ne se lit pas. « 9 », « 9h30 » ou « 21:00 »
-                    conviennent.
-                  </Texte>
-                ) : null}
               </>
             ) : null}
 

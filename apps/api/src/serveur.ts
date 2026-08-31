@@ -9,6 +9,7 @@ import { creerServiceAxes } from './modules/axes/axes.service.ts';
 import { creerServiceAppairage } from './modules/appairage/appairage.service.ts';
 import { creerServiceDissociation } from './modules/dissociation/dissociation.service.ts';
 import { creerServicePartages } from './modules/partages/partages.service.ts';
+import { enregistrerIdempotence } from './securite/idempotence.ts';
 import { creerServiceActivite } from './modules/activite/activite.service.ts';
 import { enregistrerRoutesActivite } from './modules/activite/activite.routes.ts';
 import { creerServiceCycle } from './modules/cycle/cycle.service.ts';
@@ -184,6 +185,10 @@ export async function creerServeur(options: OptionsServeur = {}) {
    * 500, posées volontairement par une route — passent inchangées. Seules les
    * autres sont remplacées par un message neutre, le détail restant au journal.
    */
+  // Posé avant les routes : le client rejoue une requête expirée pour survivre
+  // au réveil du serveur, et sans cela le rejeu créait un second message.
+  enregistrerIdempotence(app);
+
   app.setErrorHandler((brute, requete, reponse) => {
     const erreur = brute as {
       statusCode?: number;

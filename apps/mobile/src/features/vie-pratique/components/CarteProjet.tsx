@@ -12,7 +12,7 @@ import {
   type Partenaire,
   type Projet,
 } from '@lonlonbenu/shared';
-import { Bouton, Carte, Champ, Texte } from '@/components/ui';
+import { Bouton, Carte, Champ, ChampDate, Texte } from '@/components/ui';
 import { espacements, rayons } from '@/design/theme';
 
 interface Props {
@@ -150,12 +150,11 @@ export function CarteProjet({
               value={titreJalon}
               onChangeText={setTitreJalon}
             />
-            <Champ
-              etiquette="Échéance (facultatif, AAAA-MM-JJ)"
-              placeholder="2026-05-01"
-              value={echeance}
-              onChangeText={setEcheance}
-              keyboardType="numbers-and-punctuation"
+            <ChampDate
+              etiquette="Échéance (facultatif)"
+              placeholder="Sans échéance"
+              valeur={echeance}
+              onChanger={setEcheance}
             />
             <Bouton
               libelle="Ajouter ce jalon"

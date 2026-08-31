@@ -11,6 +11,7 @@
  * rejoué, et l'utilisateur serait déconnecté par son propre client.
  */
 
+import * as Crypto from 'expo-crypto';
 import { CONFIGURATION_API } from './configuration';
 import { ErreurApi, genreDepuisStatut } from './erreurs';
 
@@ -78,6 +79,7 @@ async function envoyer(
   options: OptionsRequete,
   jeton: string | undefined,
   delaiMs: number = DELAI_MS,
+  cleIdempotence?: string,
 ): Promise<Response> {
   const controleur = new AbortController();
   let expire = false;
@@ -99,6 +101,7 @@ async function envoyer(
           ? {}
           : { 'content-type': 'application/json' }),
         ...(jeton ? { authorization: `Bearer ${jeton}` } : {}),
+        ...(cleIdempotence ? { 'x-idempotence': cleIdempotence } : {}),
       },
       body: options.corps === undefined ? undefined : JSON.stringify(options.corps),
       signal: controleur.signal,
@@ -125,16 +128,27 @@ async function envoyerAvecPatience(
   chemin: string,
   options: OptionsRequete,
   jeton: string | undefined,
+  cleIdempotence?: string,
 ): Promise<Response> {
   try {
-    return await envoyer(chemin, options, jeton);
+    return await envoyer(chemin, options, jeton, DELAI_MS, cleIdempotence);
   } catch (erreur) {
     if (!(erreur instanceof ErreurApi) || erreur.genre !== 'reveil_trop_long') {
       throw erreur;
     }
     signalerReveil(true);
     try {
-      return await envoyer(chemin, options, jeton, DELAI_REVEIL_MS);
+      // **La même clé** que la tentative abandonnée. C'est tout l'intérêt :
+      // `abort()` n'a interrompu que l'attente du téléphone, et le serveur a
+      // pu traiter la première requête. Sans clé partagée, ce rejeu créait un
+      // second message — le même mot affiché deux fois dans la conversation.
+      return await envoyer(
+        chemin,
+        options,
+        jeton,
+        DELAI_REVEIL_MS,
+        cleIdempotence,
+      );
     } finally {
       signalerReveil(false);
     }
@@ -157,14 +171,20 @@ export async function appeler<T>(
   options: OptionsRequete = {},
 ): Promise<T> {
   const jeton = options.sansJeton ? undefined : fournisseur?.jetonActuel();
-  let reponse = await envoyerAvecPatience(chemin, options, jeton);
+  // Une clé par appel logique, partagée par toutes ses tentatives. Seules les
+  // créations en ont besoin : `PUT` et `DELETE` visent une ressource nommée et
+  // sont déjà sans effet cumulé.
+  const cle =
+    (options.methode ?? 'GET') === 'POST' ? Crypto.randomUUID() : undefined;
+
+  let reponse = await envoyerAvecPatience(chemin, options, jeton, cle);
 
   if (reponse.status === 401 && !options.sansJeton && fournisseur) {
     const renouvele = await fournisseur.rafraichir();
     if (!renouvele) {
       throw new ErreurApi('non_authentifie', 'Session expirée', 401);
     }
-    reponse = await envoyerAvecPatience(chemin, options, renouvele);
+    reponse = await envoyerAvecPatience(chemin, options, renouvele, cle);
   }
 
   if (!reponse.ok) {

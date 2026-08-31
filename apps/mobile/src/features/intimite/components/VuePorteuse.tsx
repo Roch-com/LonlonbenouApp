@@ -16,7 +16,7 @@ import {
   type Intensite,
   type TypeSymptome,
 } from '@lonlonbenu/shared';
-import { Bouton, Carte, Champ, Puce, Texte } from '@/components/ui';
+import { Bouton, Carte, ChampDate, Puce, Texte } from '@/components/ui';
 import { espacements, rayons } from '@/design/theme';
 import { useCycle } from '../stores/cycleStore';
 import type { VuePorteuse as VuePorteuseServeur } from '../api/cycle.api';
@@ -114,11 +114,13 @@ export function VuePorteuse({ coupleId, moiId, vue, lectureSeule }: Props) {
         <Texte variante="surtitre">Noter mes règles</Texte>
         {!lectureSeule ? (
           <View style={styles.champs}>
-            <Champ
-              etiquette="Premier jour (AAAA-MM-JJ)"
-              value={debut}
-              onChangeText={setDebut}
-              keyboardType="numbers-and-punctuation"
+            <ChampDate
+              etiquette="Premier jour de mes règles"
+              valeur={debut}
+              onChanger={setDebut}
+              // Une date de règles à venir n'a pas de sens : on ne prédit pas,
+              // on enregistre ce qui a eu lieu.
+              maximum={new Date()}
             />
             <Bouton
               libelle="Enregistrer"

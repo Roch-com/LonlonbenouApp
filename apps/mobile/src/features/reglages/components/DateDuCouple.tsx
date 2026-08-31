@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 import type { Theme } from '@lonlonbenu/shared';
-import { Bouton, Carte, Champ, Texte } from '@/components/ui';
+import { Bouton, Carte, ChampDate, Texte } from '@/components/ui';
 import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { espacements } from '@/design/theme';
 import { dateLongue } from '@/lib/temps';
@@ -52,13 +52,13 @@ export function DateDuCouple() {
             Au format année-mois-jour, par exemple 2024-09-14.
           </Texte>
           <View style={styles.champ}>
-            <Champ
+            <ChampDate
               etiquette="Date d’origine"
-              value={saisie}
-              onChangeText={setSaisie}
-              placeholder="2024-09-14"
-              keyboardType="numbers-and-punctuation"
-              autoCapitalize="none"
+              valeur={saisie}
+              onChanger={setSaisie}
+              placeholder="Choisir la date"
+              // Un couple n'a pas commencé demain.
+              maximum={new Date()}
               {...(erreur ? { erreur } : {})}
             />
           </View>

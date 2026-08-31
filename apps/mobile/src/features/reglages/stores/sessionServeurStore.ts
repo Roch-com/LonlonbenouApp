@@ -248,11 +248,24 @@ export const useSessionServeur = create<EtatSessionStore>()((set, get) => {
 
     async rafraichirLeCouple() {
       try {
-        const moi = await appeler<{ partenaireId: string; coupleId?: string }>(
-          '/moi',
-        );
+        // `/moi` rend quatre champs ; on n'en lisait que deux. La date
+        // d'origine n'était donc jamais relue du serveur : elle n'existait que
+        // sur le téléphone qui venait de la saisir, disparaissait au
+        // redémarrage, et n'atteignait jamais l'autre. Le compteur n'était pas
+        // désynchronisé — il n'était tout simplement jamais synchronisé.
+        const moi = await appeler<{
+          partenaireId: string;
+          coupleId?: string;
+          depuis?: string;
+          partenaires?: PartenaireServeur[];
+        }>('/moi');
         await enregistrerPartenaireId(moi.partenaireId);
-        set({ partenaireId: moi.partenaireId, coupleId: moi.coupleId });
+        set({
+          partenaireId: moi.partenaireId,
+          coupleId: moi.coupleId,
+          depuis: moi.depuis,
+          partenaires: moi.partenaires,
+        });
       } catch (erreur) {
         if (erreur instanceof ErreurApi && erreur.genre === 'non_authentifie') {
           set({ etat: 'anonyme', jetonAcces: undefined });

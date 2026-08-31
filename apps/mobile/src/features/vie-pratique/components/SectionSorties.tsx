@@ -13,7 +13,7 @@ import {
   resumeJournal,
   type CategorieSortie,
 } from '@lonlonbenu/shared';
-import { Bouton, Carte, Champ, Puce, Texte } from '@/components/ui';
+import { Bouton, Carte, Champ, ChampDate, Puce, Texte } from '@/components/ui';
 import { espacements } from '@/design/theme';
 import { useSession } from '@/features/reglages/stores/sessionStore';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
@@ -145,13 +145,12 @@ export function SectionSorties() {
                   <Texte variante="meta">
                     proposée par {auteur?.prenom ?? '—'}
                   </Texte>
-                  <Champ
-                    placeholder="Une date ? AAAA-MM-JJ"
-                    value={dates[initiative.id] ?? ''}
-                    onChangeText={(v) =>
+                  <ChampDate
+                    placeholder="Une date ?"
+                    valeur={dates[initiative.id] ?? ''}
+                    onChanger={(v) =>
                       setDates((d) => ({ ...d, [initiative.id]: v }))
                     }
-                    keyboardType="numbers-and-punctuation"
                   />
                   <View style={styles.actions}>
                     <Bouton

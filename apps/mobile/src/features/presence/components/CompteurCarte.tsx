@@ -1,4 +1,6 @@
+import { useCallback } from 'react';
 import { View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import type { Theme } from '@lonlonbenu/shared';
 import { formaterJours, joursEnsemble, prochainJalon } from '@lonlonbenu/shared';
 import { Carte, Texte } from '@/components/ui';
@@ -49,6 +51,17 @@ export function CompteurCarte({ compact, enAvant }: Props) {
    * Un repli inventé est pire qu'une absence : il se présente comme un fait.
    */
   const depuis = useSessionServeur((e) => e.depuis);
+  const connecte = useSessionServeur((e) => e.etat === 'connecte');
+  const rafraichirLeCouple = useSessionServeur((e) => e.rafraichirLeCouple);
+
+  // La date vit sur le serveur et se change depuis l’autre téléphone.
+  // Sans cette relecture, celui qui ne l’a pas saisie devait redémarrer
+  // l’application pour la voir arriver.
+  useFocusEffect(
+    useCallback(() => {
+      if (connecte) void rafraichirLeCouple();
+    }, [connecte, rafraichirLeCouple]),
+  );
   const maintenant = new Date().toISOString();
 
   // Sans date connue, on le dit plutôt que d'inventer un chiffre.

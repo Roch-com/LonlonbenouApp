@@ -2,6 +2,7 @@ export { Avatar } from './Avatar';
 export { Bouton } from './Bouton';
 export { Carte } from './Carte';
 export { Champ } from './Champ';
+export { ChampDate } from './ChampDate';
 export { Ecran } from './Ecran';
 export { EnTete } from './EnTete';
 export { EnTeteApp } from './EnTeteApp';
