@@ -1,0 +1,12 @@
+-- Pôle ③ — projet surprise (§8.10).
+--
+-- Date à partir de laquelle un projet devient commun. Avant elle, seul son
+-- auteur le voit.
+--
+-- Le piège que cette migration évite est le même que pour `dureeDeclaree` du
+-- cycle : le dépôt en mémoire range l'objet entier, l'adaptateur SQL n'écrit
+-- que les colonnes qu'il nomme. Sans cette colonne, `revelerLe` compilerait,
+-- passerait tous les tests en mémoire, et se perdrait à chaque écriture réelle
+-- — un projet surprise deviendrait public au premier rechargement, ce qui est
+-- exactement le contraire de ce que le module promet.
+ALTER TABLE projets ADD COLUMN IF NOT EXISTS reveler_le DATE;

@@ -103,7 +103,11 @@ export function enregistrerRoutesViePratique(
     { preHandler: authentifier },
     async (requete, reponse) => {
       const { coupleId } = requete.params as { coupleId: string };
-      const corps = requete.body as { titre?: string; intention?: string };
+      const corps = requete.body as {
+        titre?: string;
+        intention?: string;
+        revelerLe?: string;
+      };
       if (!corps?.titre) {
         return reponse.code(400).send({ motif: 'champs_manquants' });
       }
@@ -113,6 +117,7 @@ export function enregistrerRoutesViePratique(
         requete.identite!.partenaireId,
         corps.titre,
         corps.intention,
+        corps.revelerLe,
       );
       if (!resultat.ok) {
         return reponse

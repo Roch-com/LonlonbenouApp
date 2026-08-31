@@ -10,6 +10,8 @@ export * from './types/presence';
 export * from './presence/geo';
 export * from './memoire/souvenirs';
 export * from './finances/finances';
+export * from './initiatives/catalogue';
+export * from './score/historique';
 export * from './confidences/complicite';
 export * from './confidences/differe';
 export * from './croissance/reformulation';

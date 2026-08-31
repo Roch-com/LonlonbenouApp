@@ -31,6 +31,7 @@ import {
   type PartenaireId,
   type Projet,
 } from '@lonlonbenu/shared';
+import { projetsVisiblesPar } from '@lonlonbenu/shared';
 import type { CoupleServeur, Depot } from '../../domaine/depot.ts';
 
 export type RefusViePratique =
@@ -83,6 +84,11 @@ export interface ServiceViePratique {
     moiId: PartenaireId,
     titre: string,
     intention?: string,
+    /**
+     * Projet surprise (§8.10) : `YYYY-MM-DD` à partir duquel il devient
+     * commun. Avant cette date, seul son auteur le voit.
+     */
+    revelerLe?: string,
   ): Promise<Resultat<Projet>>;
   ajouterJalon(
     coupleId: string,
@@ -206,7 +212,14 @@ export function creerServiceViePratique(depot: Depot): ServiceViePratique {
           evenements: (await depot.viePratique.evenements(coupleId)).map(
             reparerHorodatage,
           ),
-          projets: await depot.viePratique.projets(coupleId),
+          // Filtrage des projets surprise : un projet encore secret ne
+          // franchit pas la frontière du serveur. C'est la seule asymétrie
+          // assumée de l'application — ce qui est caché n'est pas une
+          // observation de l'autre, c'est un cadeau qu'on lui prépare.
+          projets: projetsVisiblesPar(
+            await depot.viePratique.projets(coupleId),
+            lecteurId,
+          ),
           initiatives: await depot.viePratique.initiatives(coupleId),
         },
       })),
@@ -248,10 +261,16 @@ export function creerServiceViePratique(depot: Depot): ServiceViePratique {
         return { ok: true };
       }),
 
-    creerProjet: (coupleId, moiId, titre, intention) =>
+    creerProjet: (coupleId, moiId, titre, intention, revelerLe) =>
       avecAcces(coupleId, moiId, async () => {
         const propre = titre.trim();
         if (!propre) return { ok: false, motif: 'donnees_invalides' };
+
+        // Une date de révélation mal formée ferait un projet secret pour
+        // toujours — exactement ce que le module ne promet pas.
+        if (revelerLe !== undefined && !FORMAT_JOUR.test(revelerLe)) {
+          return { ok: false, motif: 'donnees_invalides' };
+        }
 
         const projet: Projet = {
           id: randomUUID(),
@@ -260,6 +279,7 @@ export function creerServiceViePratique(depot: Depot): ServiceViePratique {
           jalons: [],
           creePar: moiId,
           creeLe: new Date().toISOString(),
+          revelerLe,
         };
         await depot.viePratique.enregistrerProjet(coupleId, projet);
         return { ok: true, valeur: projet };

@@ -649,7 +649,8 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
 
       async projets(coupleId) {
         const { rows } = await pool.query(
-          `SELECT id, titre, intention, echeance::text AS echeance, cree_par, cree_le, archive_le
+          `SELECT id, titre, intention, echeance::text AS echeance, cree_par, cree_le,
+                  archive_le, reveler_le::text AS reveler_le
              FROM projets WHERE couple_id = $1 ORDER BY cree_le DESC`,
           [coupleId],
         );
@@ -669,6 +670,7 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
           creePar: r.cree_par,
           creeLe: isoRequis(r.cree_le),
           archiveLe: iso(r.archive_le),
+          revelerLe: r.reveler_le ?? undefined,
           jalons: jalons.rows
             .filter((j) => j.projet_id === r.id)
             .map((j) => ({
@@ -690,11 +692,12 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
         try {
           await client.query('BEGIN');
           await client.query(
-            `INSERT INTO projets (id, couple_id, titre, intention, echeance, cree_par, cree_le, archive_le)
-                  VALUES ($1,$2,$3,$4,$5::date,$6,$7,$8)
+            `INSERT INTO projets (id, couple_id, titre, intention, echeance, cree_par, cree_le, archive_le, reveler_le)
+                  VALUES ($1,$2,$3,$4,$5::date,$6,$7,$8,$9::date)
              ON CONFLICT (id) DO UPDATE
                     SET titre = EXCLUDED.titre, intention = EXCLUDED.intention,
-                        echeance = EXCLUDED.echeance, archive_le = EXCLUDED.archive_le`,
+                        echeance = EXCLUDED.echeance, archive_le = EXCLUDED.archive_le,
+                        reveler_le = EXCLUDED.reveler_le`,
             [
               projet.id,
               coupleId,
@@ -704,6 +707,7 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
               projet.creePar,
               projet.creeLe,
               projet.archiveLe ?? null,
+              projet.revelerLe ?? null,
             ],
           );
           // Remplacement intégral : un jalon retiré doit disparaître.
