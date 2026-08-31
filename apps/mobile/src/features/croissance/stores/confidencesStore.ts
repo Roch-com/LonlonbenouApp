@@ -17,7 +17,12 @@
  */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { nonLues, type Confidence, type TypeConfidence } from '@lonlonbenu/shared';
+import {
+  etatDiffere,
+  nonLues,
+  type Confidence,
+  type TypeConfidence,
+} from '@lonlonbenu/shared';
 import { identifiant, stockage } from '@/lib/stockage';
 import { ErreurApi, messageLisible } from '@/lib/api/erreurs';
 import {
@@ -38,6 +43,13 @@ export interface Brouillon {
   texte: string;
   creeLe: string;
   majLe: string;
+  /**
+   * Instant où la personne a demandé à différer l'envoi de 24 h (§8.6).
+   *
+   * Absent = la lettre part quand elle veut. Le délai protège de ce qui
+   * s'écrit à chaud, pas de l'élan : on ne l'impose pas.
+   */
+  differeDepuis?: string;
 }
 
 interface EtatConfidences {
@@ -62,6 +74,8 @@ interface EtatConfidences {
   commencerLettre: (titre: string, texte: string) => string;
   modifierLettre: (id: string, titre: string, texte: string) => void;
   supprimerBrouillon: (id: string) => void;
+  /** Met la lettre de côté pour 24 h, ou lève le délai. */
+  differerLettre: (id: string, differer: boolean) => void;
   /** Le seul chemin par lequel une lettre quitte l'appareil. */
   envoyerLettre: (coupleId: string, moiId: string, id: string) => Promise<boolean>;
 
@@ -192,6 +206,19 @@ export const useConfidences = create<EtatConfidences>()(
           }));
         },
 
+        differerLettre(id, differer) {
+          set((e) => ({
+            brouillons: e.brouillons.map((b) =>
+              b.id === id
+                ? {
+                    ...b,
+                    differeDepuis: differer ? new Date().toISOString() : undefined,
+                  }
+                : b,
+            ),
+          }));
+        },
+
         supprimerBrouillon(id) {
           set((e) => ({ brouillons: e.brouillons.filter((b) => b.id !== id) }));
         },
@@ -199,6 +226,16 @@ export const useConfidences = create<EtatConfidences>()(
         async envoyerLettre(coupleId, moiId, id) {
           const brouillon = get().brouillons.find((b) => b.id === id);
           if (!brouillon || !brouillon.texte.trim()) return false;
+
+          // Le délai est vérifié ici et pas seulement dans l'interface : c'est
+          // toute la fonctionnalité, et un écran contourné la viderait.
+          if (!etatDiffere(brouillon.differeDepuis).pret) {
+            set({
+              erreur:
+                'Cette lettre est mise de côté jusqu’à demain. Vous pouvez la modifier ou l’effacer d’ici là.',
+            });
+            return false;
+          }
 
           set({ erreur: undefined });
           const cle = await cleDuCouple();

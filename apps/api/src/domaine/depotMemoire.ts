@@ -30,6 +30,7 @@ import type {
   InvitationServeur,
   DepenseScellee,
   MessageScelle,
+  ReponseCompliciteServeur,
   NotificationServeur,
   ReglagesFinancesServeur,
   PositionServeur,
@@ -56,6 +57,7 @@ export function creerDepotMemoire(): Depot {
   const activite = new Map<string, ActiviteBrute[]>();
   const souvenirs = new Map<string, SouvenirScelle[]>();
   const depenses = new Map<string, DepenseScellee[]>();
+  const complicite = new Map<string, ReponseCompliciteServeur[]>();
   const reglagesFinances = new Map<string, ReglagesFinancesServeur>();
   const positions = new Map<string, PositionServeur[]>();
   const statuts = new Map<string, StatutServeur[]>();
@@ -261,6 +263,26 @@ export function creerDepotMemoire(): Depot {
       },
       async effacerPourCouple(coupleId) {
         activite.delete(coupleId);
+      },
+    },
+
+    complicite: {
+      async reponses(coupleId, jour) {
+        return copie(
+          (complicite.get(coupleId) ?? []).filter((r) => r.jour === jour),
+        );
+      },
+      async repondre(coupleId, reponse) {
+        // Une seule réponse par personne et par jour : répondre à nouveau
+        // remplace, plutôt que d'empiler des versions successives.
+        const liste = (complicite.get(coupleId) ?? []).filter(
+          (r) => !(r.jour === reponse.jour && r.partenaireId === reponse.partenaireId),
+        );
+        liste.push(copie(reponse));
+        complicite.set(coupleId, liste);
+      },
+      async effacerPourCouple(coupleId) {
+        complicite.delete(coupleId);
       },
     },
 

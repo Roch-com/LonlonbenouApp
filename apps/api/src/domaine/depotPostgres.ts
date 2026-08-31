@@ -921,6 +921,51 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
       },
     },
 
+    complicite: {
+      async reponses(coupleId, jour) {
+        const { rows } = await pool.query<{
+          jour: Date | string;
+          partenaire_id: string;
+          texte_scelle: string;
+          repondu_le: Date;
+        }>(
+          `SELECT jour, partenaire_id, texte_scelle, repondu_le
+             FROM reponses_complicite WHERE couple_id = $1 AND jour = $2`,
+          [coupleId, jour],
+        );
+        return rows.map((r) => ({
+          jour: jourCivil(r.jour),
+          partenaireId: r.partenaire_id,
+          texteScelle: r.texte_scelle,
+          reponduLe: isoRequis(r.repondu_le),
+        }));
+      },
+
+      async repondre(coupleId, reponse) {
+        await pool.query(
+          `INSERT INTO reponses_complicite
+                  (couple_id, jour, partenaire_id, texte_scelle, repondu_le)
+                VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (couple_id, jour, partenaire_id) DO UPDATE
+                  SET texte_scelle = EXCLUDED.texte_scelle,
+                      repondu_le = EXCLUDED.repondu_le`,
+          [
+            coupleId,
+            reponse.jour,
+            reponse.partenaireId,
+            reponse.texteScelle,
+            reponse.reponduLe,
+          ],
+        );
+      },
+
+      async effacerPourCouple(coupleId) {
+        await pool.query('DELETE FROM reponses_complicite WHERE couple_id = $1', [
+          coupleId,
+        ]);
+      },
+    },
+
     finances: {
       async reglages(coupleId) {
         const { rows } = await pool.query<{

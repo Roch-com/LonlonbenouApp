@@ -90,6 +90,14 @@ export interface StatutServeur {
  * Position d’un partenaire, telle que le serveur la détient : une enveloppe et
  * un horodatage. Il ne sait pas l’ouvrir, donc pas où se trouve la personne.
  */
+/** Une réponse à la question du jour. Le serveur ne l’ouvre pas. */
+export interface ReponseCompliciteServeur {
+  jour: string;
+  partenaireId: PartenaireId;
+  texteScelle: string;
+  reponduLe: string;
+}
+
 /** Réglages du module finances. Les parts sont scellées : elles disent les revenus. */
 export interface ReglagesFinancesServeur {
   actif: boolean;
@@ -215,6 +223,15 @@ export interface Depot {
   activite: {
     parCouple(coupleId: string): Promise<ActiviteBrute[]>;
     signaler(coupleId: string, activite: ActiviteBrute): Promise<void>;
+    effacerPourCouple(coupleId: string): Promise<void>;
+  };
+  /** Pôle ② — questions de complicité. */
+  complicite: {
+    reponses(coupleId: string, jour: string): Promise<ReponseCompliciteServeur[]>;
+    repondre(
+      coupleId: string,
+      reponse: ReponseCompliciteServeur,
+    ): Promise<void>;
     effacerPourCouple(coupleId: string): Promise<void>;
   };
   /** Pôle ③ — finances partagées, scellées. */

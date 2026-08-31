@@ -5,6 +5,7 @@ import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useRouter } from 'expo-router';
 import { GRATITUDES_SUGGEREES } from '@lonlonbenu/shared';
 import { Bouton, Carte, Champ, Puce, Texte } from '@/components/ui';
+import { QuestionDuJour } from './QuestionDuJour';
 import { espacements } from '@/design/theme';
 import { ilYA } from '@/lib/temps';
 import {
@@ -46,6 +47,7 @@ export function SectionConfidences() {
   const modifierLettre = useConfidences((e) => e.modifierLettre);
   const envoyerLettre = useConfidences((e) => e.envoyerLettre);
   const supprimerBrouillon = useConfidences((e) => e.supprimerBrouillon);
+  const differerLettre = useConfidences((e) => e.differerLettre);
   const marquerLue = useConfidences((e) => e.marquerLue);
 
   const [merci, setMerci] = useState('');
@@ -102,6 +104,10 @@ export function SectionConfidences() {
 
   return (
     <View style={styles.section}>
+      {/* La question du jour en tête : elle se répond en trente secondes,
+          là où une lettre demande de s’asseoir. */}
+      <QuestionDuJour />
+
       {horsLigne ? (
         <Carte discrete>
           <Texte variante="petit">
@@ -178,6 +184,7 @@ export function SectionConfidences() {
         onModifier={modifierLettre}
         onEnvoyer={(id) => void envoyerLettre(coupleId!, partenaireId!, id)}
         onSupprimer={supprimerBrouillon}
+        onDifferer={differerLettre}
       />
 
       {lettresEchangees.length === 0 ? (

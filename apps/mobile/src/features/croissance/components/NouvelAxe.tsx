@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { AXES_SUGGERES, THEMES_AXE, type ThemeAxe } from '@lonlonbenu/shared';
 import { Bouton, Carte, Champ, Puce, Texte } from '@/components/ui';
+import { Relecture } from './Relecture';
 import { espacements } from '@/design/theme';
 
 interface Props {
@@ -52,6 +53,8 @@ export function NouvelAxe({ prenomAutre, onOuvrir }: Props) {
           value={titre}
           onChangeText={setTitre}
         />
+
+        <Relecture texte={titre} />
 
         <Texte variante="meta">Ou partez d’une amorce :</Texte>
         <View style={styles.puces}>

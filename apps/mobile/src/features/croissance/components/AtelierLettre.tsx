@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { AMORCES_LETTRE } from '@lonlonbenu/shared';
+import { AMORCES_LETTRE, etatDiffere } from '@lonlonbenu/shared';
 import type { Brouillon } from '../stores/confidencesStore';
 import { Bouton, Carte, Champ, Puce, Texte } from '@/components/ui';
 import { espacements } from '@/design/theme';
@@ -15,6 +15,8 @@ interface Props {
   onModifier: (id: string, titre: string, texte: string) => void;
   onEnvoyer: (id: string) => void;
   onSupprimer: (id: string) => void;
+  /** Met la lettre de côté pour 24 h, ou lève le délai. */
+  onDifferer: (id: string, differer: boolean) => void;
 }
 
 /**
@@ -29,6 +31,7 @@ export function AtelierLettre({
   onModifier,
   onEnvoyer,
   onSupprimer,
+  onDifferer,
 }: Props) {
   const [enCoursId, setEnCoursId] = useState<string | null>(null);
   const [redaction, setRedaction] = useState(false);
@@ -127,6 +130,24 @@ export function AtelierLettre({
             Commencé {ilYA(brouillon.creeLe)}
           </Texte>
 
+          {/* Le délai de réflexion (§8.6). Ce qui s'écrit à chaud se relit
+              rarement pareil le lendemain — l'attente est la fonctionnalité,
+              pas une friction. */}
+          <Texte variante="meta" style={styles.pied}>
+            {etatDiffere(brouillon.differeDepuis).lecture}
+          </Texte>
+
+          {!brouillon.differeDepuis ? (
+            <View style={styles.actions}>
+              <Bouton
+                libelle="La garder jusqu’à demain"
+                ton="discret"
+                pleineLargeur={false}
+                onPress={() => onDifferer(brouillon.id, true)}
+              />
+            </View>
+          ) : null}
+
           {aConfirmer === brouillon.id ? (
             <View style={styles.actions}>
               <Texte variante="corps">
@@ -155,13 +176,24 @@ export function AtelierLettre({
               />
               <Bouton
                 libelle={
-                  envoiPossible
-                    ? `Envoyer à ${prenomAutre}`
-                    : 'Envoi impossible hors ligne'
+                  !etatDiffere(brouillon.differeDepuis).pret
+                    ? 'Mise de côté jusqu’à demain'
+                    : envoiPossible
+                      ? `Envoyer à ${prenomAutre}`
+                      : 'Envoi impossible hors ligne'
                 }
                 onPress={() => setAConfirmer(brouillon.id)}
-                disabled={!envoiPossible}
+                disabled={
+                  !envoiPossible || !etatDiffere(brouillon.differeDepuis).pret
+                }
               />
+              {brouillon.differeDepuis ? (
+                <Bouton
+                  libelle="Finalement, la libérer"
+                  ton="discret"
+                  onPress={() => onDifferer(brouillon.id, false)}
+                />
+              ) : null}
               <Bouton
                 libelle="Supprimer ce brouillon"
                 ton="discret"
