@@ -34,6 +34,7 @@ import type {
   AlerteServeur,
   Appareil,
   CoupleServeur,
+  DepenseScellee,
   Depot,
   InvitationServeur,
   NotificationServeur,
@@ -125,6 +126,24 @@ function jourCivil(valeur: Date | string): string {
   if (typeof valeur === 'string') return valeur.slice(0, 10);
   const deux = (n: number) => String(n).padStart(2, '0');
   return `${valeur.getFullYear()}-${deux(valeur.getMonth() + 1)}-${deux(valeur.getDate())}`;
+}
+
+interface LigneDepense {
+  id: string;
+  jour: Date | string;
+  contenu_scelle: string;
+  cree_par: string;
+  cree_le: Date;
+}
+
+function versDepense(ligne: LigneDepense): DepenseScellee {
+  return {
+    id: ligne.id,
+    jour: jourCivil(ligne.jour),
+    contenuScelle: ligne.contenu_scelle,
+    creePar: ligne.cree_par,
+    creeLe: isoRequis(ligne.cree_le),
+  };
 }
 
 function versSouvenir(ligne: LigneSouvenir): SouvenirScelle {
@@ -899,6 +918,101 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
 
       async effacerPourCouple(coupleId) {
         await pool.query('DELETE FROM activite WHERE couple_id = $1', [coupleId]);
+      },
+    },
+
+    finances: {
+      async reglages(coupleId) {
+        const { rows } = await pool.query<{
+          actif: boolean;
+          devise: string;
+          regles_scelles: string | null;
+          maj_le: Date;
+        }>(
+          `SELECT actif, devise, regles_scelles, maj_le
+             FROM reglages_finances WHERE couple_id = $1`,
+          [coupleId],
+        );
+        const ligne = rows[0];
+        return ligne
+          ? {
+              actif: ligne.actif,
+              devise: ligne.devise,
+              reglesScellees: ligne.regles_scelles ?? undefined,
+              majLe: isoRequis(ligne.maj_le),
+            }
+          : undefined;
+      },
+
+      async definirReglages(coupleId, reglages) {
+        await pool.query(
+          `INSERT INTO reglages_finances
+                  (couple_id, actif, devise, regles_scelles, maj_le)
+                VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (couple_id) DO UPDATE
+                  SET actif = EXCLUDED.actif,
+                      devise = EXCLUDED.devise,
+                      regles_scelles = EXCLUDED.regles_scelles,
+                      maj_le = EXCLUDED.maj_le`,
+          [
+            coupleId,
+            reglages.actif,
+            reglages.devise,
+            reglages.reglesScellees ?? null,
+            reglages.majLe,
+          ],
+        );
+      },
+
+      async depenses(coupleId) {
+        const { rows } = await pool.query<LigneDepense>(
+          `SELECT id, jour, contenu_scelle, cree_par, cree_le
+             FROM depenses WHERE couple_id = $1 ORDER BY jour DESC`,
+          [coupleId],
+        );
+        return rows.map(versDepense);
+      },
+
+      async depenseParId(coupleId, id) {
+        const { rows } = await pool.query<LigneDepense>(
+          `SELECT id, jour, contenu_scelle, cree_par, cree_le
+             FROM depenses WHERE couple_id = $1 AND id = $2`,
+          [coupleId, id],
+        );
+        return rows[0] ? versDepense(rows[0]) : undefined;
+      },
+
+      async enregistrerDepense(coupleId, depense) {
+        await pool.query(
+          `INSERT INTO depenses
+                  (id, couple_id, jour, contenu_scelle, cree_par, cree_le)
+                VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (id) DO UPDATE
+                  SET jour = EXCLUDED.jour,
+                      contenu_scelle = EXCLUDED.contenu_scelle`,
+          [
+            depense.id,
+            coupleId,
+            depense.jour,
+            depense.contenuScelle,
+            depense.creePar,
+            depense.creeLe,
+          ],
+        );
+      },
+
+      async supprimerDepense(coupleId, id) {
+        await pool.query('DELETE FROM depenses WHERE couple_id = $1 AND id = $2', [
+          coupleId,
+          id,
+        ]);
+      },
+
+      async effacerPourCouple(coupleId) {
+        await pool.query('DELETE FROM depenses WHERE couple_id = $1', [coupleId]);
+        await pool.query('DELETE FROM reglages_finances WHERE couple_id = $1', [
+          coupleId,
+        ]);
       },
     },
 

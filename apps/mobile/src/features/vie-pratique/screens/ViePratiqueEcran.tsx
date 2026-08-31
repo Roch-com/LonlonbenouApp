@@ -14,11 +14,13 @@ import {
 import { useAutre } from '@/features/reglages/stores/sessionStore';
 import { SectionAgenda } from '../components/SectionAgenda';
 import { SectionProjets } from '../components/SectionProjets';
+import { SectionFinances } from '../components/SectionFinances';
 import { SectionSorties } from '../components/SectionSorties';
 import { useCycle } from '@/features/intimite/stores/cycleStore';
+import { useFinances } from '../stores/financesStore';
 import { useViePratique } from '../stores/viePratiqueStore';
 
-type Onglet = 'agenda' | 'projets' | 'sorties';
+type Onglet = 'agenda' | 'projets' | 'sorties' | 'comptes';
 
 /**
  * Pôle ③ — Vie pratique partagée, adossée au serveur.
@@ -42,6 +44,7 @@ export function ViePratiqueEcran() {
   const synchroniseeLe = useViePratique((e) => e.synchroniseeLe);
   const charger = useViePratique((e) => e.charger);
   const chargerCycle = useCycle((e) => e.charger);
+  const chargerFinances = useFinances((e) => e.charger);
 
   useEffect(() => {
     if (connecte && coupleId && partenaireId) {
@@ -50,8 +53,9 @@ export function ViePratiqueEcran() {
       // filtrée par le serveur — rien du tout sans partage — mais encore
       // faut-il l’avoir demandée.
       void chargerCycle(coupleId, partenaireId);
+      void chargerFinances(coupleId, partenaireId);
     }
-  }, [connecte, coupleId, partenaireId, charger, chargerCycle]);
+  }, [connecte, coupleId, partenaireId, charger, chargerCycle, chargerFinances]);
 
   if (etat === 'anonyme' || (etat === 'connecte' && !coupleId)) {
     return (
@@ -113,6 +117,7 @@ export function ViePratiqueEcran() {
       {onglet === 'agenda' ? <SectionAgenda /> : null}
       {onglet === 'projets' ? <SectionProjets /> : null}
       {onglet === 'sorties' ? <SectionSorties /> : null}
+      {onglet === 'comptes' ? <SectionFinances /> : null}
     </EcranOnglet>
   );
 }
@@ -121,12 +126,14 @@ const SEGMENTS = [
   { cle: 'agenda', libelle: 'Agenda' },
   { cle: 'projets', libelle: 'Projets' },
   { cle: 'sorties', libelle: 'Sorties' },
+  { cle: 'comptes', libelle: 'Comptes' },
 ] as const satisfies readonly { cle: Onglet; libelle: string }[];
 
 const SOUS_TITRES: Record<Onglet, string> = {
   agenda: 'Un seul calendrier, visible pareil des deux côtés.',
   projets: 'Ce que vous voulez faire arriver, découpé en étapes.',
   sorties: 'Les envies, les dates, et ce qu’il en reste.',
+  comptes: 'Les dépenses communes, et où en est l’équilibre.',
 };
 
 const styles = stylesDynamiques(({ colors }: Theme) => ({

@@ -90,6 +90,23 @@ export interface StatutServeur {
  * Position d’un partenaire, telle que le serveur la détient : une enveloppe et
  * un horodatage. Il ne sait pas l’ouvrir, donc pas où se trouve la personne.
  */
+/** Réglages du module finances. Les parts sont scellées : elles disent les revenus. */
+export interface ReglagesFinancesServeur {
+  actif: boolean;
+  devise: string;
+  reglesScellees?: string;
+  majLe: string;
+}
+
+/** Une dépense telle que le serveur la détient : une enveloppe et une date. */
+export interface DepenseScellee {
+  id: string;
+  jour: string;
+  contenuScelle: string;
+  creePar: PartenaireId;
+  creeLe: string;
+}
+
 export interface PositionServeur {
   partenaireId: PartenaireId;
   /** `m1.<nonce>.<scellé>` — opaque pour le serveur. */
@@ -198,6 +215,19 @@ export interface Depot {
   activite: {
     parCouple(coupleId: string): Promise<ActiviteBrute[]>;
     signaler(coupleId: string, activite: ActiviteBrute): Promise<void>;
+    effacerPourCouple(coupleId: string): Promise<void>;
+  };
+  /** Pôle ③ — finances partagées, scellées. */
+  finances: {
+    reglages(coupleId: string): Promise<ReglagesFinancesServeur | undefined>;
+    definirReglages(
+      coupleId: string,
+      reglages: ReglagesFinancesServeur,
+    ): Promise<void>;
+    depenses(coupleId: string): Promise<DepenseScellee[]>;
+    depenseParId(coupleId: string, id: string): Promise<DepenseScellee | undefined>;
+    enregistrerDepense(coupleId: string, depense: DepenseScellee): Promise<void>;
+    supprimerDepense(coupleId: string, id: string): Promise<void>;
     effacerPourCouple(coupleId: string): Promise<void>;
   };
   /** Pôle ⑤ — souvenirs et lieux visités, scellés. */

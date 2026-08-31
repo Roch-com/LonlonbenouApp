@@ -28,8 +28,10 @@ import type {
   CoupleServeur,
   Depot,
   InvitationServeur,
+  DepenseScellee,
   MessageScelle,
   NotificationServeur,
+  ReglagesFinancesServeur,
   PositionServeur,
   StatutServeur,
 } from './depot.ts';
@@ -53,6 +55,8 @@ export function creerDepotMemoire(): Depot {
   const messages = new Map<string, MessageScelle[]>();
   const activite = new Map<string, ActiviteBrute[]>();
   const souvenirs = new Map<string, SouvenirScelle[]>();
+  const depenses = new Map<string, DepenseScellee[]>();
+  const reglagesFinances = new Map<string, ReglagesFinancesServeur>();
   const positions = new Map<string, PositionServeur[]>();
   const statuts = new Map<string, StatutServeur[]>();
   const checkIns = new Map<string, CheckInServeur[]>();
@@ -257,6 +261,40 @@ export function creerDepotMemoire(): Depot {
       },
       async effacerPourCouple(coupleId) {
         activite.delete(coupleId);
+      },
+    },
+
+    finances: {
+      async reglages(coupleId) {
+        const trouve = reglagesFinances.get(coupleId);
+        return trouve ? copie(trouve) : undefined;
+      },
+      async definirReglages(coupleId, reglages) {
+        reglagesFinances.set(coupleId, copie(reglages));
+      },
+      async depenses(coupleId) {
+        return copie(depenses.get(coupleId) ?? []);
+      },
+      async depenseParId(coupleId, id) {
+        const trouve = (depenses.get(coupleId) ?? []).find((d) => d.id === id);
+        return trouve ? copie(trouve) : undefined;
+      },
+      async enregistrerDepense(coupleId, depense) {
+        const liste = (depenses.get(coupleId) ?? []).filter(
+          (d) => d.id !== depense.id,
+        );
+        liste.push(copie(depense));
+        depenses.set(coupleId, liste);
+      },
+      async supprimerDepense(coupleId, id) {
+        depenses.set(
+          coupleId,
+          (depenses.get(coupleId) ?? []).filter((d) => d.id !== id),
+        );
+      },
+      async effacerPourCouple(coupleId) {
+        depenses.delete(coupleId);
+        reglagesFinances.delete(coupleId);
       },
     },
 

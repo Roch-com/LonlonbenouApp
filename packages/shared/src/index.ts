@@ -9,6 +9,7 @@ export * from './types/couple';
 export * from './types/presence';
 export * from './presence/geo';
 export * from './memoire/souvenirs';
+export * from './finances/finances';
 export * from './activite/activite';
 export * from './types/chat';
 export * from './types/croissance';
