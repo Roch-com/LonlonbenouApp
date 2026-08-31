@@ -18,6 +18,7 @@ export * from './types/calendrier';
 export * from './types/projets';
 export * from './types/initiatives';
 export * from './calendrier/agenda';
+export * from './calendrier/mois';
 export * from './projets/avancement';
 export * from './initiatives/journal';
 export * from './rappels/rappels';

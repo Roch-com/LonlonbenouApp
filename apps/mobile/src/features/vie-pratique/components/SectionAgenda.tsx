@@ -21,6 +21,7 @@ import { heure } from '@/lib/temps';
 import { useSession } from '@/features/reglages/stores/sessionStore';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 import { useViePratique } from '../stores/viePratiqueStore';
+import { VueCalendrier } from './VueCalendrier';
 
 /** Pôle ③ — Calendrier partagé (P0). */
 export function SectionAgenda() {
@@ -77,6 +78,10 @@ export function SectionAgenda() {
 
   return (
     <View style={styles.section}>
+      {/* La vue mensuelle d’abord : c’est elle qui réunit ce que les trois
+          sections tiennent séparément, et la liste qui suit détaille. */}
+      <VueCalendrier />
+
       {ouvert ? (
         <Carte>
           <Texte variante="surtitre">Nouvel événement</Texte>

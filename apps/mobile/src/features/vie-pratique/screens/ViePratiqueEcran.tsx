@@ -15,6 +15,7 @@ import { useAutre } from '@/features/reglages/stores/sessionStore';
 import { SectionAgenda } from '../components/SectionAgenda';
 import { SectionProjets } from '../components/SectionProjets';
 import { SectionSorties } from '../components/SectionSorties';
+import { useCycle } from '@/features/intimite/stores/cycleStore';
 import { useViePratique } from '../stores/viePratiqueStore';
 
 type Onglet = 'agenda' | 'projets' | 'sorties';
@@ -40,12 +41,17 @@ export function ViePratiqueEcran() {
   const erreur = useViePratique((e) => e.erreur);
   const synchroniseeLe = useViePratique((e) => e.synchroniseeLe);
   const charger = useViePratique((e) => e.charger);
+  const chargerCycle = useCycle((e) => e.charger);
 
   useEffect(() => {
     if (connecte && coupleId && partenaireId) {
       void charger(coupleId, partenaireId);
+      // Le calendrier agrège aussi le cycle. Il ne lit que la vue déjà
+      // filtrée par le serveur — rien du tout sans partage — mais encore
+      // faut-il l’avoir demandée.
+      void chargerCycle(coupleId, partenaireId);
     }
-  }, [connecte, coupleId, partenaireId, charger]);
+  }, [connecte, coupleId, partenaireId, charger, chargerCycle]);
 
   if (etat === 'anonyme' || (etat === 'connecte' && !coupleId)) {
     return (
