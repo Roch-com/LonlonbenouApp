@@ -15,6 +15,7 @@ import pg from 'pg';
 import {
   PREFERENCES_PAR_DEFAUT,
   type AxeCroissance,
+  type SouvenirScelle,
   type Consentement,
   type ContributionAxe,
   type Confidence,
@@ -102,6 +103,39 @@ function iso(valeur: Date | string | null): string | undefined {
 
 function isoRequis(valeur: Date | string): string {
   return iso(valeur)!;
+}
+
+/** Une ligne de `souvenirs`, telle que pg la rend. */
+interface LigneSouvenir {
+  id: string;
+  sorte: string;
+  jour: Date | string;
+  contenu_scelle: string;
+  cree_par: string;
+  cree_le: Date;
+}
+
+/**
+ * `DATE` revient tantôt en `Date`, tantôt en chaîne selon la configuration du
+ * pilote. On ramène les deux à `YYYY-MM-DD`, sans passer par `toISOString` :
+ * celui-ci convertit en UTC et rendrait la veille pour toute date lue à l'est
+ * de Greenwich.
+ */
+function jourCivil(valeur: Date | string): string {
+  if (typeof valeur === 'string') return valeur.slice(0, 10);
+  const deux = (n: number) => String(n).padStart(2, '0');
+  return `${valeur.getFullYear()}-${deux(valeur.getMonth() + 1)}-${deux(valeur.getDate())}`;
+}
+
+function versSouvenir(ligne: LigneSouvenir): SouvenirScelle {
+  return {
+    id: ligne.id,
+    sorte: ligne.sorte as SouvenirScelle['sorte'],
+    jour: jourCivil(ligne.jour),
+    contenuScelle: ligne.contenu_scelle,
+    creePar: ligne.cree_par,
+    creeLe: isoRequis(ligne.cree_le),
+  };
 }
 
 export function creerDepotPostgres(pool: pg.Pool): Depot {
@@ -865,6 +899,58 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
 
       async effacerPourCouple(coupleId) {
         await pool.query('DELETE FROM activite WHERE couple_id = $1', [coupleId]);
+      },
+    },
+
+    souvenirs: {
+      async parCouple(coupleId) {
+        const { rows } = await pool.query<LigneSouvenir>(
+          `SELECT id, sorte, jour, contenu_scelle, cree_par, cree_le
+             FROM souvenirs WHERE couple_id = $1 ORDER BY jour DESC`,
+          [coupleId],
+        );
+        return rows.map(versSouvenir);
+      },
+
+      async parId(coupleId, id) {
+        const { rows } = await pool.query<LigneSouvenir>(
+          `SELECT id, sorte, jour, contenu_scelle, cree_par, cree_le
+             FROM souvenirs WHERE couple_id = $1 AND id = $2`,
+          [coupleId, id],
+        );
+        return rows[0] ? versSouvenir(rows[0]) : undefined;
+      },
+
+      async enregistrer(coupleId, souvenir) {
+        await pool.query(
+          `INSERT INTO souvenirs
+                  (id, couple_id, sorte, jour, contenu_scelle, cree_par, cree_le)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (id) DO UPDATE
+                  SET sorte = EXCLUDED.sorte,
+                      jour = EXCLUDED.jour,
+                      contenu_scelle = EXCLUDED.contenu_scelle`,
+          [
+            souvenir.id,
+            coupleId,
+            souvenir.sorte,
+            souvenir.jour,
+            souvenir.contenuScelle,
+            souvenir.creePar,
+            souvenir.creeLe,
+          ],
+        );
+      },
+
+      async supprimer(coupleId, id) {
+        await pool.query('DELETE FROM souvenirs WHERE couple_id = $1 AND id = $2', [
+          coupleId,
+          id,
+        ]);
+      },
+
+      async effacerPourCouple(coupleId) {
+        await pool.query('DELETE FROM souvenirs WHERE couple_id = $1', [coupleId]);
       },
     },
 

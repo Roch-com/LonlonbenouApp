@@ -9,6 +9,7 @@
 
 import type {
   ActiviteBrute,
+  SouvenirScelle,
   AxeCroissance,
   CategorieNotification,
   Confidence,
@@ -197,6 +198,14 @@ export interface Depot {
   activite: {
     parCouple(coupleId: string): Promise<ActiviteBrute[]>;
     signaler(coupleId: string, activite: ActiviteBrute): Promise<void>;
+    effacerPourCouple(coupleId: string): Promise<void>;
+  };
+  /** Pôle ⑤ — souvenirs et lieux visités, scellés. */
+  souvenirs: {
+    parCouple(coupleId: string): Promise<SouvenirScelle[]>;
+    parId(coupleId: string, id: string): Promise<SouvenirScelle | undefined>;
+    enregistrer(coupleId: string, souvenir: SouvenirScelle): Promise<void>;
+    supprimer(coupleId: string, id: string): Promise<void>;
     effacerPourCouple(coupleId: string): Promise<void>;
   };
   presence: {

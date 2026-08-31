@@ -11,6 +11,7 @@ import {
   PREFERENCES_PAR_DEFAUT,
   type ActiviteBrute,
   type AxeCroissance,
+  type SouvenirScelle,
   type Confidence,
   type Evenement,
   type Initiative,
@@ -51,6 +52,7 @@ export function creerDepotMemoire(): Depot {
   const clesPubliques = new Map<string, string>();
   const messages = new Map<string, MessageScelle[]>();
   const activite = new Map<string, ActiviteBrute[]>();
+  const souvenirs = new Map<string, SouvenirScelle[]>();
   const positions = new Map<string, PositionServeur[]>();
   const statuts = new Map<string, StatutServeur[]>();
   const checkIns = new Map<string, CheckInServeur[]>();
@@ -255,6 +257,32 @@ export function creerDepotMemoire(): Depot {
       },
       async effacerPourCouple(coupleId) {
         activite.delete(coupleId);
+      },
+    },
+
+    souvenirs: {
+      async parCouple(coupleId) {
+        return copie(souvenirs.get(coupleId) ?? []);
+      },
+      async parId(coupleId, id) {
+        const trouve = (souvenirs.get(coupleId) ?? []).find((s) => s.id === id);
+        return trouve ? copie(trouve) : undefined;
+      },
+      async enregistrer(coupleId, souvenir) {
+        const liste = (souvenirs.get(coupleId) ?? []).filter(
+          (s) => s.id !== souvenir.id,
+        );
+        liste.push(copie(souvenir));
+        souvenirs.set(coupleId, liste);
+      },
+      async supprimer(coupleId, id) {
+        souvenirs.set(
+          coupleId,
+          (souvenirs.get(coupleId) ?? []).filter((s) => s.id !== id),
+        );
+      },
+      async effacerPourCouple(coupleId) {
+        souvenirs.delete(coupleId);
       },
     },
 

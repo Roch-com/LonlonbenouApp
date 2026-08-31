@@ -125,6 +125,13 @@ function DispositionRacine() {
                   }}
                 />
                 <Stack.Screen
+                  name="memoire"
+                  options={{
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+                <Stack.Screen
                   name="qui-voit-quoi"
                   options={{
                     presentation: 'modal',
