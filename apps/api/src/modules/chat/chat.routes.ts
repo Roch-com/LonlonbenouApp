@@ -153,7 +153,11 @@ export function enregistrerRoutesPresence(
     { preHandler: authentifier },
     async (requete, reponse) => {
       const { coupleId } = requete.params as { coupleId: string };
-      const corps = requete.body as { code?: string; noteScellee?: string };
+      const corps = requete.body as {
+        code?: string;
+        noteScellee?: string;
+        annoncer?: boolean;
+      };
       if (!corps?.code) {
         return reponse.code(400).send({ motif: 'champs_manquants' });
       }
@@ -163,6 +167,7 @@ export function enregistrerRoutesPresence(
         requete.identite!.partenaireId,
         corps.code,
         corps.noteScellee,
+        corps.annoncer === true,
       );
       if (!resultat.ok) {
         return reponse

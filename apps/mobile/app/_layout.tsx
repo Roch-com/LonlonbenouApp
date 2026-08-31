@@ -26,6 +26,10 @@ import { configurerAffichagePush } from '@/features/reglages/services/affichageP
 import { useInscriptionPush } from '@/features/reglages/hooks/useInscriptionPush';
 import { Ouverture } from '@/components/chrome/Ouverture';
 import { demarrerLaSurveillance } from '@/lib/surveillance';
+// Import pour effet de bord : les tâches d’arrière-plan doivent être définies
+// au chargement du module. Le système peut réveiller l’application sans monter
+// le moindre écran, et une tâche déclarée dans un composant n’existerait pas.
+import '@/features/presence/services/tachesPosition';
 
 // Hors du composant : l'initialisation doit précéder le premier rendu, sinon
 // une erreur survenue pendant ce rendu — le cas le plus fréquent — échapperait

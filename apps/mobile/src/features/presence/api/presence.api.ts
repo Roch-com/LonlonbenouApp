@@ -63,10 +63,16 @@ export function definirStatutServeur(
   coupleId: string,
   code: string,
   noteScellee?: string,
+  /**
+   * Prévient le partenaire. Réservé aux arrivées détectées par un lieu
+   * favori : annoncer chaque statut posé à la main ferait de la présence un
+   * flux de notifications.
+   */
+  annoncer?: boolean,
 ): Promise<void> {
   return appeler<void>(`/couples/${coupleId}/presence/statut`, {
     methode: 'PUT',
-    corps: { code, noteScellee },
+    corps: { code, noteScellee, annoncer },
   });
 }
 

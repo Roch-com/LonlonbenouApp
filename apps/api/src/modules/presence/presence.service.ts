@@ -18,10 +18,13 @@
 
 import { randomUUID } from 'node:crypto';
 import {
+  definitionStatut,
   estPartageActif,
   estScelleMessage,
+  type CodeStatut,
   type PartenaireId,
 } from '@lonlonbenu/shared';
+import type { Expediteur } from '../notifications/expedition.ts';
 import type {
   AlerteServeur,
   CheckInServeur,
@@ -66,6 +69,12 @@ export interface ServicePresence {
     moiId: PartenaireId,
     code: string,
     noteScellee?: string,
+    /**
+     * Prévient l'autre du changement. Réservé aux arrivées détectées par un
+     * lieu favori : annoncer chaque statut posé à la main transformerait la
+     * présence en flux de notifications.
+     */
+    annoncer?: boolean,
   ): Promise<{ ok: boolean; motif?: RefusPresence }>;
   /** On ne pose jamais que **sa propre** position. */
   definirPosition(
@@ -133,7 +142,10 @@ async function autoriser(
   return { couple: enregistrement };
 }
 
-export function creerServicePresence(depot: Depot): ServicePresence {
+export function creerServicePresence(
+  depot: Depot,
+  expediteur?: Expediteur,
+): ServicePresence {
   return {
     async lire(coupleId, lecteurId) {
       const acces = await autoriser(depot, coupleId, lecteurId);
@@ -179,7 +191,7 @@ export function creerServicePresence(depot: Depot): ServicePresence {
       };
     },
 
-    async definirStatut(coupleId, moiId, code, noteScellee) {
+    async definirStatut(coupleId, moiId, code, noteScellee, annoncer) {
       const acces = await autoriser(depot, coupleId, moiId);
       if ('motif' in acces) return { ok: false, motif: acces.motif };
       if (!CODES_STATUT.includes(code)) {
@@ -192,6 +204,34 @@ export function creerServicePresence(depot: Depot): ServicePresence {
         noteScellee,
         majLe: new Date().toISOString(),
       });
+
+      /**
+       * Annonce d'arrivée (§8.2 : « Gaëlle vient de rentrer »).
+       *
+       * Le texte est composé **par le serveur**, à partir de son propre
+       * vocabulaire de statuts. Le client ne dicte aucune formulation, et le
+       * nom du lieu favori — qui ne quitte jamais le téléphone — n'apparaît
+       * nulle part : l'autre lit « est à la maison », pas une adresse.
+       *
+       * Soumise à la même réciprocité que la lecture : sans partage actif des
+       * deux côtés, une notification d'arrivée serait une observation à sens
+       * unique réintroduite par la porte des alertes.
+       */
+      const partage = acces.couple.partages['position'];
+      if (annoncer && expediteur && partage && estPartageActif(partage)) {
+        const moi = acces.couple.couple.partenaires.find((p) => p.id === moiId);
+        const lautre = acces.couple.couple.partenaires.find((p) => p.id !== moiId);
+        if (moi && lautre) {
+          await expediteur.publier([
+            {
+              destinataireId: lautre.id,
+              categorie: 'presence',
+              texte: `${moi.prenom} ${definitionStatut(code as CodeStatut).lecture}.`,
+            },
+          ]);
+        }
+      }
+
       return { ok: true };
     },
 

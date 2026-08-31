@@ -103,7 +103,7 @@ export async function creerServeur(options: OptionsServeur = {}) {
   const cycle = creerServiceCycle(depot);
   const confidences = creerServiceConfidences(depot);
   const chat = creerServiceChat(depot);
-  const presence = creerServicePresence(depot);
+  const presence = creerServicePresence(depot, expediteur);
   const viePratique = creerServiceViePratique(depot);
   const authentifier = creerAuthentification(autorisation, depot);
 

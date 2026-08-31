@@ -10,6 +10,7 @@ import { useAutre, useSession } from '@/features/reglages/stores/sessionStore';
 import { GardeModuleSensible } from '@/features/reglages/components/GardeModuleSensible';
 import { CarteProximite } from '../components/CarteProximite';
 import { LieuxFavoris } from '../components/LieuxFavoris';
+import { SuiviContinu } from '../components/SuiviContinu';
 import { BandeauSos } from '../components/BandeauSos';
 import { CarteDuPartenaire } from '../components/CarteDuPartenaire';
 import { CheckIn } from '../components/CheckIn';
@@ -44,6 +45,7 @@ export function PresenceEcran() {
         <CarteProximite />
         <CheckIn />
         <LieuxFavoris />
+        <SuiviContinu />
       </GardeModuleSensible>
 
       <Carte>
