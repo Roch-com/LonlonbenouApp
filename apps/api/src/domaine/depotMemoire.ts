@@ -29,6 +29,7 @@ import type {
   InvitationServeur,
   MessageScelle,
   NotificationServeur,
+  PositionServeur,
   StatutServeur,
 } from './depot.ts';
 
@@ -50,6 +51,7 @@ export function creerDepotMemoire(): Depot {
   const clesPubliques = new Map<string, string>();
   const messages = new Map<string, MessageScelle[]>();
   const activite = new Map<string, ActiviteBrute[]>();
+  const positions = new Map<string, PositionServeur[]>();
   const statuts = new Map<string, StatutServeur[]>();
   const checkIns = new Map<string, CheckInServeur[]>();
   const alertes = new Map<string, AlerteServeur[]>();
@@ -260,6 +262,17 @@ export function creerDepotMemoire(): Depot {
       async statuts(coupleId) {
         return copie(statuts.get(coupleId) ?? []);
       },
+      async positions(coupleId) {
+        return copie(positions.get(coupleId) ?? []);
+      },
+      async definirPosition(coupleId, position) {
+        // Écrasement : une seule ligne par personne, aucun historique.
+        const liste = (positions.get(coupleId) ?? []).filter(
+          (p) => p.partenaireId !== position.partenaireId,
+        );
+        liste.push(copie(position));
+        positions.set(coupleId, liste);
+      },
       async definirStatut(coupleId, statut) {
         const liste = statuts.get(coupleId) ?? [];
         const ancien = liste.find((s) => s.partenaireId === statut.partenaireId);
@@ -319,6 +332,7 @@ export function creerDepotMemoire(): Depot {
         return trouve ? copie(trouve) : undefined;
       },
       async effacerPourCouple(coupleId) {
+        positions.delete(coupleId);
         statuts.delete(coupleId);
         checkIns.delete(coupleId);
         alertes.delete(coupleId);

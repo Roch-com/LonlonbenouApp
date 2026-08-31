@@ -3,7 +3,15 @@
 import type { PartenaireId } from './couple';
 
 export type CodeStatut =
-  'disponible' | 'occupe' | 'en_route' | 'au_calme' | 'je_pense_a_toi';
+  | 'disponible'
+  | 'occupe'
+  | 'en_route'
+  | 'au_calme'
+  | 'je_pense_a_toi'
+  // Statuts de lieu (§8.2), posés à la main ou déduits d'un lieu favori.
+  | 'maison'
+  | 'bureau'
+  | 'arrive';
 
 export interface DefinitionStatut {
   code: CodeStatut;
@@ -33,6 +41,28 @@ export const STATUTS: readonly DefinitionStatut[] = [
     libelle: 'Je pense à toi',
     lecture: 'pense à toi',
     emoji: '💛',
+  },
+  // Statuts de lieu (§8.2). Ils peuvent être posés à la main comme les
+  // autres, ou déduits d'un lieu favori — celui-ci ne quittant jamais
+  // l'appareil, l'autre reçoit « est à la maison » sans jamais recevoir
+  // l'adresse de la maison.
+  {
+    code: 'maison',
+    libelle: 'À la maison',
+    lecture: 'est à la maison',
+    emoji: '🏡',
+  },
+  {
+    code: 'bureau',
+    libelle: 'Au bureau',
+    lecture: 'est au bureau',
+    emoji: '🏢',
+  },
+  {
+    code: 'arrive',
+    libelle: 'Arrivé·e',
+    lecture: 'est bien arrivé·e',
+    emoji: '✅',
   },
 ] as const;
 

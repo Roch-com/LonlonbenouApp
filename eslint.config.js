@@ -69,7 +69,13 @@ export default tseslint.config(
     files: ['**/*.config.js', '**/*.cjs'],
     languageOptions: {
       sourceType: 'commonjs',
-      globals: { require: 'readonly', module: 'writable', __dirname: 'readonly' },
+      globals: {
+        require: 'readonly',
+        module: 'writable',
+        __dirname: 'readonly',
+        // `app.config.js` lit la clé Google Maps dans l'environnement de build.
+        process: 'readonly',
+      },
     },
     rules: { '@typescript-eslint/no-require-imports': 'off' },
   },

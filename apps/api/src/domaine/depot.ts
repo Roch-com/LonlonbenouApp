@@ -85,6 +85,17 @@ export interface StatutServeur {
   humeurMajLe?: string;
 }
 
+/**
+ * Position d’un partenaire, telle que le serveur la détient : une enveloppe et
+ * un horodatage. Il ne sait pas l’ouvrir, donc pas où se trouve la personne.
+ */
+export interface PositionServeur {
+  partenaireId: PartenaireId;
+  /** `m1.<nonce>.<scellé>` — opaque pour le serveur. */
+  positionScellee: string;
+  majLe: string;
+}
+
 export interface CheckInServeur {
   id: string;
   partenaireId: PartenaireId;
@@ -190,6 +201,9 @@ export interface Depot {
   };
   presence: {
     statuts(coupleId: string): Promise<StatutServeur[]>;
+    /** Dernière position connue de chacun. Aucun historique n’est conservé. */
+    positions(coupleId: string): Promise<PositionServeur[]>;
+    definirPosition(coupleId: string, position: PositionServeur): Promise<void>;
     definirStatut(coupleId: string, statut: StatutServeur): Promise<void>;
     definirHumeur(
       coupleId: string,

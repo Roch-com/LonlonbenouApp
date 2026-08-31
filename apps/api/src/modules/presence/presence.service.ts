@@ -17,12 +17,17 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { estPartageActif, type PartenaireId } from '@lonlonbenu/shared';
+import {
+  estPartageActif,
+  estScelleMessage,
+  type PartenaireId,
+} from '@lonlonbenu/shared';
 import type {
   AlerteServeur,
   CheckInServeur,
   CoupleServeur,
   Depot,
+  PositionServeur,
   StatutServeur,
 } from '../../domaine/depot.ts';
 
@@ -31,6 +36,7 @@ export type RefusPresence =
   | 'non_membre'
   | 'couple_dissocie'
   | 'donnees_invalides'
+  | 'position_non_scellee'
   | 'introuvable';
 
 export interface VuePresence {
@@ -42,6 +48,10 @@ export interface VuePresence {
   partageActif: boolean;
   /** Check-ins des deux, soumis au même partage. */
   checkIns: CheckInServeur[];
+  /** Ma dernière position, telle que l'autre peut la voir. */
+  maPosition?: PositionServeur;
+  /** Celle de l'autre : soumise au même partage que le statut. */
+  positionAutre?: PositionServeur;
   /** Les alertes, elles, ne dépendent d'aucun consentement. */
   alertes: AlerteServeur[];
 }
@@ -56,6 +66,12 @@ export interface ServicePresence {
     moiId: PartenaireId,
     code: string,
     noteScellee?: string,
+  ): Promise<{ ok: boolean; motif?: RefusPresence }>;
+  /** On ne pose jamais que **sa propre** position. */
+  definirPosition(
+    coupleId: string,
+    moiId: PartenaireId,
+    positionScellee: string,
   ): Promise<{ ok: boolean; motif?: RefusPresence }>;
   definirHumeur(
     coupleId: string,
@@ -98,6 +114,9 @@ const CODES_STATUT = [
   'en_route',
   'au_calme',
   'je_pense_a_toi',
+  'maison',
+  'bureau',
+  'arrive',
 ];
 
 async function autoriser(
@@ -123,10 +142,11 @@ export function creerServicePresence(depot: Depot): ServicePresence {
       const partage = acces.couple.partages['position'];
       const actif = !!partage && estPartageActif(partage);
 
-      const [statuts, checkIns, alertes] = await Promise.all([
+      const [statuts, checkIns, alertes, positions] = await Promise.all([
         depot.presence.statuts(coupleId),
         depot.presence.checkIns(coupleId),
         depot.presence.alertes(coupleId),
+        depot.presence.positions(coupleId),
       ]);
 
       const mien = statuts.find((s) => s.partenaireId === lecteurId);
@@ -141,6 +161,15 @@ export function creerServicePresence(depot: Depot): ServicePresence {
             ? statuts.find((s) => s.partenaireId !== lecteurId)
             : undefined,
           partageActif: actif,
+          // Ma propre position m'est toujours rendue : savoir ce que l'autre
+          // peut voir de soi est le minimum pour décider de le partager.
+          maPosition: positions.find((p) => p.partenaireId === lecteurId),
+          // La sienne suit exactement la même règle que son statut. Le
+          // filtrage a lieu ici, avant sérialisation : sans réciprocité,
+          // l'enveloppe ne franchit pas la frontière du serveur.
+          positionAutre: actif
+            ? positions.find((p) => p.partenaireId !== lecteurId)
+            : undefined,
           checkIns: actif
             ? checkIns
             : checkIns.filter((c) => c.partenaireId === lecteurId),
@@ -161,6 +190,27 @@ export function creerServicePresence(depot: Depot): ServicePresence {
         partenaireId: moiId,
         code,
         noteScellee,
+        majLe: new Date().toISOString(),
+      });
+      return { ok: true };
+    },
+
+    async definirPosition(coupleId, moiId, positionScellee) {
+      const acces = await autoriser(depot, coupleId, moiId);
+      if ('motif' in acces) return { ok: false, motif: acces.motif };
+
+      // Le serveur ne peut pas vérifier qu'une enveloppe est bien chiffrée,
+      // faute de clé. Il peut refuser ce qui n'en a pas la forme, et c'est ce
+      // qui garantit qu'aucune coordonnée n'entre en clair dans la base.
+      if (!estScelleMessage(positionScellee)) {
+        return { ok: false, motif: 'position_non_scellee' };
+      }
+
+      // Aucune vérification de partage à l'écriture : on dépose la sienne,
+      // pas celle d'un autre. C'est la lecture qui applique la réciprocité.
+      await depot.presence.definirPosition(coupleId, {
+        partenaireId: moiId,
+        positionScellee,
         majLe: new Date().toISOString(),
       });
       return { ok: true };

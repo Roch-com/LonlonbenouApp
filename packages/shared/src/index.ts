@@ -7,6 +7,7 @@ export * from './securite/verrou';
 export * from './privacy/reciprocite';
 export * from './types/couple';
 export * from './types/presence';
+export * from './presence/geo';
 export * from './activite/activite';
 export * from './types/chat';
 export * from './types/croissance';

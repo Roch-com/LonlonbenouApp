@@ -8,6 +8,8 @@ import { espacements } from '@/design/theme';
 import { ilYA } from '@/lib/temps';
 import { useAutre, useSession } from '@/features/reglages/stores/sessionStore';
 import { GardeModuleSensible } from '@/features/reglages/components/GardeModuleSensible';
+import { CarteProximite } from '../components/CarteProximite';
+import { LieuxFavoris } from '../components/LieuxFavoris';
 import { BandeauSos } from '../components/BandeauSos';
 import { CarteDuPartenaire } from '../components/CarteDuPartenaire';
 import { CheckIn } from '../components/CheckIn';
@@ -39,7 +41,9 @@ export function PresenceEcran() {
 
       <GardeModuleSensible module="presence">
         <CarteDuPartenaire />
+        <CarteProximite />
         <CheckIn />
+        <LieuxFavoris />
       </GardeModuleSensible>
 
       <Carte>

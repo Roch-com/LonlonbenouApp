@@ -869,6 +869,41 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
     },
 
     presence: {
+      async positions(coupleId) {
+        const { rows } = await pool.query<{
+          partenaire_id: string;
+          position_scellee: string;
+          maj_le: Date;
+        }>(
+          `SELECT partenaire_id, position_scellee, maj_le
+             FROM positions WHERE couple_id = $1`,
+          [coupleId],
+        );
+        return rows.map((r) => ({
+          partenaireId: r.partenaire_id,
+          positionScellee: r.position_scellee,
+          majLe: isoRequis(r.maj_le),
+        }));
+      },
+
+      async definirPosition(coupleId, position) {
+        // Écrasement : une seule ligne par personne, aucun historique gardé.
+        await pool.query(
+          `INSERT INTO positions
+                  (couple_id, partenaire_id, position_scellee, maj_le)
+                VALUES ($1, $2, $3, $4)
+           ON CONFLICT (couple_id, partenaire_id) DO UPDATE
+                  SET position_scellee = EXCLUDED.position_scellee,
+                      maj_le = EXCLUDED.maj_le`,
+          [
+            coupleId,
+            position.partenaireId,
+            position.positionScellee,
+            position.majLe,
+          ],
+        );
+      },
+
       async statuts(coupleId) {
         const { rows } = await pool.query<{
           partenaire_id: string;
@@ -1004,6 +1039,9 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
       },
 
       async effacerPourCouple(coupleId) {
+        await pool.query('DELETE FROM positions WHERE couple_id = $1', [
+          coupleId,
+        ]);
         await pool.query('DELETE FROM alertes_sos WHERE couple_id = $1', [
           coupleId,
         ]);

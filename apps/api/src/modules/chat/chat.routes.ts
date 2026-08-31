@@ -10,6 +10,7 @@ const CODES: Record<string, number> = {
   enveloppe_invalide: 400,
   cle_manquante: 400,
   donnees_invalides: 400,
+  position_non_scellee: 400,
 };
 
 const repondre = (motif: string | undefined) => CODES[motif ?? ''] ?? 400;
@@ -162,6 +163,37 @@ export function enregistrerRoutesPresence(
         requete.identite!.partenaireId,
         corps.code,
         corps.noteScellee,
+      );
+      if (!resultat.ok) {
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
+      }
+      return reponse.code(204).send();
+    },
+  );
+
+  /**
+   * Dépôt de sa propre position, scellée.
+   *
+   * Aucun paramètre de partenaire : on ne pose que la sienne. La réciprocité
+   * s'applique à la lecture, où le service décide si l'enveloppe de l'autre
+   * franchit ou non la frontière du serveur.
+   */
+  app.put(
+    '/couples/:coupleId/presence/position',
+    { preHandler: authentifier },
+    async (requete, reponse) => {
+      const { coupleId } = requete.params as { coupleId: string };
+      const corps = requete.body as { positionScellee?: string };
+      if (!corps?.positionScellee) {
+        return reponse.code(400).send({ motif: 'champs_manquants' });
+      }
+
+      const resultat = await presence.definirPosition(
+        coupleId,
+        requete.identite!.partenaireId,
+        corps.positionScellee,
       );
       if (!resultat.ok) {
         return reponse

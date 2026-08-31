@@ -37,12 +37,22 @@ export interface AlerteServeur {
   resolueLe?: string;
 }
 
+/** Position telle que le serveur la détient : une enveloppe, rien de plus. */
+export interface PositionServeur {
+  partenaireId: string;
+  positionScellee: string;
+  majLe: string;
+}
+
 export interface VuePresenceServeur {
   mien?: StatutServeur;
   autre?: StatutServeur;
   partageActif: boolean;
   checkIns: CheckInServeur[];
   alertes: AlerteServeur[];
+  maPosition?: PositionServeur;
+  /** Absente tant que le partage n’est pas actif des deux côtés. */
+  positionAutre?: PositionServeur;
 }
 
 export function lirePresence(coupleId: string): Promise<VuePresenceServeur> {
@@ -57,6 +67,17 @@ export function definirStatutServeur(
   return appeler<void>(`/couples/${coupleId}/presence/statut`, {
     methode: 'PUT',
     corps: { code, noteScellee },
+  });
+}
+
+/** On ne dépose que la sienne : le serveur n’accepte aucun autre partenaire. */
+export function definirPositionServeur(
+  coupleId: string,
+  positionScellee: string,
+): Promise<void> {
+  return appeler<void>(`/couples/${coupleId}/presence/position`, {
+    methode: 'PUT',
+    corps: { positionScellee },
   });
 }
 
