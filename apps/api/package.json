@@ -17,6 +17,7 @@
   "dependencies": {
     "@fastify/helmet": "^13.1.1",
     "@fastify/rate-limit": "^11.2.0",
+    "@fastify/websocket": "^11.3.0",
     "@lonlonbenu/shared": "*",
     "@sentry/node": "^10.71.0",
     "fastify": "^5.2.1",
@@ -27,6 +28,7 @@
   "devDependencies": {
     "@types/node": "^22.10.5",
     "@types/pg": "^8.21.0",
+    "@types/ws": "^8.18.1",
     "typescript": "~6.0.3"
   }
 }

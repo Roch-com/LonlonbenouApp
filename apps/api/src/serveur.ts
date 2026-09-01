@@ -20,6 +20,9 @@ import { creerServiceParcours } from './modules/parcours/parcours.service.ts';
 import { enregistrerRoutesParcours } from './modules/parcours/parcours.routes.ts';
 import { creerServiceConnexion } from './modules/connexion/connexion.service.ts';
 import { enregistrerRoutesConnexion } from './modules/connexion/connexion.routes.ts';
+import websocket from '@fastify/websocket';
+import { creerServiceAppels } from './modules/appels/appels.service.ts';
+import { enregistrerRoutesAppels } from './modules/appels/appels.routes.ts';
 import { creerServiceJournal } from './modules/journal/journal.service.ts';
 import { enregistrerRoutesJournal } from './modules/journal/journal.routes.ts';
 import { creerServiceFinances } from './modules/finances/finances.service.ts';
@@ -125,6 +128,7 @@ export async function creerServeur(options: OptionsServeur = {}) {
   const parcours = creerServiceParcours(depot);
   const connexion = creerServiceConnexion(depot);
   const journal = creerServiceJournal(depot);
+  const appels = creerServiceAppels(depot);
   const cycle = creerServiceCycle(depot);
   const confidences = creerServiceConfidences(depot);
   const chat = creerServiceChat(depot);
@@ -143,6 +147,10 @@ export async function creerServeur(options: OptionsServeur = {}) {
    * valeur par défaut ajouterait un en-tête inutile à chaque réponse.
    */
   await app.register(helmet, { contentSecurityPolicy: false });
+  // Le canal de signalisation des appels. Seul endroit de l'API qui ne passe
+  // pas par des requêtes : établir une liaison demande des allers-retours
+  // qu'un sondage à quatre secondes perdrait.
+  await app.register(websocket);
 
   /**
    * Limitation de débit.
@@ -254,6 +262,7 @@ export async function creerServeur(options: OptionsServeur = {}) {
   enregistrerRoutesParcours(app, parcours, authentifier);
   enregistrerRoutesConnexion(app, connexion, authentifier);
   enregistrerRoutesJournal(app, journal, authentifier);
+  enregistrerRoutesAppels(app, appels, autorisation, authentifier);
   enregistrerRoutesActivite(app, activite, authentifier);
   enregistrerRoutesCycle(app, cycle, authentifier);
   enregistrerRoutesConfidences(app, confidences, authentifier);
@@ -717,6 +726,7 @@ export async function creerServeur(options: OptionsServeur = {}) {
       parcours,
       connexion,
       journal,
+      appels,
       chat,
       presence,
       viePratique,

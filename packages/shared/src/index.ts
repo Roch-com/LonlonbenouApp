@@ -59,3 +59,6 @@ export * from './finances/factures';
 
 // Pôle ① — notes vocales (§8.3).
 export * from './chat/vocal';
+
+// Pôle ① — appels audio et vidéo.
+export * from './appels/appels';
