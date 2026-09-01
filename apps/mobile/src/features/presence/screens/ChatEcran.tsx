@@ -34,6 +34,7 @@ import { cleDuJour, jourLisible } from '@/lib/temps';
 import { ActionsMessage, type ActionMessage } from '../components/ActionsMessage';
 import { BulleMessage } from '../components/BulleMessage';
 import { LignePresence } from '../components/LignePresence';
+import { BandeauEpingle } from '../components/BandeauEpingle';
 import { PointsDeSaisie } from '../components/PointsDeSaisie';
 import { SelecteurEmoji } from '../components/SelecteurEmoji';
 import { SelecteurHumeur } from '../components/SelecteurHumeur';
@@ -52,6 +53,16 @@ import { stylesDynamiques } from '@/design/stylesDynamiques';
  */
 /** Hauteur approchée de la barre de saisie, pour poser le bouton au-dessus. */
 const HAUTEUR_BARRE_SAISIE = 64;
+
+/**
+ * Les emojis de réaction rapide.
+ *
+ * Six, comme dans les messageries qu'on connaît : assez pour couvrir ce qu'on
+ * veut dire d'un geste, assez peu pour tenir sur une rangée sans défilement.
+ * Ils sont volontairement tendres — c'est une conversation de couple, pas un
+ * fil de commentaires.
+ */
+const EMOJIS_REACTION = ['❤️', '😍', '😂', '😮', '🥺', '👍'] as const;
 
 export function ChatEcran() {
   const marges = useSafeAreaInsets();
@@ -105,6 +116,22 @@ export function ChatEcran() {
   const [visee, setVisee] = useState<(typeof fil)[number] | undefined>();
   /** Message auquel le brouillon répond, s'il y en a un. */
   const [reponseA, setReponseA] = useState<(typeof fil)[number] | undefined>();
+
+  const epingle = useChat((e) => e.epingle);
+  const epingler = useChat((e) => e.epingler);
+  const retirer = useChat((e) => e.retirer);
+  const reagir = useChat((e) => e.reagir);
+
+  /**
+   * Le message épinglé, résolu depuis le fil déchiffré.
+   *
+   * Absent si l'épingle désigne un message qu'on ne trouve plus — le bandeau
+   * disparaît alors plutôt que d'afficher un vide.
+   */
+  const messageEpingle = useMemo(
+    () => (epingle ? fil.find((m) => m.id === epingle.messageId) : undefined),
+    [epingle, fil],
+  );
 
   const [clavierOuvert, setClavierOuvert] = useState(false);
   const [emojisOuverts, setEmojisOuverts] = useState(false);
@@ -340,13 +367,19 @@ export function ChatEcran() {
   }
 
   /**
-   * Actions de la feuille. Rien de destructif : supprimer un message chez
-   * l'autre demanderait au serveur d'effacer une enveloppe qu'il ne sait pas
-   * lire, et surtout de décider à la place des deux. On copie, on répond.
+   * Actions de la feuille.
+   *
+   * Le retrait ne s'offre que sur ses propres messages : effacer la parole de
+   * l'autre n'est pas une fonctionnalité, c'est une prise de pouvoir. Il est
+   * posé en dernier et teinté, pour qu'on ne le touche pas par accident en
+   * cherchant « Répondre ».
+   *
+   * Un message retiré ne garde qu'une action : le décrocher s'il était
+   * épinglé. Il n'y a plus de texte à copier ni à citer.
    */
   const actionsSurMessage: ActionMessage[] = visee
     ? [
-        ...(visee.illisible
+        ...(visee.illisible || visee.retire
           ? []
           : [
               {
@@ -360,6 +393,31 @@ export function ChatEcran() {
                 onPress: () => void Clipboard.setStringAsync(visee.texte),
               },
             ]),
+        ...(visee.retire
+          ? []
+          : [
+              epingle?.messageId === visee.id
+                ? {
+                    icone: 'bookmark' as const,
+                    libelle: 'Décrocher l’épingle',
+                    onPress: () => void epingler(coupleId!),
+                  }
+                : {
+                    icone: 'bookmark' as const,
+                    libelle: 'Épingler ce message',
+                    onPress: () => void epingler(coupleId!, visee.id),
+                  },
+            ]),
+        ...(visee.auteurId === partenaireId && !visee.retire
+          ? [
+              {
+                icone: 'trash-2' as const,
+                libelle: 'Retirer pour nous deux',
+                destructive: true,
+                onPress: () => void retirer(coupleId!, visee.id),
+              },
+            ]
+          : []),
       ]
     : [];
 
@@ -392,6 +450,32 @@ export function ChatEcran() {
           <LignePresence activite={activiteAutre} />
         }
       />
+
+      {/* Sous l'en-tête et au-dessus du fil : il doit rester visible quoi
+          qu'on fasse défiler, c'est tout l'intérêt d'une épingle. */}
+      {messageEpingle ? (
+        <BandeauEpingle
+          message={messageEpingle}
+          deMoi={messageEpingle.auteurId === partenaireId}
+          prenomAutre={autre.prenom}
+          onOuvrir={() => {
+            const index = lignes.findIndex(
+              (l) => l.sorte === 'message' && l.message.id === messageEpingle.id,
+            );
+            // `viewPosition: 0.5` amène le message au milieu de l'écran : en
+            // haut, il serait collé sous le bandeau et on ne verrait pas ce
+            // qui l'entoure.
+            if (index >= 0) {
+              liste.current?.scrollToIndex({
+                index,
+                animated: true,
+                viewPosition: 0.5,
+              });
+            }
+          }}
+          onDecrocher={() => coupleId && void epingler(coupleId)}
+        />
+      ) : null}
 
       <FlatList
         ref={liste}
@@ -498,6 +582,9 @@ export function ChatEcran() {
                 void Haptics.selectionAsync();
                 setVisee(item.message);
               }}
+              {...(item.message.retire || item.message.illisible
+                ? {}
+                : { onGlisserPourRepondre: () => setReponseA(item.message) })}
             />
           )
         }
@@ -643,6 +730,23 @@ export function ChatEcran() {
 
       <ActionsMessage
         visible={!!visee}
+        emojis={visee && !visee.retire ? EMOJIS_REACTION : []}
+        {...(visee
+          ? {
+              emojiChoisi: visee.reactions.find(
+                (r) => r.partenaireId === partenaireId,
+              )?.emoji,
+            }
+          : {})}
+        onReagir={(emoji) => {
+          if (!visee || !coupleId) return;
+          // Toucher l'emoji déjà posé le retire : c'est le comportement
+          // attendu, et la seule façon de se raviser sans autre bouton.
+          const mien = visee.reactions.find(
+            (r) => r.partenaireId === partenaireId,
+          )?.emoji;
+          void reagir(coupleId, visee.id, mien === emoji ? undefined : emoji);
+        }}
         onFermer={() => setVisee(undefined)}
         actions={actionsSurMessage}
       />

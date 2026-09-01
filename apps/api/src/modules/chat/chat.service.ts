@@ -17,7 +17,12 @@
 
 import { randomUUID } from 'node:crypto';
 import { estScelleMessage, type PartenaireId } from '@lonlonbenu/shared';
-import type { CoupleServeur, Depot, MessageScelle } from '../../domaine/depot.ts';
+import type {
+  CoupleServeur,
+  Depot,
+  EpingleServeur,
+  MessageScelle,
+} from '../../domaine/depot.ts';
 
 export type RefusChat =
   | 'couple_introuvable'
@@ -27,7 +32,11 @@ export type RefusChat =
   | 'date_invalide'
   | 'deja_remis'
   | 'introuvable'
-  | 'cle_manquante';
+  | 'cle_manquante'
+  /** On ne retire que ses propres messages. */
+  | 'pas_mon_message'
+  /** Un message déjà retiré n'a plus rien à retirer. */
+  | 'deja_retire';
 
 export interface ClesDuCouple {
   /** Ma clé publique, si je l'ai publiée. */
@@ -77,6 +86,29 @@ export interface ServiceChat {
     coupleId: string,
     lecteurId: PartenaireId,
   ): Promise<{ ok: boolean; motif?: RefusChat }>;
+  /** Retire un message pour les deux. Seul son auteur le peut. */
+  retirer(
+    coupleId: string,
+    auteurId: PartenaireId,
+    id: string,
+  ): Promise<{ ok: boolean; motif?: RefusChat; message?: MessageScelle }>;
+  /** Pose, remplace ou retire sa réaction. `undefined` retire. */
+  reagir(
+    coupleId: string,
+    partenaireId: PartenaireId,
+    messageId: string,
+    emojiScelle?: string,
+  ): Promise<{ ok: boolean; motif?: RefusChat; message?: MessageScelle }>;
+  epingle(
+    coupleId: string,
+    lecteurId: PartenaireId,
+  ): Promise<{ ok: boolean; motif?: RefusChat; epingle?: EpingleServeur }>;
+  /** Épingle un message, ou décroche l'épingle si `messageId` est absent. */
+  epingler(
+    coupleId: string,
+    partenaireId: PartenaireId,
+    messageId?: string,
+  ): Promise<{ ok: boolean; motif?: RefusChat; epingle?: EpingleServeur }>;
 }
 
 async function autoriser(
@@ -219,6 +251,112 @@ export function creerServiceChat(depot: Depot): ServiceChat {
 
       await depot.chat.marquerLus(coupleId, lecteurId, new Date().toISOString());
       return { ok: true };
+    },
+
+    /**
+     * Retire un message pour les deux.
+     *
+     * **Seul son auteur le peut.** Retirer le message de l'autre reviendrait à
+     * effacer sa parole, ce qu'aucune messagerie ne permet et qu'un couple ne
+     * devrait pas pouvoir faire.
+     *
+     * L'enveloppe est vidée du serveur : le texte disparaît vraiment. La ligne
+     * reste, et les deux voient qu'un message a été retiré — sans quoi l'autre
+     * verrait un trou dans la conversation et douterait de ce qu'il a lu.
+     */
+    async retirer(coupleId, auteurId, id) {
+      const acces = await autoriser(depot, coupleId, auteurId);
+      if ('motif' in acces) return { ok: false, motif: acces.motif };
+
+      const message = await depot.chat.messageParId(coupleId, id);
+      if (!message) return { ok: false, motif: 'introuvable' };
+      if (message.auteurId !== auteurId) {
+        return { ok: false, motif: 'pas_mon_message' };
+      }
+      if (message.retireLe) return { ok: false, motif: 'deja_retire' };
+
+      await depot.chat.retirer(coupleId, id, new Date().toISOString());
+
+      // Un message épinglé qui vient d'être retiré ne doit pas rester en
+      // bandeau : l'épingle pointerait sur un vide.
+      const epingle = await depot.chat.epingle(coupleId);
+      if (epingle?.messageId === id) await depot.chat.desepingler(coupleId);
+
+      return {
+        ok: true,
+        message: (await depot.chat.messageParId(coupleId, id))!,
+      };
+    },
+
+    /**
+     * Réagit à un message, ou retire sa réaction.
+     *
+     * On réagit à ses propres messages comme à ceux de l'autre : c'est ainsi
+     * partout, et l'interdire n'aurait protégé de rien.
+     */
+    async reagir(coupleId, partenaireId, messageId, emojiScelle) {
+      const acces = await autoriser(depot, coupleId, partenaireId);
+      if ('motif' in acces) return { ok: false, motif: acces.motif };
+
+      const message = await depot.chat.messageParId(coupleId, messageId);
+      if (!message) return { ok: false, motif: 'introuvable' };
+      // Un message retiré n'a plus de contenu : il n'y a plus à quoi réagir.
+      if (message.retireLe) return { ok: false, motif: 'deja_retire' };
+
+      if (emojiScelle === undefined) {
+        await depot.chat.retirerReaction(coupleId, messageId, partenaireId);
+      } else {
+        if (!estScelleMessage(emojiScelle)) {
+          return { ok: false, motif: 'enveloppe_invalide' };
+        }
+        await depot.chat.reagir(coupleId, messageId, {
+          partenaireId,
+          emojiScelle,
+          majLe: new Date().toISOString(),
+        });
+      }
+
+      return {
+        ok: true,
+        message: (await depot.chat.messageParId(coupleId, messageId))!,
+      };
+    },
+
+    async epingle(coupleId, lecteurId) {
+      const acces = await autoriser(depot, coupleId, lecteurId);
+      if ('motif' in acces) return { ok: false, motif: acces.motif };
+
+      const epingle = await depot.chat.epingle(coupleId);
+      return { ok: true, ...(epingle ? { epingle } : {}) };
+    },
+
+    /**
+     * Épingle un message, ou décroche l'épingle.
+     *
+     * Les deux peuvent épingler et décrocher : l'épingle appartient à la
+     * conversation, pas à celui qui l'a posée. Une épingle que seul son auteur
+     * pourrait retirer serait une décision imposée à l'autre.
+     */
+    async epingler(coupleId, partenaireId, messageId) {
+      const acces = await autoriser(depot, coupleId, partenaireId);
+      if ('motif' in acces) return { ok: false, motif: acces.motif };
+
+      if (messageId === undefined) {
+        await depot.chat.desepingler(coupleId);
+        return { ok: true };
+      }
+
+      const message = await depot.chat.messageParId(coupleId, messageId);
+      if (!message) return { ok: false, motif: 'introuvable' };
+      if (message.retireLe) return { ok: false, motif: 'deja_retire' };
+
+      const epingle: EpingleServeur = {
+        messageId,
+        epinglePar: partenaireId,
+        epingleLe: new Date().toISOString(),
+      };
+      await depot.chat.epingler(coupleId, epingle);
+      return { ok: true, epingle };
     },
   };
 }

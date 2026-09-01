@@ -10,11 +10,18 @@ export interface ActionMessage {
   icone: keyof typeof Feather.glyphMap;
   libelle: string;
   onPress: () => void;
+  /** Action qui retire quelque chose : teintée, et posée en dernier. */
+  destructive?: boolean;
 }
 
 interface Props {
   visible: boolean;
   actions: ActionMessage[];
+  /** Emojis de réaction rapide. Vide : la rangée n'apparaît pas. */
+  emojis?: readonly string[];
+  /** L'emoji déjà posé par le lecteur, s'il y en a un. */
+  emojiChoisi?: string;
+  onReagir?: (emoji: string) => void;
   onFermer: () => void;
 }
 
@@ -29,7 +36,14 @@ interface Props {
  * bouton système de retour — que beaucoup n'essaient pas, de peur de quitter
  * la conversation.
  */
-export function ActionsMessage({ visible, actions, onFermer }: Props) {
+export function ActionsMessage({
+  visible,
+  actions,
+  emojis = [],
+  emojiChoisi,
+  onReagir,
+  onFermer,
+}: Props) {
   const colors = useCouleurs();
 
   return (
@@ -46,6 +60,32 @@ export function ActionsMessage({ visible, actions, onFermer }: Props) {
         accessibilityLabel="Fermer"
       />
       <View style={styles.feuille}>
+        {/* La rangée d'emojis en premier : c'est le geste le plus fréquent,
+            et le plus proche du pouce une fois la feuille ouverte. */}
+        {emojis.length > 0 && onReagir ? (
+          <View style={styles.rangeeEmojis}>
+            {emojis.map((emoji) => (
+              <Pressable
+                key={emoji}
+                onPress={() => {
+                  onReagir(emoji);
+                  onFermer();
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={`Réagir avec ${emoji}`}
+                accessibilityState={{ selected: emojiChoisi === emoji }}
+                style={({ pressed }) => [
+                  styles.emoji,
+                  emojiChoisi === emoji && styles.emojiChoisi,
+                  pressed && styles.pressee,
+                ]}
+              >
+                <Texte variante="titre">{emoji}</Texte>
+              </Pressable>
+            ))}
+          </View>
+        ) : null}
+
         {actions.map((action) => (
           <Pressable
             key={action.libelle}
@@ -56,8 +96,17 @@ export function ActionsMessage({ visible, actions, onFermer }: Props) {
             accessibilityRole="button"
             style={({ pressed }) => [styles.action, pressed && styles.pressee]}
           >
-            <Feather name={action.icone} size={18} color={colors.texte} />
-            <Texte variante="corps">{action.libelle}</Texte>
+            <Feather
+              name={action.icone}
+              size={18}
+              color={action.destructive ? colors.tendresse : colors.texte}
+            />
+            <Texte
+              variante="corps"
+              style={action.destructive ? { color: colors.tendresse } : undefined}
+            >
+              {action.libelle}
+            </Texte>
           </Pressable>
         ))}
       </View>
@@ -86,4 +135,18 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
     borderRadius: rayons.md,
   },
   pressee: { backgroundColor: colors.effleurement },
+  rangeeEmojis: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: espacements.xs,
+    marginBottom: espacements.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.bordure,
+  },
+  emoji: {
+    paddingHorizontal: espacements.sm,
+    paddingVertical: espacements.xs,
+    borderRadius: rayons.lg,
+  },
+  emojiChoisi: { backgroundColor: colors.effleurement },
 }));

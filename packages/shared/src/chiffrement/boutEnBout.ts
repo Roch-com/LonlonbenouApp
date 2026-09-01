@@ -107,6 +107,23 @@ export function ouvrirMessage(cle: Uint8Array, charge: string): string {
 }
 
 /** Reconnaît une enveloppe de message, pour ne jamais afficher du chiffré brut. */
+/**
+ * Enveloppe d'un message retiré par son auteur.
+ *
+ * Ce n'est pas un scellé : il n'y a plus rien à ouvrir. C'est une sentinelle,
+ * qui respecte la forme `m1.…` attendue par la base et que les deux côtés
+ * reconnaissent. Le texte, lui, a été effacé du serveur.
+ *
+ * On garde la ligne plutôt que de la supprimer : un message qui disparaîtrait
+ * du milieu d'une conversation sans laisser de trace ferait douter l'autre de
+ * ce qu'il a lu.
+ */
+export const ENVELOPPE_RETIREE = 'm1.retire.retire';
+
+export function estEnveloppeRetiree(valeur: string): boolean {
+  return valeur === ENVELOPPE_RETIREE;
+}
+
 export function estScelleMessage(valeur: string): boolean {
   return valeur.startsWith(`${PREFIXE}${SEPARATEUR}`);
 }

@@ -77,6 +77,30 @@ export interface MessageScelle {
    * de son auteur, qui le retrouve à part et peut encore l’annuler.
    */
   remettreLe?: string;
+  /**
+   * Message retiré par son auteur. L'enveloppe est vidée, la ligne reste :
+   * les deux voient « Ce message a été retiré » à sa place.
+   *
+   * Effacer la ligne ferait disparaître un message du milieu d'une
+   * conversation sans laisser de trace, et l'autre se demanderait s'il a rêvé.
+   */
+  retireLe?: string;
+  /** Réactions, scellées comme le reste. Une par personne au maximum. */
+  reactions?: readonly ReactionScellee[];
+}
+
+export interface ReactionScellee {
+  partenaireId: PartenaireId;
+  /** `m1.<nonce>.<scellé>` : l'emoji choisi. */
+  emojiScelle: string;
+  majLe: string;
+}
+
+/** Le message épinglé d'une conversation. Un seul à la fois. */
+export interface EpingleServeur {
+  messageId: string;
+  epinglePar: PartenaireId;
+  epingleLe: string;
 }
 
 /**
@@ -227,6 +251,28 @@ export interface Depot {
     ajouter(coupleId: string, message: MessageScelle): Promise<void>;
     /** Retire un message. Réservé à l’annulation d’un envoi programmé. */
     supprimer(coupleId: string, id: string): Promise<void>;
+    messageParId(
+      coupleId: string,
+      id: string,
+    ): Promise<MessageScelle | undefined>;
+    /** Vide l'enveloppe et pose `retireLe`. La ligne, elle, reste. */
+    retirer(coupleId: string, id: string, quand: string): Promise<void>;
+    /** Pose ou remplace la réaction d'une personne sur un message. */
+    reagir(
+      coupleId: string,
+      messageId: string,
+      reaction: ReactionScellee,
+    ): Promise<void>;
+    /** Retire sa propre réaction. */
+    retirerReaction(
+      coupleId: string,
+      messageId: string,
+      partenaireId: PartenaireId,
+    ): Promise<void>;
+    epingle(coupleId: string): Promise<EpingleServeur | undefined>;
+    /** Épingler remplace : un seul message épinglé à la fois. */
+    epingler(coupleId: string, epingle: EpingleServeur): Promise<void>;
+    desepingler(coupleId: string): Promise<void>;
     marquerLus(
       coupleId: string,
       lecteurId: PartenaireId,

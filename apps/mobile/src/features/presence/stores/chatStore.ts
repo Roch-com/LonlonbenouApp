@@ -24,11 +24,16 @@ import { stockage } from '@/lib/stockage';
 import { ErreurApi, messageLisible } from '@/lib/api/erreurs';
 import {
   envoyerEnveloppe,
+  epinglerServeur,
   lireCles,
+  lireEpingleServeur,
   listerMessages,
   marquerLusServeur,
   publierClePublique,
+  reagirServeur,
+  retirerMessageServeur,
   type ClesDuCouple,
+  type EpingleServeur,
   type MessageScelle,
 } from '../api/chat.api';
 import { cleDeMessages, paireDeLAppareil } from '../services/clesMessages';
@@ -36,6 +41,7 @@ import { cleDeMessages, paireDeLAppareil } from '../services/clesMessages';
 interface EtatChat {
   /** Cache : enveloppes scellées, jamais de clair. */
   messages: MessageScelle[];
+  epingle?: EpingleServeur;
   cles?: ClesDuCouple;
   cachePour?: string;
   synchroniseeLe?: string;
@@ -55,16 +61,34 @@ interface EtatChat {
     repondA?: string,
   ) => Promise<boolean>;
   marquerLus: (coupleId: string) => Promise<void>;
+  /** Retire un message pour les deux. Seul son auteur le peut. */
+  retirer: (coupleId: string, id: string) => Promise<boolean>;
+  /** Pose, remplace ou retire sa réaction. `undefined` retire. */
+  reagir: (coupleId: string, id: string, emoji?: string) => Promise<boolean>;
+  /** Épingle un message, ou décroche l'épingle sans identifiant. */
+  epingler: (coupleId: string, messageId?: string) => Promise<boolean>;
   vider: () => void;
 }
 
 export const useChat = create<EtatChat>()(
   persist(
     (set, get) => {
+      /** Remplace un message dans le cache, sans tout relire. */
+      const remplacer = (message: MessageScelle) =>
+        set((e) => ({
+          messages: e.messages.map((m) => (m.id === message.id ? message : m)),
+        }));
+
       const relire = async (coupleId: string, moiId: string) => {
-        const messages = await listerMessages(coupleId);
+        // L'épingle vient avec : elle désigne un message de la liste, et les
+        // charger séparément ferait clignoter le bandeau à chaque ouverture.
+        const [messages, epingle] = await Promise.all([
+          listerMessages(coupleId),
+          lireEpingleServeur(coupleId).catch(() => undefined),
+        ]);
         set({
           messages,
+          epingle,
           cachePour: moiId,
           synchroniseeLe: new Date().toISOString(),
           horsLigne: false,
@@ -156,9 +180,61 @@ export const useChat = create<EtatChat>()(
           }
         },
 
+        async retirer(coupleId, id) {
+          try {
+            remplacer(await retirerMessageServeur(coupleId, id));
+            // Retirer un message épinglé décroche l'épingle côté serveur : on
+            // suit, sinon le bandeau resterait sur un message qui n'est plus.
+            if (get().epingle?.messageId === id) set({ epingle: undefined });
+            return true;
+          } catch (erreur) {
+            set({ erreur: messageLisible(erreur) });
+            return false;
+          }
+        },
+
+        async reagir(coupleId, id, emoji) {
+          try {
+            if (emoji === undefined) {
+              remplacer(await reagirServeur(coupleId, id));
+              return true;
+            }
+            // Même clé que les messages : une réaction est du texte écrit
+            // dans la conversation, elle se scelle comme le reste.
+            const autre = get().cles?.autre;
+            if (!autre) {
+              set({
+                erreur:
+                  'Votre partenaire n’a pas encore ouvert la conversation sur son appareil. Sans sa clé, rien ne peut être chiffré pour lui.',
+              });
+              return false;
+            }
+            const cle = await cleDeMessages(autre);
+            const nonce = Crypto.getRandomBytes(LONGUEUR_NONCE);
+            remplacer(
+              await reagirServeur(coupleId, id, scellerMessage(cle, nonce, emoji)),
+            );
+            return true;
+          } catch (erreur) {
+            set({ erreur: messageLisible(erreur) });
+            return false;
+          }
+        },
+
+        async epingler(coupleId, messageId) {
+          try {
+            set({ epingle: await epinglerServeur(coupleId, messageId) });
+            return true;
+          } catch (erreur) {
+            set({ erreur: messageLisible(erreur) });
+            return false;
+          }
+        },
+
         vider: () =>
           set({
             messages: [],
+            epingle: undefined,
             cles: undefined,
             cachePour: undefined,
             synchroniseeLe: undefined,
@@ -172,6 +248,7 @@ export const useChat = create<EtatChat>()(
       storage: stockage,
       partialize: (e) => ({
         messages: e.messages,
+        epingle: e.epingle,
         cles: e.cles,
         cachePour: e.cachePour,
         synchroniseeLe: e.synchroniseeLe,

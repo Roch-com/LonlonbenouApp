@@ -13,6 +13,7 @@
 
 import pg from 'pg';
 import {
+  ENVELOPPE_RETIREE,
   NOM_ESPACE_PAR_DEFAUT,
   PREFERENCES_PAR_DEFAUT,
   type AvanceeSeance,
@@ -45,6 +46,7 @@ import type {
   Depot,
   InvitationServeur,
   NotificationServeur,
+  ReactionScellee,
 } from './depot.ts';
 
 const { Pool, types } = pg;
@@ -1029,11 +1031,38 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
           envoye_le: Date;
           lu_le: Date | null;
           remettre_le: Date | null;
+          retire_le: Date | null;
         }>(
-          `SELECT id, auteur_id, enveloppe, envoye_le, lu_le, remettre_le
+          `SELECT id, auteur_id, enveloppe, envoye_le, lu_le, remettre_le,
+                  retire_le
              FROM messages WHERE couple_id = $1 ORDER BY envoye_le`,
           [coupleId],
         );
+        if (rows.length === 0) return [];
+
+        const reactions = await pool.query<{
+          message_id: string;
+          partenaire_id: string;
+          emoji_scelle: string;
+          maj_le: Date;
+        }>(
+          `SELECT message_id, partenaire_id, emoji_scelle, maj_le
+             FROM reactions_message
+            WHERE message_id = ANY($1::text[])
+            ORDER BY maj_le`,
+          [rows.map((r) => r.id)],
+        );
+        const parMessage = new Map<string, ReactionScellee[]>();
+        for (const r of reactions.rows) {
+          const liste = parMessage.get(r.message_id) ?? [];
+          liste.push({
+            partenaireId: r.partenaire_id,
+            emojiScelle: r.emoji_scelle,
+            majLe: isoRequis(r.maj_le),
+          });
+          parMessage.set(r.message_id, liste);
+        }
+
         return rows.map((r) => ({
           id: r.id,
           auteurId: r.auteur_id,
@@ -1041,7 +1070,85 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
           envoyeLe: isoRequis(r.envoye_le),
           luLe: iso(r.lu_le),
           remettreLe: iso(r.remettre_le),
+          retireLe: iso(r.retire_le),
+          reactions: parMessage.get(r.id) ?? [],
         }));
+      },
+
+      async messageParId(coupleId, id) {
+        return (await this.messages(coupleId)).find((m) => m.id === id);
+      },
+
+      async retirer(coupleId, id, quand) {
+        await pool.query(
+          `UPDATE messages SET enveloppe = $3, retire_le = $4
+            WHERE couple_id = $1 AND id = $2`,
+          [coupleId, id, ENVELOPPE_RETIREE, quand],
+        );
+        // Les réactions d'un message retiré n'ont plus d'objet.
+        await pool.query('DELETE FROM reactions_message WHERE message_id = $1', [
+          id,
+        ]);
+      },
+
+      async reagir(coupleId, messageId, reaction) {
+        await pool.query(
+          `INSERT INTO reactions_message
+                  (message_id, partenaire_id, emoji_scelle, maj_le)
+                VALUES ($1, $2, $3, $4)
+           ON CONFLICT (message_id, partenaire_id) DO UPDATE
+                  SET emoji_scelle = EXCLUDED.emoji_scelle,
+                      maj_le = EXCLUDED.maj_le`,
+          [messageId, reaction.partenaireId, reaction.emojiScelle, reaction.majLe],
+        );
+      },
+
+      async retirerReaction(coupleId, messageId, partenaireId) {
+        await pool.query(
+          `DELETE FROM reactions_message
+            WHERE message_id = $1 AND partenaire_id = $2`,
+          [messageId, partenaireId],
+        );
+      },
+
+      async epingle(coupleId) {
+        const { rows } = await pool.query<{
+          message_id: string;
+          epingle_par: string;
+          epingle_le: Date;
+        }>(
+          `SELECT message_id, epingle_par, epingle_le
+             FROM epingle_conversation WHERE couple_id = $1`,
+          [coupleId],
+        );
+        const l = rows[0];
+        return l
+          ? {
+              messageId: l.message_id,
+              epinglePar: l.epingle_par,
+              epingleLe: isoRequis(l.epingle_le),
+            }
+          : undefined;
+      },
+
+      async epingler(coupleId, epingle) {
+        await pool.query(
+          `INSERT INTO epingle_conversation
+                  (couple_id, message_id, epingle_par, epingle_le)
+                VALUES ($1, $2, $3, $4)
+           ON CONFLICT (couple_id) DO UPDATE
+                  SET message_id = EXCLUDED.message_id,
+                      epingle_par = EXCLUDED.epingle_par,
+                      epingle_le = EXCLUDED.epingle_le`,
+          [coupleId, epingle.messageId, epingle.epinglePar, epingle.epingleLe],
+        );
+      },
+
+      async desepingler(coupleId) {
+        await pool.query(
+          'DELETE FROM epingle_conversation WHERE couple_id = $1',
+          [coupleId],
+        );
       },
 
       async ajouter(coupleId, message) {

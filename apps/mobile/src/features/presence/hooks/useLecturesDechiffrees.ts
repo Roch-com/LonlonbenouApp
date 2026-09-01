@@ -42,6 +42,11 @@ function ouvrir(cle: Uint8Array | undefined, scelle?: string): string | undefine
   }
 }
 
+export interface ReactionLisible {
+  partenaireId: string;
+  emoji: string;
+}
+
 export interface MessageLisible {
   id: string;
   auteurId: string;
@@ -53,6 +58,9 @@ export interface MessageLisible {
   repondA?: string;
   /** L'enveloppe n'a pas pu être ouverte avec la clé courante. */
   illisible: boolean;
+  /** Retiré par son auteur : il n'y a plus de texte, seulement la trace. */
+  retire: boolean;
+  reactions: readonly ReactionLisible[];
 }
 
 export function useFilLisible(): MessageLisible[] {
@@ -62,6 +70,23 @@ export function useFilLisible(): MessageLisible[] {
   return useMemo(
     () =>
       messages.map((m) => {
+        // Un message retiré n'a plus d'enveloppe à ouvrir : essayer
+        // produirait un « illisible », qui se lit comme une panne de clé
+        // alors que rien n'est cassé.
+        if (m.retireLe) {
+          return {
+            id: m.id,
+            auteurId: m.auteurId,
+            type: 'texte' as TypeMessage,
+            texte: '',
+            envoyeLe: m.envoyeLe,
+            luLe: m.luLe,
+            illisible: false,
+            retire: true,
+            reactions: [],
+          };
+        }
+
         const clair = ouvrir(cle, m.enveloppe);
         let type: TypeMessage = 'texte';
         let texte = clair ?? '';
@@ -93,6 +118,13 @@ export function useFilLisible(): MessageLisible[] {
           luLe: m.luLe,
           repondA,
           illisible: clair === undefined,
+          retire: false,
+          // Une réaction qu'on ne sait plus ouvrir est écartée : afficher un
+          // carré vide à côté d'un message n'apprend rien à personne.
+          reactions: (m.reactions ?? []).flatMap((r) => {
+            const emoji = ouvrir(cle, r.emojiScelle);
+            return emoji ? [{ partenaireId: r.partenaireId, emoji }] : [];
+          }),
         };
       }),
     [messages, cle],

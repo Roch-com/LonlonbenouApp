@@ -8,6 +8,7 @@
  */
 
 import {
+  ENVELOPPE_RETIREE,
   PREFERENCES_PAR_DEFAUT,
   type ActiviteBrute,
   type AxeCroissance,
@@ -33,6 +34,7 @@ import type {
   InvitationServeur,
   BudgetProjetScelle,
   DepenseScellee,
+  EpingleServeur,
   MessageScelle,
   ReponseCompliciteServeur,
   NotificationServeur,
@@ -63,6 +65,7 @@ export function creerDepotMemoire(): Depot {
   const depenses = new Map<string, DepenseScellee[]>();
   const complicite = new Map<string, ReponseCompliciteServeur[]>();
   const parcours = new Map<string, ParcoursEngage[]>();
+  const epingles = new Map<string, EpingleServeur>();
   const langages = new Map<string, ReponsesLangages[]>();
   const factures = new Map<string, FactureScellee[]>();
   const budgets = new Map<string, BudgetProjetScelle[]>();
@@ -258,8 +261,52 @@ export function creerDepotMemoire(): Depot {
           if (m.auteurId !== lecteurId && !m.luLe) m.luLe = quand;
         }
       },
+      async messageParId(coupleId, id) {
+        const trouve = (messages.get(coupleId) ?? []).find((m) => m.id === id);
+        return trouve ? copie(trouve) : undefined;
+      },
+      async retirer(coupleId, id, quand) {
+        for (const m of messages.get(coupleId) ?? []) {
+          if (m.id !== id) continue;
+          // L'enveloppe est vidée, la ligne reste : c'est ce qui distingue un
+          // message retiré d'un message qui n'a jamais existé.
+          m.enveloppe = ENVELOPPE_RETIREE;
+          m.retireLe = quand;
+          m.reactions = [];
+        }
+      },
+      async reagir(coupleId, messageId, reaction) {
+        for (const m of messages.get(coupleId) ?? []) {
+          if (m.id !== messageId) continue;
+          m.reactions = [
+            ...(m.reactions ?? []).filter(
+              (r) => r.partenaireId !== reaction.partenaireId,
+            ),
+            copie(reaction),
+          ];
+        }
+      },
+      async retirerReaction(coupleId, messageId, partenaireId) {
+        for (const m of messages.get(coupleId) ?? []) {
+          if (m.id !== messageId) continue;
+          m.reactions = (m.reactions ?? []).filter(
+            (r) => r.partenaireId !== partenaireId,
+          );
+        }
+      },
+      async epingle(coupleId) {
+        const trouve = epingles.get(coupleId);
+        return trouve ? copie(trouve) : undefined;
+      },
+      async epingler(coupleId, epingle) {
+        epingles.set(coupleId, copie(epingle));
+      },
+      async desepingler(coupleId) {
+        epingles.delete(coupleId);
+      },
       async effacerPourCouple(coupleId) {
         messages.delete(coupleId);
+        epingles.delete(coupleId);
       },
     },
 

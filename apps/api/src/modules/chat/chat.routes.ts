@@ -13,6 +13,8 @@ const CODES: Record<string, number> = {
   position_non_scellee: 400,
   date_invalide: 400,
   deja_remis: 409,
+  pas_mon_message: 403,
+  deja_retire: 409,
 };
 
 const repondre = (motif: string | undefined) => CODES[motif ?? ''] ?? 400;
@@ -165,6 +167,88 @@ export function enregistrerRoutesChat(
     },
   );
 
+  // Retrait d'un message pour les deux. Seul son auteur le peut.
+  app.delete(
+    '/couples/:coupleId/chat/messages/:id',
+    { preHandler: authentifier },
+    async (requete, reponse) => {
+      const { coupleId, id } = requete.params as { coupleId: string; id: string };
+      const resultat = await chat.retirer(
+        coupleId,
+        requete.identite!.partenaireId,
+        id,
+      );
+      if (!resultat.ok) {
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
+      }
+      return { message: resultat.message };
+    },
+  );
+
+  // Réaction. Un corps sans `emojiScelle` retire la sienne.
+  app.put(
+    '/couples/:coupleId/chat/messages/:id/reaction',
+    { preHandler: authentifier },
+    async (requete, reponse) => {
+      const { coupleId, id } = requete.params as { coupleId: string; id: string };
+      const corps = requete.body as { emojiScelle?: string };
+
+      const resultat = await chat.reagir(
+        coupleId,
+        requete.identite!.partenaireId,
+        id,
+        corps?.emojiScelle,
+      );
+      if (!resultat.ok) {
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
+      }
+      return { message: resultat.message };
+    },
+  );
+
+  app.get(
+    '/couples/:coupleId/chat/epingle',
+    { preHandler: authentifier },
+    async (requete, reponse) => {
+      const { coupleId } = requete.params as { coupleId: string };
+      const resultat = await chat.epingle(
+        coupleId,
+        requete.identite!.partenaireId,
+      );
+      if (!resultat.ok) {
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
+      }
+      return { epingle: resultat.epingle ?? null };
+    },
+  );
+
+  // Un corps sans `messageId` décroche l'épingle.
+  app.put(
+    '/couples/:coupleId/chat/epingle',
+    { preHandler: authentifier },
+    async (requete, reponse) => {
+      const { coupleId } = requete.params as { coupleId: string };
+      const corps = requete.body as { messageId?: string };
+
+      const resultat = await chat.epingler(
+        coupleId,
+        requete.identite!.partenaireId,
+        corps?.messageId,
+      );
+      if (!resultat.ok) {
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
+      }
+      return { epingle: resultat.epingle ?? null };
+    },
+  );
 }
 
 export function enregistrerRoutesPresence(
