@@ -47,3 +47,8 @@ export * from './motdepasse/reinitialisation';
 export * from './parcours/catalogue';
 export * from './parcours/progression';
 export * from './parcours/recommandation';
+
+// Pôle ④ — Complicité & connexion (§8.14).
+export * from './connexion/langages';
+export * from './connexion/rituels';
+export * from './connexion/distance';

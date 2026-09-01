@@ -1074,6 +1074,49 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
       },
     },
 
+    connexion: {
+      async langages(coupleId) {
+        const { rows } = await pool.query<{
+          partenaire_id: string;
+          choix: Record<string, 'a' | 'b'>;
+          maj_le: Date;
+        }>(
+          `SELECT partenaire_id, choix, maj_le
+             FROM reponses_langages WHERE couple_id = $1`,
+          [coupleId],
+        );
+        return rows.map((r) => ({
+          partenaireId: r.partenaire_id,
+          choix: r.choix,
+          majLe: isoRequis(r.maj_le),
+        }));
+      },
+
+      async definirLangages(coupleId, reponses) {
+        await pool.query(
+          `INSERT INTO reponses_langages
+                  (couple_id, partenaire_id, choix, maj_le)
+                VALUES ($1, $2, $3, $4)
+           ON CONFLICT (couple_id, partenaire_id) DO UPDATE
+                  SET choix = EXCLUDED.choix,
+                      maj_le = EXCLUDED.maj_le`,
+          [
+            coupleId,
+            reponses.partenaireId,
+            JSON.stringify(reponses.choix),
+            reponses.majLe,
+          ],
+        );
+      },
+
+      async effacerPourCouple(coupleId) {
+        await pool.query(
+          'DELETE FROM reponses_langages WHERE couple_id = $1',
+          [coupleId],
+        );
+      },
+    },
+
     parcours: {
       async engages(coupleId) {
         return lireParcours(coupleId);

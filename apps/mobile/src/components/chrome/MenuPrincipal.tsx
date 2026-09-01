@@ -58,6 +58,12 @@ export function MenuPrincipal({ visible, onFermer }: Props) {
           onPress={() => aller('/cycle')}
         />
         <LigneMenu
+          icone="sun"
+          libelle="Complicité"
+          detail="Des rituels à deux, et ce qui touche chacun"
+          onPress={() => aller('/complicite')}
+        />
+        <LigneMenu
           icone="image"
           libelle="Ce qui reste"
           detail="Vos souvenirs et les lieux qui comptent"

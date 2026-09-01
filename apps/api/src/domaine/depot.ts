@@ -22,6 +22,7 @@ import type {
   PartageCycle,
   ParcoursEngage,
   PartenaireId,
+  ReponsesLangages,
   PreferencesNotifications,
   Projet,
   Regles,
@@ -240,6 +241,20 @@ export interface Depot {
     repondre(
       coupleId: string,
       reponse: ReponseCompliciteServeur,
+    ): Promise<void>;
+    effacerPourCouple(coupleId: string): Promise<void>;
+  };
+  /**
+   * Pôle ④ — Complicité & connexion : langages de l'amour.
+   *
+   * Une ligne par personne. Les choix sont en clair — voir la migration 014,
+   * qui explique pourquoi le miroir l'exige ici.
+   */
+  connexion: {
+    langages(coupleId: string): Promise<ReponsesLangages[]>;
+    definirLangages(
+      coupleId: string,
+      reponses: ReponsesLangages,
     ): Promise<void>;
     effacerPourCouple(coupleId: string): Promise<void>;
   };
