@@ -15,6 +15,8 @@ import { creerServiceParcours } from './modules/parcours/parcours.service.ts';
 import { enregistrerRoutesParcours } from './modules/parcours/parcours.routes.ts';
 import { creerServiceConnexion } from './modules/connexion/connexion.service.ts';
 import { enregistrerRoutesConnexion } from './modules/connexion/connexion.routes.ts';
+import { creerServiceJournal } from './modules/journal/journal.service.ts';
+import { enregistrerRoutesJournal } from './modules/journal/journal.routes.ts';
 import { creerServiceFinances } from './modules/finances/finances.service.ts';
 import { enregistrerRoutesFinances } from './modules/finances/finances.routes.ts';
 import { creerServiceMemoire } from './modules/memoire/memoire.service.ts';
@@ -115,6 +117,7 @@ export async function creerServeur(options: OptionsServeur = {}) {
   const complicite = creerServiceComplicite(depot);
   const parcours = creerServiceParcours(depot);
   const connexion = creerServiceConnexion(depot);
+  const journal = creerServiceJournal(depot);
   const cycle = creerServiceCycle(depot);
   const confidences = creerServiceConfidences(depot);
   const chat = creerServiceChat(depot);
@@ -243,6 +246,7 @@ export async function creerServeur(options: OptionsServeur = {}) {
   enregistrerRoutesComplicite(app, complicite, authentifier);
   enregistrerRoutesParcours(app, parcours, authentifier);
   enregistrerRoutesConnexion(app, connexion, authentifier);
+  enregistrerRoutesJournal(app, journal, authentifier);
   enregistrerRoutesActivite(app, activite, authentifier);
   enregistrerRoutesCycle(app, cycle, authentifier);
   enregistrerRoutesConfidences(app, confidences, authentifier);
@@ -632,6 +636,7 @@ export async function creerServeur(options: OptionsServeur = {}) {
       confidences,
       parcours,
       connexion,
+      journal,
       chat,
       presence,
       viePratique,

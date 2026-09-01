@@ -21,8 +21,10 @@ import { useSouvenirs, useSouvenirsLisibles } from '../stores/souvenirsStore';
 import { AjoutSouvenir } from '../components/AjoutSouvenir';
 import { ListeSouvenirs } from '../components/ListeSouvenirs';
 import { LoveMap } from '../components/LoveMap';
+import { Frise } from '../components/Frise';
+import { useJournal, useFriseComplete } from '../stores/journalStore';
 
-type Onglet = 'album' | 'carte';
+type Onglet = 'album' | 'carte' | 'journal';
 
 const aujourdhui = () => new Date().toISOString().slice(0, 10);
 
@@ -52,13 +54,16 @@ export function MemoireEcran() {
   const charger = useSouvenirs((e) => e.charger);
 
   const souvenirs = useSouvenirsLisibles();
+  const chargerJournal = useJournal((e) => e.charger);
+  const frise = useFriseComplete(souvenirs, aujourdhui());
 
   useFocusEffect(
     useCallback(() => {
       if (connecte && coupleId && partenaireId) {
         void charger(coupleId, partenaireId);
+        void chargerJournal(coupleId);
       }
-    }, [connecte, coupleId, partenaireId, charger]),
+    }, [connecte, coupleId, partenaireId, charger, chargerJournal]),
   );
 
   const anniversaires = useMemo(
@@ -93,7 +98,11 @@ export function MemoireEcran() {
     <EcranModale section="Mémoire">
       <EnTete
         titre="Ce qui reste"
-        sousTitre="Vos moments et vos lieux, gardés à deux."
+        sousTitre={
+          onglet === 'journal'
+            ? 'Ce que vous avez mené au bout, remis dans l’ordre du temps.'
+            : 'Vos moments et vos lieux, gardés à deux.'
+        }
       />
 
       {/* « Il y a un an » en premier, et seulement s'il y a quelque chose :
@@ -114,7 +123,7 @@ export function MemoireEcran() {
       ) : null}
 
       <Segments
-        etiquette="Album ou carte"
+        etiquette="Album, lieux ou journal"
         segments={SEGMENTS}
         actif={onglet}
         onChanger={setOnglet}
@@ -144,13 +153,14 @@ export function MemoireEcran() {
         </Carte>
       ) : null}
 
-      <AjoutSouvenir pourUnLieu={onglet === 'carte'} />
+      {/* Le journal ne s'alimente pas à la main : il se déduit du reste. */}
+      {onglet !== 'journal' ? (
+        <AjoutSouvenir pourUnLieu={onglet === 'carte'} />
+      ) : null}
 
-      {onglet === 'album' ? (
-        <ListeSouvenirs souvenirs={souvenirs} />
-      ) : (
-        <LoveMap lieux={lieux} />
-      )}
+      {onglet === 'album' ? <ListeSouvenirs souvenirs={souvenirs} /> : null}
+      {onglet === 'carte' ? <LoveMap lieux={lieux} /> : null}
+      {onglet === 'journal' ? <Frise annees={frise} /> : null}
     </EcranModale>
   );
 }
@@ -158,6 +168,7 @@ export function MemoireEcran() {
 const SEGMENTS = [
   { cle: 'album', libelle: 'Album' },
   { cle: 'carte', libelle: 'Nos lieux' },
+  { cle: 'journal', libelle: 'Journal' },
 ] as const satisfies readonly { cle: Onglet; libelle: string }[];
 
 const styles = stylesDynamiques(({ colors }: Theme) => ({

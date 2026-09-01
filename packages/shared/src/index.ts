@@ -52,3 +52,6 @@ export * from './parcours/recommandation';
 export * from './connexion/langages';
 export * from './connexion/rituels';
 export * from './connexion/distance';
+
+// Pôle ⑤ — Journal du couple (§8.17).
+export * from './memoire/journal';
