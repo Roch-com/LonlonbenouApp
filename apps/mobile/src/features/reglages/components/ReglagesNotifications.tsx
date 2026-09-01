@@ -40,6 +40,7 @@ export function ReglagesNotifications() {
 
   const definirFrequence = useNotifications((e) => e.definirFrequence);
   const definirSilence = useNotifications((e) => e.definirSilence);
+  const definirRecapitulatif = useNotifications((e) => e.definirRecapitulatif);
   const definirHeure = useNotifications((e) => e.definirHeureRecapitulatif);
   const pauser = useNotifications((e) => e.pauser);
   const reprendre = useNotifications((e) => e.reprendre);
@@ -121,6 +122,19 @@ export function ReglagesNotifications() {
             />
           </View>
         ) : null}
+
+        {/* L’heure du récapitulatif : c’est le moment où arrive tout ce qui a
+            été groupé dans la journée. Sans ce réglage, le modèle portait la
+            valeur mais personne ne pouvait la changer. */}
+        <View style={styles.heures}>
+          <Champ
+            etiquette="Récapitulatif du jour"
+            value={preferences.heureRecapitulatif}
+            onChangeText={(heure) => definirRecapitulatif(moi.id, heure)}
+            placeholder="19:00"
+            keyboardType="numbers-and-punctuation"
+          />
+        </View>
 
         <Texte variante="meta" style={styles.mention}>
           Un SOS traverse toujours le silence, la pause et tous les réglages de

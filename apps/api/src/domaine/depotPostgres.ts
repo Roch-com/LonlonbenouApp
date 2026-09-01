@@ -848,8 +848,9 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
           enveloppe: string;
           envoye_le: Date;
           lu_le: Date | null;
+          remettre_le: Date | null;
         }>(
-          `SELECT id, auteur_id, enveloppe, envoye_le, lu_le
+          `SELECT id, auteur_id, enveloppe, envoye_le, lu_le, remettre_le
              FROM messages WHERE couple_id = $1 ORDER BY envoye_le`,
           [coupleId],
         );
@@ -859,13 +860,15 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
           enveloppe: r.enveloppe,
           envoyeLe: isoRequis(r.envoye_le),
           luLe: iso(r.lu_le),
+          remettreLe: iso(r.remettre_le),
         }));
       },
 
       async ajouter(coupleId, message) {
         await pool.query(
-          `INSERT INTO messages (id, couple_id, auteur_id, enveloppe, envoye_le, lu_le)
-                VALUES ($1, $2, $3, $4, $5, $6)`,
+          `INSERT INTO messages
+                  (id, couple_id, auteur_id, enveloppe, envoye_le, lu_le, remettre_le)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)`,
           [
             message.id,
             coupleId,
@@ -873,8 +876,16 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
             message.enveloppe,
             message.envoyeLe,
             message.luLe ?? null,
+            message.remettreLe ?? null,
           ],
         );
+      },
+
+      async supprimer(coupleId, id) {
+        await pool.query('DELETE FROM messages WHERE couple_id = $1 AND id = $2', [
+          coupleId,
+          id,
+        ]);
       },
 
       async marquerLus(coupleId, lecteurId, quand) {

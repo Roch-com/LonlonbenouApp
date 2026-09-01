@@ -24,6 +24,9 @@ export type RefusChat =
   | 'non_membre'
   | 'couple_dissocie'
   | 'enveloppe_invalide'
+  | 'date_invalide'
+  | 'deja_remis'
+  | 'introuvable'
   | 'cle_manquante';
 
 export interface ClesDuCouple {
@@ -53,7 +56,23 @@ export interface ServiceChat {
     coupleId: string,
     auteurId: PartenaireId,
     enveloppe: string,
+    /**
+     * Message programmé (§8.3) : instant de remise, ISO 8601. Absent = tout
+     * de suite.
+     */
+    remettreLe?: string,
   ): Promise<{ ok: boolean; motif?: RefusChat; message?: MessageScelle }>;
+  /** Messages que j'ai programmés et qui n'ont pas encore été remis. */
+  enAttente(
+    coupleId: string,
+    auteurId: PartenaireId,
+  ): Promise<{ ok: boolean; motif?: RefusChat; messages?: MessageScelle[] }>;
+  /** Annule un envoi programmé. Seul son auteur le peut. */
+  annuler(
+    coupleId: string,
+    auteurId: PartenaireId,
+    id: string,
+  ): Promise<{ ok: boolean; motif?: RefusChat }>;
   marquerLus(
     coupleId: string,
     lecteurId: PartenaireId,
@@ -110,13 +129,59 @@ export function creerServiceChat(depot: Depot): ServiceChat {
       const acces = await autoriser(depot, coupleId, lecteurId);
       if ('motif' in acces) return { ok: false, motif: acces.motif };
 
-      // Aucun filtrage à faire : les deux membres du couple ont droit aux mêmes
-      // enveloppes, et le serveur serait de toute façon incapable de trier sur
-      // un contenu qu'il ne peut pas lire.
-      return { ok: true, messages: await depot.chat.messages(coupleId) };
+      // Les deux membres ont droit aux mêmes enveloppes, et le serveur serait
+      // de toute façon incapable de trier sur un contenu qu'il ne peut pas
+      // lire. Le seul filtre porte sur le temps : un message programmé
+      // n'apparaît dans la conversation qu'à l'heure dite — et pas même chez
+      // son auteur, sinon la capsule n'aurait plus de sens pour lui.
+      const maintenant = Date.now();
+      const messages = (await depot.chat.messages(coupleId)).filter(
+        (m) => !m.remettreLe || Date.parse(m.remettreLe) <= maintenant,
+      );
+
+      return { ok: true, messages };
     },
 
-    async envoyer(coupleId, auteurId, enveloppe) {
+    async enAttente(coupleId, auteurId) {
+      const acces = await autoriser(depot, coupleId, auteurId);
+      if ('motif' in acces) return { ok: false, motif: acces.motif };
+
+      const maintenant = Date.now();
+      // Les siens seulement : voir ceux de l'autre reviendrait à connaître
+      // à l'avance une surprise qu'il prépare.
+      return {
+        ok: true,
+        messages: (await depot.chat.messages(coupleId)).filter(
+          (m) =>
+            m.auteurId === auteurId &&
+            m.remettreLe !== undefined &&
+            Date.parse(m.remettreLe) > maintenant,
+        ),
+      };
+    },
+
+    async annuler(coupleId, auteurId, id) {
+      const acces = await autoriser(depot, coupleId, auteurId);
+      if ('motif' in acces) return { ok: false, motif: acces.motif };
+
+      const message = (await depot.chat.messages(coupleId)).find(
+        (m) => m.id === id,
+      );
+      if (!message || message.auteurId !== auteurId) {
+        return { ok: false, motif: 'introuvable' };
+      }
+
+      // Un message déjà remis ne s'annule pas : il a été lu, peut-être
+      // répondu. Le retirer réécrirait une conversation à deux.
+      if (!message.remettreLe || Date.parse(message.remettreLe) <= Date.now()) {
+        return { ok: false, motif: 'deja_remis' };
+      }
+
+      await depot.chat.supprimer(coupleId, id);
+      return { ok: true };
+    },
+
+    async envoyer(coupleId, auteurId, enveloppe, remettreLe) {
       const acces = await autoriser(depot, coupleId, auteurId);
       if ('motif' in acces) return { ok: false, motif: acces.motif };
 
@@ -127,10 +192,21 @@ export function creerServiceChat(depot: Depot): ServiceChat {
         return { ok: false, motif: 'enveloppe_invalide' };
       }
 
+      // Une date de remise illisible ferait un message jamais délivré : il
+      // disparaîtrait de la conversation sans que personne ne sache pourquoi.
+      if (remettreLe !== undefined && Number.isNaN(Date.parse(remettreLe))) {
+        return { ok: false, motif: 'date_invalide' };
+      }
+
       const message: MessageScelle = {
         id: randomUUID(),
         auteurId,
         enveloppe,
+        // Une date déjà passée n'est pas une erreur : c'est un envoi
+        // immédiat, et refuser ferait échouer une programmation à la minute
+        // près pour rien.
+        remettreLe:
+          remettreLe && Date.parse(remettreLe) > Date.now() ? remettreLe : undefined,
         envoyeLe: new Date().toISOString(),
       };
       await depot.chat.ajouter(coupleId, message);

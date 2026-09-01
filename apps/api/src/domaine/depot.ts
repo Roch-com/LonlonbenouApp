@@ -68,6 +68,12 @@ export interface MessageScelle {
   enveloppe: string;
   envoyeLe: string;
   luLe?: string;
+  /**
+   * Message programmé (§8.3) : instant de remise. Tant qu’il n’est pas
+   * atteint, le message n’apparaît dans aucune conversation — pas même celle
+   * de son auteur, qui le retrouve à part et peut encore l’annuler.
+   */
+  remettreLe?: string;
 }
 
 /**
@@ -209,6 +215,8 @@ export interface Depot {
     /** Messages scellés, du plus ancien au plus récent. */
     messages(coupleId: string): Promise<MessageScelle[]>;
     ajouter(coupleId: string, message: MessageScelle): Promise<void>;
+    /** Retire un message. Réservé à l’annulation d’un envoi programmé. */
+    supprimer(coupleId: string, id: string): Promise<void>;
     marquerLus(
       coupleId: string,
       lecteurId: PartenaireId,

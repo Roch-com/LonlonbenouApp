@@ -11,6 +11,8 @@ const CODES: Record<string, number> = {
   cle_manquante: 400,
   donnees_invalides: 400,
   position_non_scellee: 400,
+  date_invalide: 400,
+  deja_remis: 409,
 };
 
 const repondre = (motif: string | undefined) => CODES[motif ?? ''] ?? 400;
@@ -87,7 +89,7 @@ export function enregistrerRoutesChat(
     { preHandler: authentifier },
     async (requete, reponse) => {
       const { coupleId } = requete.params as { coupleId: string };
-      const corps = requete.body as { enveloppe?: string };
+      const corps = requete.body as { enveloppe?: string; remettreLe?: string };
       if (!corps?.enveloppe) {
         return reponse.code(400).send({ motif: 'champs_manquants' });
       }
@@ -96,6 +98,7 @@ export function enregistrerRoutesChat(
         coupleId,
         requete.identite!.partenaireId,
         corps.enveloppe,
+        corps.remettreLe,
       );
       if (!resultat.ok) {
         return reponse
@@ -123,6 +126,45 @@ export function enregistrerRoutesChat(
       return reponse.code(204).send();
     },
   );
+
+  /** Mes envois programmés, pas encore remis. */
+  app.get(
+    '/couples/:coupleId/chat/programmes',
+    { preHandler: authentifier },
+    async (requete, reponse) => {
+      const { coupleId } = requete.params as { coupleId: string };
+      const resultat = await chat.enAttente(
+        coupleId,
+        requete.identite!.partenaireId,
+      );
+      if (!resultat.ok) {
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
+      }
+      return { messages: resultat.messages };
+    },
+  );
+
+  app.delete(
+    '/couples/:coupleId/chat/programmes/:id',
+    { preHandler: authentifier },
+    async (requete, reponse) => {
+      const { coupleId, id } = requete.params as { coupleId: string; id: string };
+      const resultat = await chat.annuler(
+        coupleId,
+        requete.identite!.partenaireId,
+        id,
+      );
+      if (!resultat.ok) {
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
+      }
+      return reponse.code(204).send();
+    },
+  );
+
 }
 
 export function enregistrerRoutesPresence(

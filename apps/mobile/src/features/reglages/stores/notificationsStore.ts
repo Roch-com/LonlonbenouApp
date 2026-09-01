@@ -54,6 +54,8 @@ interface EtatNotifications {
     frequence: Frequence,
   ) => void;
   definirSilence: (partenaireId: PartenaireId, silence: PlageSilence) => void;
+  /** Heure du récapitulatif quotidien, « HH:MM ». */
+  definirRecapitulatif: (partenaireId: PartenaireId, heure: string) => void;
   definirHeureRecapitulatif: (partenaireId: PartenaireId, heure: string) => void;
   pauser: (partenaireId: PartenaireId, minutes: number) => void;
   reprendre: (partenaireId: PartenaireId) => void;
@@ -134,6 +136,11 @@ export const useNotifications = create<EtatNotifications>()(
 
       definirSilence: (partenaireId, silence) =>
         set((e) => modifier(e, partenaireId, (p) => ({ ...p, silence }))),
+
+      definirRecapitulatif: (partenaireId, heure) =>
+        set((e) =>
+          modifier(e, partenaireId, (p) => ({ ...p, heureRecapitulatif: heure })),
+        ),
 
       definirHeureRecapitulatif: (partenaireId, heureRecapitulatif) =>
         set((e) =>

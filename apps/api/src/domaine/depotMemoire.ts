@@ -239,6 +239,12 @@ export function creerDepotMemoire(): Depot {
         liste.push(copie(message));
         messages.set(coupleId, liste);
       },
+      async supprimer(coupleId, id) {
+        messages.set(
+          coupleId,
+          (messages.get(coupleId) ?? []).filter((m) => m.id !== id),
+        );
+      },
       async marquerLus(coupleId, lecteurId, quand) {
         for (const m of messages.get(coupleId) ?? []) {
           if (m.auteurId !== lecteurId && !m.luLe) m.luLe = quand;
