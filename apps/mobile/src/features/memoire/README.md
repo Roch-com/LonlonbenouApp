@@ -25,10 +25,13 @@ deux ne pouvaient pas coexister. Les lieux se marquent volontairement.
 ## Reste à faire
 
 - [ ] Photos et vidéos dans l’album (§8.15) — compression, chiffrement et
-      stockage des médias, avec la question de la capacité côté base
-- [ ] Rattachement d’un souvenir à un projet ou une sortie : le champ
-      `origine` existe dans `ContenuSouvenir`, aucun écran ne le remplit encore
+      stockage des médias. Bloqué sur l’infrastructure : la base actuelle n’a
+      pas la capacité, et aucun stockage d’objets n’est provisionné.
 
-## P2
+## Fait depuis
 
-- [ ] Journal du couple (§8.17)
+- [x] Rattachement d’un souvenir à un projet ou une sortie (`origine`),
+      proposé à la saisie et affiché dans l’album
+- [x] Journal du couple (§8.17) — troisième onglet de cet écran. Il ne stocke
+      rien : le serveur compose ce qu’il peut lire, le mobile y ajoute les
+      souvenirs qu’il vient d’ouvrir.

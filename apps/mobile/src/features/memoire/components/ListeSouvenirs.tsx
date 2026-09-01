@@ -8,6 +8,7 @@ import { espacements } from '@/design/theme';
 import { dateLongue } from '@/lib/temps';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 import { useSession } from '@/features/reglages/stores/sessionStore';
+import { useViePratique } from '@/features/vie-pratique/stores/viePratiqueStore';
 import { useSouvenirs } from '../stores/souvenirsStore';
 
 interface Props {
@@ -27,6 +28,23 @@ export function ListeSouvenirs({ souvenirs }: Props) {
   const partenaireId = useSessionServeur((e) => e.partenaireId);
   const couple = useSession((e) => e.couple);
   const supprimer = useSouvenirs((e) => e.supprimer);
+  const projets = useViePratique((e) => e.projets);
+  const initiatives = useViePratique((e) => e.initiatives);
+
+  /**
+   * Le nom de ce à quoi le souvenir est rattaché (§8.15).
+   *
+   * Rend `undefined` si la cible n'existe plus : un projet supprimé ne doit pas
+   * laisser une étiquette vide sur un souvenir qui, lui, reste valable.
+   */
+  const nomDeLOrigine = (origine: Souvenir['contenu']['origine']) => {
+    if (!origine) return undefined;
+    const cible =
+      origine.sorte === 'projet'
+        ? projets.find((p) => p.id === origine.id)
+        : initiatives.find((i) => i.id === origine.id);
+    return cible?.titre;
+  };
 
   if (souvenirs.length === 0) {
     return (
@@ -74,6 +92,15 @@ export function ListeSouvenirs({ souvenirs }: Props) {
                 {auteur ? ` · ajouté par ${auteur.prenom}` : ''}
               </Texte>
 
+              {nomDeLOrigine(souvenir.contenu.origine) ? (
+                <Texte variante="petit" style={styles.origine}>
+                  {souvenir.contenu.origine!.sorte === 'projet'
+                    ? 'Projet'
+                    : 'Sortie'}{' '}
+                  · {nomDeLOrigine(souvenir.contenu.origine)}
+                </Texte>
+              ) : null}
+
               {souvenir.contenu.note ? (
                 <Texte variante="corpsDoux" style={styles.note}>
                   {souvenir.contenu.note}
@@ -106,6 +133,7 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
   entete: { flexDirection: 'row', alignItems: 'center', gap: espacements.sm },
   titre: { flex: 1, minWidth: 0 },
   date: { marginTop: espacements.xxs },
+  origine: { marginTop: espacements.xxs },
   note: { marginTop: espacements.sm },
   actions: { marginTop: espacements.md, alignItems: 'flex-start' },
   fond: { backgroundColor: colors.fond },
