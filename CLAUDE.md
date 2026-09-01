@@ -94,6 +94,21 @@ Légende : **P0** = MVP obligatoire · **P1** = V1.1 · **P2** = évolution ult�
 - **Monter `expo.version` dès qu’une dépendance native change** (ajout, retrait ou montée de version d’un module natif). La version d’exécution des mises à jour OTA en découle (`runtimeVersion: appVersion`) : l’oublier laisserait un JavaScript neuf atterrir sur un binaire qui ne l’attend pas.
 
   La politique `fingerprint`, plus automatique, a été essayée puis retirée : elle exige que la machine locale et EAS calculent le même hachage, ce qu’un `app.config.js` conditionnel et des paquets désalignés suffisent à casser. Le build échoue alors à « Configure expo-updates », sans qu’aucune vérification locale ne l’ait vu venir.
+- **`eas update` ne lit pas le bloc `env` du profil de build.** Celui-ci ne vaut
+  que pour `eas build`. Les variables `EXPO_PUBLIC_*` d'une mise à jour à
+  distance viennent des variables d'environnement **EAS** (`eas env:set
+  --environment preview`), et elles sont insérées dans le paquet au moment de
+  l'empaquetage.
+
+  Publier une mise à jour sans elles produit une application qui cherche son
+  serveur sur `127.0.0.1` et n'affiche qu'un « pas de connexion ». Rien ne dit
+  que c'est un défaut de configuration. C'est arrivé, et les deux comptes se
+  sont retrouvés déconnectés.
+
+  Vérifier avant chaque `eas update` : `npx eas-cli env:list --environment
+  preview` doit montrer `EXPO_PUBLIC_API_URL`. Hors développement, l'absence
+  d'adresse est désormais signalée à l'écran plutôt que déguisée en panne de
+  réseau (`estConfigurationManquante` dans `lib/api/configuration.ts`).
 - Les journaux de build EAS sont compressés en **Brotli** : `curl --compressed` pour les lire. Ils portent la vraie cause, là où `eas build:view` ne rend qu’un « Unknown error ».
 
 ## État actuel du projet

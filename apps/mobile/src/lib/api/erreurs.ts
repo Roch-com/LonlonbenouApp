@@ -1,5 +1,7 @@
 /** Erreurs de la couche réseau, typées pour que l'interface puisse réagir. */
 
+import { estConfigurationManquante } from './configuration';
+
 export type GenreErreur =
   /** Pas de réseau, serveur injoignable, délai dépassé. */
   | 'hors_ligne'
@@ -70,6 +72,13 @@ const PAR_MOTIF: Record<string, string> = {
 };
 
 export function messageLisible(erreur: unknown): string {
+  // Une application empaquetée sans adresse de serveur échoue exactement
+  // comme une application hors ligne. Le dire évite de chercher la panne du
+  // côté du réseau, là où il n'y a rien à trouver.
+  if (estConfigurationManquante()) {
+    return 'Cette version de l’application a été livrée sans adresse de serveur. Ce n’est pas un problème de réseau : il faut une nouvelle mise à jour pour la corriger.';
+  }
+
   if (!(erreur instanceof ErreurApi)) {
     return 'Quelque chose n’a pas fonctionné. Réessayez dans un instant.';
   }
