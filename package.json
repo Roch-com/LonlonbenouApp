@@ -22,13 +22,13 @@
   "devDependencies": {
     "@eslint/js": "^9.39.5",
     "eas-cli": "^21.8.0",
-    "eslint": "^9.39.5",
-    "eslint-config-prettier": "^9.1.2",
-    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint": "^10.9.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "prettier": "^3.9.6",
-    "typescript": "~6.0.3",
+    "typescript": "~7.0.2",
     "typescript-eslint": "^8.68.0",
-    "vitest": "^3.2.4"
+    "vitest": "^4.1.11"
   },
   "type": "module"
 }
