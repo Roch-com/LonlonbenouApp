@@ -42,3 +42,8 @@ export * from './score/score';
 export * from './croissance/miroir';
 export * from './confidences/confidences';
 export * from './motdepasse/reinitialisation';
+
+// Pôle ② — Parcours guidé du couple (§8.7).
+export * from './parcours/catalogue';
+export * from './parcours/progression';
+export * from './parcours/recommandation';

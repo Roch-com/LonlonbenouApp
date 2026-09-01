@@ -16,6 +16,7 @@ import {
   type Evenement,
   type Initiative,
   type Projet,
+  type ParcoursEngage,
   type PartageCycle,
   type PartenaireId,
   type Regles,
@@ -58,6 +59,7 @@ export function creerDepotMemoire(): Depot {
   const souvenirs = new Map<string, SouvenirScelle[]>();
   const depenses = new Map<string, DepenseScellee[]>();
   const complicite = new Map<string, ReponseCompliciteServeur[]>();
+  const parcours = new Map<string, ParcoursEngage[]>();
   const reglagesFinances = new Map<string, ReglagesFinancesServeur>();
   const positions = new Map<string, PositionServeur[]>();
   const statuts = new Map<string, StatutServeur[]>();
@@ -289,6 +291,28 @@ export function creerDepotMemoire(): Depot {
       },
       async effacerPourCouple(coupleId) {
         complicite.delete(coupleId);
+      },
+    },
+
+    parcours: {
+      async engages(coupleId) {
+        return copie(parcours.get(coupleId) ?? []);
+      },
+      async parId(coupleId, parcoursId) {
+        const trouve = (parcours.get(coupleId) ?? []).find(
+          (e) => e.parcoursId === parcoursId,
+        );
+        return trouve ? copie(trouve) : undefined;
+      },
+      async enregistrer(coupleId, engage) {
+        const liste = (parcours.get(coupleId) ?? []).filter(
+          (e) => e.parcoursId !== engage.parcoursId,
+        );
+        liste.push(copie(engage));
+        parcours.set(coupleId, liste);
+      },
+      async effacerPourCouple(coupleId) {
+        parcours.delete(coupleId);
       },
     },
 

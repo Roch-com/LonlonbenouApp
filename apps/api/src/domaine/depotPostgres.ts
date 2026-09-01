@@ -14,6 +14,7 @@
 import pg from 'pg';
 import {
   PREFERENCES_PAR_DEFAUT,
+  type AvanceeSeance,
   type AxeCroissance,
   type SouvenirScelle,
   type Consentement,
@@ -22,6 +23,7 @@ import {
   type Couple,
   type Evenement,
   type Initiative,
+  type ParcoursEngage,
   type PartageCycle,
   type Projet,
   type Partenaire,
@@ -29,6 +31,7 @@ import {
   type PartageReciproque,
   type PartenaireId,
   type PreferencesNotifications,
+  type ReponseSeance,
 } from '@lonlonbenu/shared';
 import type {
   AlerteServeur,
@@ -290,6 +293,96 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
       contributions: parAxe.get(l.id) ?? [],
       clotureLe: iso(l.cloture_le),
     }));
+  }
+
+  /**
+   * Recompose des parcours engagés à partir des trois tables.
+   *
+   * En trois requêtes plutôt qu'en jointure : une jointure sur des séances sans
+   * réponse perdrait les avancées tout juste ouvertes, et une jointure externe
+   * demanderait de dédoublonner à la main ce que trois `Map` font mieux.
+   *
+   * Les séances sont rendues dans l'ordre d'ouverture, qui est celui du
+   * catalogue : le modèle partagé cherche la première non échangée et n'a donc
+   * pas besoin d'un tri, mais un ordre stable rend les tests lisibles.
+   */
+  async function lireParcours(
+    coupleId: string,
+    parcoursId?: string,
+  ): Promise<ParcoursEngage[]> {
+    const filtre = parcoursId ? ' AND parcours_id = $2' : '';
+    const args = parcoursId ? [coupleId, parcoursId] : [coupleId];
+
+    const engages = await pool.query<{
+      parcours_id: string;
+      commence_le: Date;
+      termine_le: Date | null;
+    }>(
+      `SELECT parcours_id, commence_le, termine_le
+         FROM parcours_engages WHERE couple_id = $1${filtre}
+        ORDER BY commence_le`,
+      args,
+    );
+    if (engages.rows.length === 0) return [];
+
+    const [avancees, reponses] = await Promise.all([
+      pool.query<{
+        parcours_id: string;
+        seance_id: string;
+        echange_le: Date | null;
+      }>(
+        `SELECT parcours_id, seance_id, echange_le
+           FROM parcours_avancees WHERE couple_id = $1${filtre}
+          ORDER BY seance_id`,
+        args,
+      ),
+      pool.query<{
+        parcours_id: string;
+        seance_id: string;
+        partenaire_id: string;
+        texte_scelle: string;
+        fait_le: Date;
+      }>(
+        `SELECT parcours_id, seance_id, partenaire_id, texte_scelle, fait_le
+           FROM parcours_reponses WHERE couple_id = $1${filtre}
+          ORDER BY fait_le`,
+        args,
+      ),
+    ]);
+
+    const parSeance = new Map<string, ReponseSeance[]>();
+    for (const r of reponses.rows) {
+      const cle = `${r.parcours_id}|${r.seance_id}`;
+      const liste = parSeance.get(cle) ?? [];
+      liste.push({
+        partenaireId: r.partenaire_id,
+        texteScelle: r.texte_scelle,
+        faitLe: isoRequis(r.fait_le),
+      });
+      parSeance.set(cle, liste);
+    }
+
+    const parParcours = new Map<string, AvanceeSeance[]>();
+    for (const a of avancees.rows) {
+      const liste = parParcours.get(a.parcours_id) ?? [];
+      const echangeLe = iso(a.echange_le);
+      liste.push({
+        seanceId: a.seance_id,
+        reponses: parSeance.get(`${a.parcours_id}|${a.seance_id}`) ?? [],
+        ...(echangeLe ? { echangeLe } : {}),
+      });
+      parParcours.set(a.parcours_id, liste);
+    }
+
+    return engages.rows.map((e) => {
+      const termineLe = iso(e.termine_le);
+      return {
+        parcoursId: e.parcours_id,
+        commenceLe: isoRequis(e.commence_le),
+        avancees: parParcours.get(e.parcours_id) ?? [],
+        ...(termineLe ? { termineLe } : {}),
+      };
+    });
   }
 
   return {
@@ -978,6 +1071,95 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
         await pool.query('DELETE FROM reponses_complicite WHERE couple_id = $1', [
           coupleId,
         ]);
+      },
+    },
+
+    parcours: {
+      async engages(coupleId) {
+        return lireParcours(coupleId);
+      },
+
+      async parId(coupleId, parcoursId) {
+        const tous = await lireParcours(coupleId, parcoursId);
+        return tous[0];
+      },
+
+      /**
+       * Réécrit l'avancement d'un parcours en une transaction.
+       *
+       * On efface les avancées avant de les réécrire : le modèle partagé
+       * manipule l'objet entier, et un `INSERT ... ON CONFLICT` seul laisserait
+       * en base les séances qu'une correction aurait retirées. La cascade sur
+       * `parcours_reponses` emporte les réponses avec.
+       */
+      async enregistrer(coupleId, engage) {
+        const client = await pool.connect();
+        try {
+          await client.query('BEGIN');
+          await client.query(
+            `INSERT INTO parcours_engages
+                    (couple_id, parcours_id, commence_le, termine_le)
+                  VALUES ($1, $2, $3, $4)
+             ON CONFLICT (couple_id, parcours_id) DO UPDATE
+                    SET commence_le = EXCLUDED.commence_le,
+                        termine_le = EXCLUDED.termine_le`,
+            [
+              coupleId,
+              engage.parcoursId,
+              engage.commenceLe,
+              engage.termineLe ?? null,
+            ],
+          );
+          await client.query(
+            'DELETE FROM parcours_avancees WHERE couple_id = $1 AND parcours_id = $2',
+            [coupleId, engage.parcoursId],
+          );
+
+          for (const avancee of engage.avancees) {
+            await client.query(
+              `INSERT INTO parcours_avancees
+                      (couple_id, parcours_id, seance_id, echange_le)
+                    VALUES ($1, $2, $3, $4)`,
+              [
+                coupleId,
+                engage.parcoursId,
+                avancee.seanceId,
+                avancee.echangeLe ?? null,
+              ],
+            );
+            for (const reponse of avancee.reponses) {
+              await client.query(
+                `INSERT INTO parcours_reponses
+                        (couple_id, parcours_id, seance_id, partenaire_id,
+                         texte_scelle, fait_le)
+                      VALUES ($1, $2, $3, $4, $5, $6)`,
+                [
+                  coupleId,
+                  engage.parcoursId,
+                  avancee.seanceId,
+                  reponse.partenaireId,
+                  reponse.texteScelle,
+                  reponse.faitLe,
+                ],
+              );
+            }
+          }
+
+          await client.query('COMMIT');
+        } catch (erreur) {
+          await client.query('ROLLBACK');
+          throw erreur;
+        } finally {
+          client.release();
+        }
+      },
+
+      async effacerPourCouple(coupleId) {
+        // La cascade emporte avancées et réponses.
+        await pool.query(
+          'DELETE FROM parcours_engages WHERE couple_id = $1',
+          [coupleId],
+        );
       },
     },
 

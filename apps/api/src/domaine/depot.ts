@@ -20,6 +20,7 @@ import type {
   ModuleSensible,
   PartageReciproque,
   PartageCycle,
+  ParcoursEngage,
   PartenaireId,
   PreferencesNotifications,
   Projet,
@@ -240,6 +241,21 @@ export interface Depot {
       coupleId: string,
       reponse: ReponseCompliciteServeur,
     ): Promise<void>;
+    effacerPourCouple(coupleId: string): Promise<void>;
+  };
+  /**
+   * Pôle ② — parcours guidés engagés par le couple.
+   *
+   * Le catalogue lui-même n'est pas ici : c'est du contenu éditorial, versionné
+   * avec l'application. On ne conserve que l'avancement et les réponses.
+   */
+  parcours: {
+    engages(coupleId: string): Promise<ParcoursEngage[]>;
+    parId(
+      coupleId: string,
+      parcoursId: string,
+    ): Promise<ParcoursEngage | undefined>;
+    enregistrer(coupleId: string, engage: ParcoursEngage): Promise<void>;
     effacerPourCouple(coupleId: string): Promise<void>;
   };
   /** Pôle ③ — finances partagées, scellées. */

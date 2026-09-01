@@ -6,8 +6,9 @@ import { SectionAxes } from '../components/SectionAxes';
 import { GardeModuleSensible } from '@/features/reglages/components/GardeModuleSensible';
 import { SectionConfidences } from '../components/SectionConfidences';
 import { SectionScore } from '../components/SectionScore';
+import { SectionParcours } from '../components/SectionParcours';
 
-type Onglet = 'axes' | 'confidences' | 'elan';
+type Onglet = 'axes' | 'confidences' | 'parcours' | 'elan';
 
 /** Pôle ② — Communication profonde & croissance (P0). */
 export function CroissanceEcran() {
@@ -34,6 +35,7 @@ export function CroissanceEcran() {
           <SectionConfidences />
         </GardeModuleSensible>
       ) : null}
+      {onglet === 'parcours' ? <SectionParcours /> : null}
       {onglet === 'elan' ? <SectionScore /> : null}
     </EcranOnglet>
   );
@@ -42,11 +44,14 @@ export function CroissanceEcran() {
 const SEGMENTS = [
   { cle: 'axes', libelle: 'Axes' },
   { cle: 'confidences', libelle: 'Confidences' },
+  { cle: 'parcours', libelle: 'Parcours' },
   { cle: 'elan', libelle: 'Notre élan' },
 ] as const satisfies readonly { cle: Onglet; libelle: string }[];
 
 const SOUS_TITRES: Record<Onglet, (prenomAutre: string) => string> = {
   axes: (autre) => `Ce que vous décidez de regarder avec ${autre}.`,
   confidences: (autre) => `Ce que vous choisissez d’offrir à ${autre}.`,
+  parcours: () =>
+    'Des séances de cinq minutes, chacun de son côté puis ensemble.',
   elan: () => 'Vos gestes récents, à deux. Jamais une note de l’un ou de l’autre.',
 };
