@@ -54,7 +54,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
-    "typescript": "~6.0.3"
+    "typescript": "~7.0.2"
   },
   "comment:react": "React est aligné sur 19.2.8 (et non 19.2.3 attendu par le SDK) parce que @expo/ui, tiré par expo-router, exige ^19.2.8. Écart de patch assumé : il évite deux copies de React dans le bundle, qui provoqueraient des 'Invalid hook call'. À réévaluer à chaque montée de SDK.",
   "expo": {
