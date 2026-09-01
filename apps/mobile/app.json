@@ -16,7 +16,6 @@
     "android": {
       "package": "com.lonlonbenu.app",
       "googleServicesFile": "./google-services.json",
-      "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "backgroundColor": "#FBF6EC",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -55,7 +54,7 @@
       }
     },
     "runtimeVersion": {
-      "policy": "fingerprint"
+      "policy": "appVersion"
     },
     "updates": {
       "url": "https://u.expo.dev/2704cc3a-ae4d-471f-94be-3c06f27de701",

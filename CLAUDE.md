@@ -91,6 +91,10 @@ Légende : **P0** = MVP obligatoire · **P1** = V1.1 · **P2** = évolution ult�
 
   Le dépôt en mémoire range l'objet entier ; l'adaptateur SQL n'écrit que les colonnes qu'il nomme, et la base porte des contraintes que la mémoire ignore. Un champ ajouté à un type et oublié dans la migration compile, passe toute la suite en mémoire, et se perd **silencieusement** à chaque écriture réelle. C'est arrivé deux fois : `dureeDeclaree` du cycle, et le module `activite` absent du `CHECK` de `partages`.
 - Ne jamais compléter une migration déjà appliquée : le lanceur l'enregistre et ne la rejoue nulle part. Toujours un nouveau fichier numéroté.
+- **Monter `expo.version` dès qu’une dépendance native change** (ajout, retrait ou montée de version d’un module natif). La version d’exécution des mises à jour OTA en découle (`runtimeVersion: appVersion`) : l’oublier laisserait un JavaScript neuf atterrir sur un binaire qui ne l’attend pas.
+
+  La politique `fingerprint`, plus automatique, a été essayée puis retirée : elle exige que la machine locale et EAS calculent le même hachage, ce qu’un `app.config.js` conditionnel et des paquets désalignés suffisent à casser. Le build échoue alors à « Configure expo-updates », sans qu’aucune vérification locale ne l’ait vu venir.
+- Les journaux de build EAS sont compressés en **Brotli** : `curl --compressed` pour les lire. Ils portent la vraie cause, là où `eas build:view` ne rend qu’un « Unknown error ».
 
 ## État actuel du projet
 
