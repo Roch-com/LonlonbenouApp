@@ -16,6 +16,7 @@ import {
 import { appeler, brancherFournisseurDeJeton, volUnique } from '@/lib/api/client';
 import { CONFIGURATION_API } from '@/lib/api/configuration';
 import { ErreurApi, messageLisible } from '@/lib/api/erreurs';
+import { useSession } from './sessionStore';
 import {
   effacerSession,
   enregistrerPartenaireId,
@@ -47,6 +48,8 @@ interface EtatSessionStore {
   coupleId?: string;
   /** Date d'origine du couple, telle que le serveur la connaît. */
   depuis?: string;
+  /** Nom que le couple donne à son espace (§8.18). Absent s'il n'en a pas choisi. */
+  nomEspace?: string;
   /** Prénoms venus de l'appairage : le serveur fait autorité, pas le local. */
   partenaires?: PartenaireServeur[];
   jetonAcces?: string;
@@ -57,6 +60,8 @@ interface EtatSessionStore {
   restaurer: () => Promise<void>;
   /** Corrige la date d'origine du couple. Rend vrai si le serveur l'a acceptée. */
   corrigerLaDate: (depuis: string) => Promise<boolean>;
+  /** Renomme l'espace. Un nom vide le remet au défaut. */
+  renommerLEspace: (nom: string) => Promise<boolean>;
   sInscrire: (courriel: string, motDePasse: string) => Promise<boolean>;
   seConnecter: (courriel: string, motDePasse: string) => Promise<boolean>;
   seDeconnecter: () => Promise<void>;
@@ -246,6 +251,22 @@ export const useSessionServeur = create<EtatSessionStore>()((set, get) => {
       }
     },
 
+    async renommerLEspace(nom) {
+      const coupleId = get().coupleId;
+      if (!coupleId) return false;
+      try {
+        const { nomEspace } = await appeler<{ nomEspace: string | null }>(
+          `/couples/${coupleId}/nom`,
+          { methode: 'PUT', corps: { nom } },
+        );
+        set({ nomEspace: nomEspace ?? undefined });
+        return true;
+      } catch (erreur) {
+        set({ erreur: messageLisible(erreur) });
+        return false;
+      }
+    },
+
     async rafraichirLeCouple() {
       try {
         // `/moi` rend quatre champs ; on n'en lisait que deux. La date
@@ -257,6 +278,7 @@ export const useSessionServeur = create<EtatSessionStore>()((set, get) => {
           partenaireId: string;
           coupleId?: string;
           depuis?: string;
+          nomEspace?: string;
           partenaires?: PartenaireServeur[];
         }>('/moi');
         await enregistrerPartenaireId(moi.partenaireId);
@@ -264,6 +286,7 @@ export const useSessionServeur = create<EtatSessionStore>()((set, get) => {
           partenaireId: moi.partenaireId,
           coupleId: moi.coupleId,
           depuis: moi.depuis,
+          nomEspace: moi.nomEspace,
           partenaires: moi.partenaires,
         });
       } catch (erreur) {
@@ -278,4 +301,18 @@ export const useSessionServeur = create<EtatSessionStore>()((set, get) => {
 /** Vrai quand le serveur peut faire autorité : connecté et couple appairé. */
 export function useServeurFaitAutorite(): boolean {
   return useSessionServeur((e) => e.etat === 'connecte' && !!e.coupleId);
+}
+
+/**
+ * Le nom de l'espace tel qu'il doit s'afficher.
+ *
+ * Le serveur fait autorité : c'est la seule valeur que les deux téléphones
+ * partagent. Le nom local, saisi à l'onboarding, sert de repli le temps que la
+ * première synchronisation arrive — sans lui, l'écran afficherait « Notre
+ * espace » pendant une seconde juste après qu'on vient d'en choisir un autre.
+ */
+export function useNomEspace(): string {
+  const duServeur = useSessionServeur((e) => e.nomEspace);
+  const local = useSession((e) => e.nomEspace);
+  return duServeur ?? local;
 }

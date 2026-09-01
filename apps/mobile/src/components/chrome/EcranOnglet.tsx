@@ -5,7 +5,8 @@ import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useRouter } from 'expo-router';
 import { Ecran, EnTeteApp } from '@/components/ui';
 
-import { useMoi, useSession } from '@/features/reglages/stores/sessionStore';
+import { useMoi } from '@/features/reglages/stores/sessionStore';
+import { useNomEspace } from '@/features/reglages/stores/sessionServeurStore';
 import { useNotifications } from '@/features/reglages/stores/notificationsStore';
 import { Children, isValidElement } from 'react';
 import { Apparition } from './Apparition';
@@ -38,7 +39,7 @@ export function EcranOnglet({
 }: Props) {
   const router = useRouter();
   const moi = useMoi();
-  const nomEspace = useSession((e) => e.nomEspace);
+  const nomEspace = useNomEspace();
   const [menuOuvert, setMenuOuvert] = useState(false);
 
   const journal = useNotifications((e) => e.journal);

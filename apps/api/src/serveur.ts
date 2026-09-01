@@ -5,7 +5,11 @@ import type { KeyObject } from 'node:crypto';
 import type { CategorieNotification, ThemeAxe } from '@lonlonbenu/shared';
 import { creerDepotMemoire } from './domaine/depotMemoire.ts';
 import type { Depot } from './domaine/depot.ts';
-import { IMPORTANCES, type NiveauImportance } from '@lonlonbenu/shared';
+import {
+  IMPORTANCES,
+  nettoyerNomEspace,
+  type NiveauImportance,
+} from '@lonlonbenu/shared';
 import { creerServiceAxes } from './modules/axes/axes.service.ts';
 import { creerServiceAppairage } from './modules/appairage/appairage.service.ts';
 import { creerServiceDissociation } from './modules/dissociation/dissociation.service.ts';
@@ -545,6 +549,44 @@ export async function creerServeur(options: OptionsServeur = {}) {
       });
 
       return { depuis: corps.depuis };
+    },
+  );
+
+  /**
+   * Nom de l'espace du couple (§8.18).
+   *
+   * Les deux peuvent le changer : l'espace appartient au couple, pas à celui
+   * qui l'a nommé en premier. Un nom vide le remet au défaut plutôt que
+   * d'être refusé — se raviser sur un surnom doit rester possible.
+   */
+  app.put(
+    '/couples/:coupleId/nom',
+    { preHandler: authentifier },
+    async (requete, reponse) => {
+      const { coupleId } = requete.params as { coupleId: string };
+      const corps = requete.body as { nom?: string };
+      if (typeof corps?.nom !== 'string') {
+        return reponse.code(400).send({ motif: 'champs_manquants' });
+      }
+
+      const couple = await depot.couples.parId(coupleId);
+      if (!couple || couple.dissocieLe) {
+        return reponse.code(410).send({ motif: 'couple_dissocie' });
+      }
+      const membre = couple.couple.partenaires.some(
+        (p) => p.id === requete.identite!.partenaireId,
+      );
+      if (!membre) return reponse.code(403).send({ motif: 'non_membre' });
+
+      const nomEspace = nettoyerNomEspace(corps.nom);
+      const { nomEspace: _, ...sansNom } = couple.couple;
+
+      await depot.couples.enregistrer({
+        ...couple,
+        couple: nomEspace ? { ...sansNom, nomEspace } : sansNom,
+      });
+
+      return { nomEspace: nomEspace ?? null };
     },
   );
 

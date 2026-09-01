@@ -185,6 +185,9 @@ export function enregistrerRoutesOAuth(
       // faute de connaître celle du couple. Les prénoms suivent : ils viennent
       // de l'appairage, et chaque appareil les redemandait à l'autre.
       depuis: actif?.couple.depuis,
+      // Le nom que le couple donne à son espace (§8.18). Absent tant qu'il n'en
+      // a pas choisi : l'écran décide alors de ce qu'il affiche à la place.
+      nomEspace: actif?.couple.nomEspace,
       partenaires: actif?.couple.partenaires.map((p) => ({
         id: p.id,
         prenom: p.prenom,

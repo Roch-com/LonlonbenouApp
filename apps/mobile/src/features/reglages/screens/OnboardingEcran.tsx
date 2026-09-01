@@ -8,6 +8,7 @@ import { espacements, rayons } from '@/design/theme';
 import { EtapeAppairage } from '../components/EtapeAppairage';
 import { EtapePartagesInitiaux } from '../components/EtapePartagesInitiaux';
 import { useSession } from '../stores/sessionStore';
+import { useSessionServeur } from '../stores/sessionServeurStore';
 
 type Etape = 'prenoms' | 'invitation' | 'espace' | 'partages' | 'fin';
 
@@ -24,6 +25,7 @@ export function OnboardingEcran() {
   const couple = useSession((e) => e.couple);
   const definirPrenoms = useSession((e) => e.definirPrenoms);
   const definirNomEspace = useSession((e) => e.definirNomEspace);
+  const renommerLEspace = useSessionServeur((e) => e.renommerLEspace);
   const terminerOnboarding = useSession((e) => e.terminerOnboarding);
 
   const [etape, setEtape] = useState<Etape>('prenoms');
@@ -49,6 +51,9 @@ export function OnboardingEcran() {
       return;
     }
     definirNomEspace(nom);
+    // Et au serveur : sans cela le nom restait sur ce téléphone, et l'autre
+    // voyait « Notre espace » sans jamais savoir pourquoi.
+    void renommerLEspace(nom);
     avancer();
   };
 

@@ -13,6 +13,7 @@
 
 import pg from 'pg';
 import {
+  NOM_ESPACE_PAR_DEFAUT,
   PREFERENCES_PAR_DEFAUT,
   type AvanceeSeance,
   type AxeCroissance,
@@ -190,6 +191,7 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
   async function chargerCouple(ligne: {
     id: string;
     depuis: string;
+    nom_espace?: string | null;
     dissocie_le: Date | null;
   }): Promise<CoupleServeur> {
     const [partenaires, partages] = await Promise.all([
@@ -218,6 +220,11 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
       id: ligne.id,
       depuis: ligne.depuis,
       partenaires: [membres[0]!, membres[1]!],
+      // Absent plutôt que par défaut : un couple qui n'a pas nommé son espace
+      // n'en a pas nommé, et l'écran décide de ce qu'il affiche à la place.
+      ...(ligne.nom_espace && ligne.nom_espace !== NOM_ESPACE_PAR_DEFAUT
+        ? { nomEspace: ligne.nom_espace }
+        : {}),
     };
 
     const parModule = new Map<string, Consentement[]>();
@@ -442,7 +449,8 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
     couples: {
       async parId(coupleId) {
         const { rows } = await pool.query(
-          'SELECT id, depuis::text AS depuis, dissocie_le FROM couples WHERE id = $1',
+          `SELECT id, depuis::text AS depuis, nom_espace, dissocie_le
+             FROM couples WHERE id = $1`,
           [coupleId],
         );
         return rows[0] ? chargerCouple(rows[0]) : undefined;
@@ -450,14 +458,15 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
 
       async actifs() {
         const { rows } = await pool.query(
-          'SELECT id, depuis::text AS depuis, dissocie_le FROM couples WHERE dissocie_le IS NULL',
+          `SELECT id, depuis::text AS depuis, nom_espace, dissocie_le
+             FROM couples WHERE dissocie_le IS NULL`,
         );
         return Promise.all(rows.map((r) => chargerCouple(r)));
       },
 
       async parPartenaire(partenaireId) {
         const { rows } = await pool.query(
-          `SELECT c.id, c.depuis::text AS depuis, c.dissocie_le
+          `SELECT c.id, c.depuis::text AS depuis, c.nom_espace, c.dissocie_le
              FROM couples c
              JOIN partenaires p ON p.couple_id = c.id
             WHERE p.id = $1`,
@@ -472,14 +481,18 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
           await client.query('BEGIN');
 
           await client.query(
-            `INSERT INTO couples (id, depuis, dissocie_le)
-                  VALUES ($1, $2::date, $3)
+            `INSERT INTO couples (id, depuis, nom_espace, dissocie_le)
+                  VALUES ($1, $2::date, $3, $4)
              ON CONFLICT (id) DO UPDATE
                     SET depuis = EXCLUDED.depuis,
+                        nom_espace = EXCLUDED.nom_espace,
                         dissocie_le = EXCLUDED.dissocie_le`,
             [
               enregistrement.id,
               enregistrement.couple.depuis,
+              // La colonne est NOT NULL : le défaut est posé ici plutôt que
+              // laissé à la base, pour que les deux adaptateurs s'accordent.
+              enregistrement.couple.nomEspace ?? NOM_ESPACE_PAR_DEFAUT,
               enregistrement.dissocieLe ?? null,
             ],
           );

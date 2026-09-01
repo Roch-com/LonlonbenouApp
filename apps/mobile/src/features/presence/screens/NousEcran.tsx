@@ -14,9 +14,13 @@ import {
 } from '@/features/reglages/stores/sessionStore';
 import { useNotifications } from '@/features/reglages/stores/notificationsStore';
 import { ConsentementServeur } from '@/features/reglages/components/ConsentementServeur';
-import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
+import {
+  useNomEspace,
+  useSessionServeur,
+} from '@/features/reglages/stores/sessionServeurStore';
 import { CompteurCarte } from '../components/CompteurCarte';
 import { DateDuCouple } from '@/features/reglages/components/DateDuCouple';
+import { NomDeLEspace } from '@/features/reglages/components/NomDeLEspace';
 
 /**
  * Pôle ① — Compteur, plus le strict minimum du pôle ⑥ nécessaire pour que le
@@ -28,7 +32,7 @@ export function NousEcran() {
   const autre = useAutre();
   const couple = useSession((e) => e.couple);
   const changerDePartenaire = useSession((e) => e.changerDePartenaire);
-  const nomEspace = useSession((e) => e.nomEspace);
+  const nomEspace = useNomEspace();
   const coupleId = useSessionServeur((e) => e.coupleId);
   const journal = useNotifications((e) => e.journal);
   const marquerLues = useNotifications((e) => e.marquerLues);
@@ -55,6 +59,8 @@ export function NousEcran() {
       </Carte>
 
       <CompteurCarte />
+
+      <NomDeLEspace />
 
       <DateDuCouple />
 
