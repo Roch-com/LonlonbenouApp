@@ -3,7 +3,10 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import type { Theme } from '@lonlonbenu/shared';
 import { stylesDynamiques } from '@/design/stylesDynamiques';
 import {
+  definitionImportance,
   definitionTheme,
+  etatAxe,
+  LIBELLES_ETAT_AXE,
   type AxeVisible,
   type Partenaire,
 } from '@lonlonbenu/shared';
@@ -19,6 +22,10 @@ interface Props {
   onContribuer: (ressenti: string, besoin: string) => void;
   onCloturer: () => void;
   onRouvrir: () => void;
+  /** Reconnaître le progrès de l'autre (§8.5). Absent sur ses propres axes. */
+  onReconnaitreProgres: () => void;
+  /** Identifiant du lecteur, pour savoir qui a ouvert l'axe. */
+  moiId?: string;
 }
 
 export function CarteAxe({
@@ -28,15 +35,23 @@ export function CarteAxe({
   onContribuer,
   onCloturer,
   onRouvrir,
+  onReconnaitreProgres,
+  moiId,
 }: Props) {
   const theme = definitionTheme(axe.theme);
+  const cloture = !!axe.clotureLe;
+  const reconnaissances = axe.reconnaissances ?? [];
+  const jaiReconnu = reconnaissances.some((r) => r.partenaireId === moiId);
+  // §8.5 : « l'autre ne peut que reconnaître un progrès ». On ne se décerne
+  // pas le sien — la valeur du geste tient à ce qu'il vient d'en face.
+  const peutReconnaitre =
+    !!moiId && axe.ouvertPar !== moiId && !jaiReconnu && !cloture;
 
   // Le serveur ne renvoie que ce que j'ai le droit de voir : ma contribution
   // est celle qu'il a marquée comme mienne, et s'il y en a une seconde, c'est
   // que le miroir est complet. Rien à recouper avec une identité locale.
   const mienne = axe.contributions.find((c) => c.estLaMienne);
   const sienne = axe.contributions.find((c) => !c.estLaMienne);
-  const cloture = !!axe.clotureLe;
 
   const [ouverte, setOuverte] = useState(false);
   const [enEdition, setEnEdition] = useState(false);
@@ -68,8 +83,15 @@ export function CarteAxe({
         </Texte>
         <Texte variante="meta">
           {theme.libelle} · ouvert {ilYA(axe.ouvertLe)}
-          {cloture ? ' · clôturé' : ''}
+          {axe.importance
+            ? ` · ${definitionImportance(axe.importance).libelle.toLowerCase()}`
+            : ''}
         </Texte>
+        <View style={styles.badge}>
+          <Texte variante="petit" style={styles.badgeTexte}>
+            {LIBELLES_ETAT_AXE[etatAxe(axe)]}
+          </Texte>
+        </View>
         <View style={styles.badge}>
           <Texte variante="petit" style={styles.badgeTexte}>
             {resume(axe, autre.prenom)}
@@ -164,6 +186,22 @@ export function CarteAxe({
             )}
           </View>
 
+          {reconnaissances.length > 0 ? (
+            <Texte variante="petit" style={styles.progres}>
+              {jaiReconnu
+                ? 'Vous avez reconnu un progrès sur cet axe.'
+                : `${autre.prenom} a reconnu un progrès sur cet axe.`}
+            </Texte>
+          ) : null}
+
+          {peutReconnaitre && !lectureSeule ? (
+            <Bouton
+              libelle="Reconnaître un progrès"
+              ton="secondaire"
+              onPress={onReconnaitreProgres}
+            />
+          ) : null}
+
           {axe.etat === 'complet' && !cloture && !lectureSeule ? (
             <Bouton
               libelle="Nous avons avancé, clôturer cet axe"
@@ -205,6 +243,7 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
     borderRadius: rayons.rond,
     backgroundColor: colors.fondNuance,
   },
+  progres: { color: colors.accent },
   badgeTexte: { color: colors.accentFonce },
   corps: {
     marginTop: espacements.lg,

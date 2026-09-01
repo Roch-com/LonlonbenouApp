@@ -24,6 +24,7 @@ import {
   type Evenement,
   type Initiative,
   type FactureScellee,
+  type NiveauImportance,
   type ParcoursEngage,
   type PartageCycle,
   type Projet,
@@ -32,6 +33,7 @@ import {
   type PartageReciproque,
   type PartenaireId,
   type PreferencesNotifications,
+  type Reconnaissance,
   type ReponseSeance,
 } from '@lonlonbenu/shared';
 import type {
@@ -278,6 +280,7 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
       ouvert_par: string;
       ouvert_le: Date;
       cloture_le: Date | null;
+      importance: string | null;
     }[],
   ): Promise<AxeCroissance[]> {
     if (lignes.length === 0) return [];
@@ -295,6 +298,25 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
         ORDER BY maj_le`,
       [lignes.map((l) => l.id)],
     );
+
+    const reconnaissances = await pool.query<{
+      axe_id: string;
+      partenaire_id: string;
+      le: Date;
+    }>(
+      `SELECT axe_id, partenaire_id, le
+         FROM reconnaissances_axe
+        WHERE axe_id = ANY($1::text[])
+        ORDER BY le`,
+      [lignes.map((l) => l.id)],
+    );
+
+    const reconnuesParAxe = new Map<string, Reconnaissance[]>();
+    for (const r of reconnaissances.rows) {
+      const liste = reconnuesParAxe.get(r.axe_id) ?? [];
+      liste.push({ partenaireId: r.partenaire_id, le: isoRequis(r.le) });
+      reconnuesParAxe.set(r.axe_id, liste);
+    }
 
     const parAxe = new Map<string, ContributionAxe[]>();
     for (const c of contributions.rows) {
@@ -315,6 +337,13 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
       ouvertPar: l.ouvert_par,
       ouvertLe: isoRequis(l.ouvert_le),
       contributions: parAxe.get(l.id) ?? [],
+      // Absente plutôt que par défaut : un axe ouvert avant que l'importance
+      // existe n'a pas eu à choisir, et lui en prêter une ferait dire à son
+      // auteur quelque chose qu'il n'a pas dit.
+      ...(l.importance
+        ? { importance: l.importance as NiveauImportance }
+        : {}),
+      reconnaissances: reconnuesParAxe.get(l.id) ?? [],
       clotureLe: iso(l.cloture_le),
     }));
   }
@@ -509,7 +538,7 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
     axes: {
       async parCouple(coupleId) {
         const { rows } = await pool.query(
-          `SELECT id, theme, titre, ouvert_par, ouvert_le, cloture_le
+          `SELECT id, theme, titre, ouvert_par, ouvert_le, cloture_le, importance
              FROM axes WHERE couple_id = $1 ORDER BY ouvert_le`,
           [coupleId],
         );
@@ -518,7 +547,7 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
 
       async parId(coupleId, axeId) {
         const { rows } = await pool.query(
-          `SELECT id, theme, titre, ouvert_par, ouvert_le, cloture_le
+          `SELECT id, theme, titre, ouvert_par, ouvert_le, cloture_le, importance
              FROM axes WHERE couple_id = $1 AND id = $2`,
           [coupleId, axeId],
         );
@@ -530,12 +559,14 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
         try {
           await client.query('BEGIN');
           await client.query(
-            `INSERT INTO axes (id, couple_id, theme, titre, ouvert_par, ouvert_le, cloture_le)
-                  VALUES ($1, $2, $3, $4, $5, $6, $7)
+            `INSERT INTO axes (id, couple_id, theme, titre, ouvert_par,
+                               ouvert_le, cloture_le, importance)
+                  VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
              ON CONFLICT (id) DO UPDATE
                     SET theme = EXCLUDED.theme,
                         titre = EXCLUDED.titre,
-                        cloture_le = EXCLUDED.cloture_le`,
+                        cloture_le = EXCLUDED.cloture_le,
+                        importance = EXCLUDED.importance`,
             [
               axe.id,
               coupleId,
@@ -544,8 +575,18 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
               axe.ouvertPar,
               axe.ouvertLe,
               axe.clotureLe ?? null,
+              axe.importance ?? null,
             ],
           );
+
+          for (const reconnaissance of axe.reconnaissances ?? []) {
+            await client.query(
+              `INSERT INTO reconnaissances_axe (axe_id, partenaire_id, le)
+                    VALUES ($1, $2, $3)
+               ON CONFLICT (axe_id, partenaire_id) DO NOTHING`,
+              [axe.id, reconnaissance.partenaireId, reconnaissance.le],
+            );
+          }
 
           for (const contribution of axe.contributions) {
             await client.query(

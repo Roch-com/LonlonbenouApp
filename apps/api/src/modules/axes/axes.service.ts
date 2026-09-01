@@ -17,8 +17,10 @@ import {
   axeVisiblePar,
   deposerContribution,
   estPartageActif,
+  peutOuvrirUnAxe,
   type AxeCroissance,
   type AxeVisible,
+  type NiveauImportance,
   type PartenaireId,
   type ThemeAxe,
 } from '@lonlonbenu/shared';
@@ -29,7 +31,11 @@ export type RefusAcces =
   | 'non_membre'
   | 'couple_dissocie'
   | 'partage_inactif'
-  | 'axe_introuvable';
+  | 'axe_introuvable'
+  /** La limite d'axes ouverts simultanément est atteinte (§8.5). */
+  | 'trop_daxes_ouverts'
+  /** On ne reconnaît pas son propre progrès. */
+  | 'progres_a_soi_meme';
 
 export interface ResultatLecture {
   ok: boolean;
@@ -44,6 +50,12 @@ export interface ServiceAxes {
     auteurId: PartenaireId,
     theme: ThemeAxe,
     titre: string,
+    importance?: NiveauImportance,
+  ): Promise<{ ok: boolean; motif?: RefusAcces; axe?: AxeVisible }>;
+  reconnaitreProgres(
+    coupleId: string,
+    auteurId: PartenaireId,
+    axeId: string,
   ): Promise<{ ok: boolean; motif?: RefusAcces; axe?: AxeVisible }>;
   contribuer(
     coupleId: string,
@@ -92,12 +104,19 @@ export function creerServiceAxes(depot: Depot): ServiceAxes {
       return { ok: true, axes: axes.map((axe) => axeVisiblePar(axe, lecteurId)) };
     },
 
-    async ouvrir(coupleId, auteurId, theme, titre) {
+    async ouvrir(coupleId, auteurId, theme, titre, importance) {
       const acces = await autoriser(depot, coupleId, auteurId);
       if ('motif' in acces) return { ok: false, motif: acces.motif };
 
       const propre = titre.trim();
       if (!propre) return { ok: false, motif: 'axe_introuvable' };
+
+      // §8.5 : « limite du nombre de cartes actives simultanément pour éviter
+      // l'effet liste de griefs ». La règle est vérifiée ici et pas seulement
+      // à l'écran : c'est un garde-fou, pas un confort d'affichage.
+      if (!peutOuvrirUnAxe(await depot.axes.parCouple(coupleId))) {
+        return { ok: false, motif: 'trop_daxes_ouverts' };
+      }
 
       const axe: AxeCroissance = {
         id: randomUUID(),
@@ -106,6 +125,7 @@ export function creerServiceAxes(depot: Depot): ServiceAxes {
         ouvertPar: auteurId,
         ouvertLe: new Date().toISOString(),
         contributions: [],
+        ...(importance ? { importance } : {}),
       };
       await depot.axes.enregistrer(coupleId, axe);
 
@@ -122,6 +142,45 @@ export function creerServiceAxes(depot: Depot): ServiceAxes {
       // `deposerContribution` refuse un troisième contributeur et remplace la
       // contribution existante au lieu de l'empiler.
       const misAJour = deposerContribution(axe, auteurId, ressenti, besoin);
+      await depot.axes.enregistrer(coupleId, misAJour);
+
+      return { ok: true, axe: axeVisiblePar(misAJour, auteurId) };
+    },
+
+    /**
+     * Reconnaître un progrès (§8.5).
+     *
+     * « L'autre ne peut que reconnaître un progrès » : on reconnaît donc celui
+     * de l'autre, jamais le sien. Se décerner soi-même un progrès viderait le
+     * geste de tout son sens — sa valeur tient entièrement à ce qu'il vient
+     * d'en face.
+     *
+     * Le geste ne se reprend pas : il n'y a pas de « retirer ma
+     * reconnaissance ». Un progrès reconnu puis retiré blesserait plus que
+     * l'absence de reconnaissance.
+     */
+    async reconnaitreProgres(coupleId, auteurId, axeId) {
+      const acces = await autoriser(depot, coupleId, auteurId);
+      if ('motif' in acces) return { ok: false, motif: acces.motif };
+
+      const axe = await depot.axes.parId(coupleId, axeId);
+      if (!axe) return { ok: false, motif: 'axe_introuvable' };
+      if (axe.ouvertPar === auteurId) {
+        return { ok: false, motif: 'progres_a_soi_meme' };
+      }
+
+      const deja = (axe.reconnaissances ?? []).some(
+        (r) => r.partenaireId === auteurId,
+      );
+      if (deja) return { ok: true, axe: axeVisiblePar(axe, auteurId) };
+
+      const misAJour: AxeCroissance = {
+        ...axe,
+        reconnaissances: [
+          ...(axe.reconnaissances ?? []),
+          { partenaireId: auteurId, le: new Date().toISOString() },
+        ],
+      };
       await depot.axes.enregistrer(coupleId, misAJour);
 
       return { ok: true, axe: axeVisiblePar(misAJour, auteurId) };

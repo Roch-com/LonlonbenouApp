@@ -115,3 +115,46 @@ export function trierProjets(
       rang[avancementProjet(b, maintenant).etat],
   );
 }
+
+export interface EcheanceProjet {
+  projetId: string;
+  projetTitre: string;
+  jalon: Jalon;
+}
+
+/**
+ * La prochaine échéance de projet, tous projets confondus (§8.1).
+ *
+ * Le tableau de bord en résume une seule : c'est un écran d'accueil, pas une
+ * liste de tâches. Le module Projets porte le détail.
+ *
+ * Les projets archivés sont écartés, et les jalons sans date aussi — une
+ * échéance qui n'en est pas une n'a rien à annoncer. Un jalon déjà en retard
+ * est **gardé** : c'est justement celui qu'il faut voir, et le masquer
+ * reviendrait à faire disparaître ce qu'on a laissé filer.
+ */
+export function prochaineEcheanceProjet(
+  projets: readonly Projet[],
+): EcheanceProjet | undefined {
+  const candidates: EcheanceProjet[] = [];
+
+  for (const projet of projets) {
+    if (projet.archiveLe) continue;
+    for (const jalon of projet.jalons) {
+      if (jalonFait(jalon) || !jalon.echeance) continue;
+      candidates.push({
+        projetId: projet.id,
+        projetTitre: projet.titre,
+        jalon,
+      });
+    }
+  }
+
+  // Le titre départage deux échéances du même jour, pour que le tableau de
+  // bord n'en change pas d'un rendu à l'autre.
+  return candidates.sort((a, b) =>
+    a.jalon.echeance === b.jalon.echeance
+      ? a.projetTitre.localeCompare(b.projetTitre)
+      : a.jalon.echeance!.localeCompare(b.jalon.echeance!),
+  )[0];
+}

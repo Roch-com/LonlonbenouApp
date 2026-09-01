@@ -5,6 +5,7 @@ import type { KeyObject } from 'node:crypto';
 import type { CategorieNotification, ThemeAxe } from '@lonlonbenu/shared';
 import { creerDepotMemoire } from './domaine/depotMemoire.ts';
 import type { Depot } from './domaine/depot.ts';
+import { IMPORTANCES, type NiveauImportance } from '@lonlonbenu/shared';
 import { creerServiceAxes } from './modules/axes/axes.service.ts';
 import { creerServiceAppairage } from './modules/appairage/appairage.service.ts';
 import { creerServiceDissociation } from './modules/dissociation/dissociation.service.ts';
@@ -89,6 +90,8 @@ const CODES: Record<string, number> = {
   deja_utilisee: 410,
   trop_d_essais: 429,
   code_incorrect: 401,
+  trop_daxes_ouverts: 409,
+  progres_a_soi_meme: 403,
 };
 
 export async function creerServeur(options: OptionsServeur = {}) {
@@ -324,8 +327,18 @@ export async function creerServeur(options: OptionsServeur = {}) {
     { preHandler: authentifier },
     async (requete, reponse) => {
       const { coupleId } = requete.params as { coupleId: string };
-      const corps = requete.body as { theme?: ThemeAxe; titre?: string };
+      const corps = requete.body as {
+        theme?: ThemeAxe;
+        titre?: string;
+        importance?: NiveauImportance;
+      };
       if (!corps?.theme || !corps.titre) {
+        return reponse.code(400).send({ motif: 'champs_manquants' });
+      }
+      if (
+        corps.importance &&
+        !IMPORTANCES.some((i) => i.code === corps.importance)
+      ) {
         return reponse.code(400).send({ motif: 'champs_manquants' });
       }
 
@@ -334,6 +347,7 @@ export async function creerServeur(options: OptionsServeur = {}) {
         requete.identite!.partenaireId,
         corps.theme,
         corps.titre,
+        corps.importance,
       );
       if (!resultat.ok) {
         return reponse
@@ -360,6 +374,30 @@ export async function creerServeur(options: OptionsServeur = {}) {
         axeId,
         corps?.ressenti ?? '',
         corps?.besoin ?? '',
+      );
+      if (!resultat.ok) {
+        return reponse
+          .code(CODES[resultat.motif ?? ''] ?? 400)
+          .send({ motif: resultat.motif });
+      }
+      return { axe: resultat.axe };
+    },
+  );
+
+  // §8.5 : « l'autre ne peut que reconnaître un progrès ».
+  app.post(
+    '/couples/:coupleId/axes/:axeId/progres',
+    { preHandler: authentifier },
+    async (requete, reponse) => {
+      const { coupleId, axeId } = requete.params as {
+        coupleId: string;
+        axeId: string;
+      };
+
+      const resultat = await axes.reconnaitreProgres(
+        coupleId,
+        requete.identite!.partenaireId,
+        axeId,
       );
       if (!resultat.ok) {
         return reponse

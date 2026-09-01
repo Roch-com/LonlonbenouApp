@@ -6,7 +6,11 @@
  * client n'a donc plus rien à masquer, et surtout plus rien à oublier de
  * masquer — c'était toute la faiblesse du filtrage local.
  */
-import type { AxeVisible, ThemeAxe } from '@lonlonbenu/shared';
+import type {
+  AxeVisible,
+  NiveauImportance,
+  ThemeAxe,
+} from '@lonlonbenu/shared';
 import { appeler } from '@/lib/api/client';
 
 export async function listerAxes(coupleId: string): Promise<AxeVisible[]> {
@@ -20,11 +24,24 @@ export async function ouvrirAxeServeur(
   coupleId: string,
   theme: ThemeAxe,
   titre: string,
+  importance?: NiveauImportance,
 ): Promise<AxeVisible> {
   const { axe } = await appeler<{ axe: AxeVisible }>(`/couples/${coupleId}/axes`, {
     methode: 'POST',
-    corps: { theme, titre },
+    corps: { theme, titre, ...(importance ? { importance } : {}) },
   });
+  return axe;
+}
+
+/** Reconnaître un progrès (§8.5). On reconnaît celui de l'autre, jamais le sien. */
+export async function reconnaitreProgresServeur(
+  coupleId: string,
+  axeId: string,
+): Promise<AxeVisible> {
+  const { axe } = await appeler<{ axe: AxeVisible }>(
+    `/couples/${coupleId}/axes/${axeId}/progres`,
+    { methode: 'POST' },
+  );
   return axe;
 }
 

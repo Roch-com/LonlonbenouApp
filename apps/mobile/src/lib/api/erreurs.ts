@@ -53,10 +53,29 @@ export function genreDepuisStatut(statut: number): GenreErreur {
  * l'erreur. On ne le fait que pour les erreurs de client (4xx) : au-delà, le
  * détail relève du diagnostic interne et n'aiderait personne.
  */
+/**
+ * Messages liés à un motif précis du serveur.
+ *
+ * La lecture générique d'un conflit — « cette action n'est plus possible » —
+ * conviendrait mal ici : un refus de garde-fou doit dire ce qu'il protège et
+ * ce qu'on peut faire, pas annoncer un quota.
+ */
+const PAR_MOTIF: Record<string, string> = {
+  trop_daxes_ouverts:
+    'Vous avez déjà plusieurs axes ouverts. Refermez-en un qui a avancé avant d’en ouvrir un autre — quelques sujets à la fois se travaillent, une longue liste se subit.',
+  progres_a_soi_meme:
+    'Un progrès se reconnaît à l’autre. C’est ce qui lui donne sa valeur.',
+  module_inactif:
+    'Ce module n’est pas activé. Vous pouvez l’allumer tous les deux quand vous le souhaitez.',
+};
+
 export function messageLisible(erreur: unknown): string {
   if (!(erreur instanceof ErreurApi)) {
     return 'Quelque chose n’a pas fonctionné. Réessayez dans un instant.';
   }
+
+  const parMotif = erreur.motif ? PAR_MOTIF[erreur.motif] : undefined;
+  if (parMotif) return parMotif;
 
   const duServeur = erreur.message?.trim();
   const estClient = erreur.statut !== undefined && erreur.statut < 500;

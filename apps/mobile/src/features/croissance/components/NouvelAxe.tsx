@@ -1,24 +1,39 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { AXES_SUGGERES, THEMES_AXE, type ThemeAxe } from '@lonlonbenu/shared';
+import {
+  AXES_SUGGERES,
+  definitionImportance,
+  IMPORTANCES,
+  IMPORTANCE_PAR_DEFAUT,
+  THEMES_AXE,
+  type NiveauImportance,
+  type ThemeAxe,
+} from '@lonlonbenu/shared';
 import { Bouton, Carte, Champ, Puce, Texte } from '@/components/ui';
 import { Relecture } from './Relecture';
 import { espacements } from '@/design/theme';
 
 interface Props {
   prenomAutre: string;
-  onOuvrir: (theme: ThemeAxe, titre: string) => void;
+  onOuvrir: (
+    theme: ThemeAxe,
+    titre: string,
+    importance: NiveauImportance,
+  ) => void;
 }
 
 export function NouvelAxe({ prenomAutre, onOuvrir }: Props) {
   const [deplie, setDeplie] = useState(false);
   const [theme, setTheme] = useState<ThemeAxe>('communication');
   const [titre, setTitre] = useState('');
+  const [importance, setImportance] =
+    useState<NiveauImportance>(IMPORTANCE_PAR_DEFAUT);
 
   const valider = () => {
     if (!titre.trim()) return;
-    onOuvrir(theme, titre);
+    onOuvrir(theme, titre, importance);
     setTitre('');
+    setImportance(IMPORTANCE_PAR_DEFAUT);
     setDeplie(false);
   };
 
@@ -55,6 +70,23 @@ export function NouvelAxe({ prenomAutre, onOuvrir }: Props) {
         />
 
         <Relecture texte={titre} />
+
+        {/* §8.5 : « niveau d'importance ». Il dit ce que le sujet pèse pour
+            celui qui l'ouvre — ce n'est pas une échéance imposée à l'autre. */}
+        <Texte variante="meta">Ce que ça pèse pour vous :</Texte>
+        <View style={styles.puces}>
+          {IMPORTANCES.map((i) => (
+            <Puce
+              key={i.code}
+              libelle={i.libelle}
+              active={importance === i.code}
+              onPress={() => setImportance(i.code)}
+            />
+          ))}
+        </View>
+        <Texte variante="petit">
+          {definitionImportance(importance).lecture}
+        </Texte>
 
         <Texte variante="meta">Ou partez d’une amorce :</Texte>
         <View style={styles.puces}>

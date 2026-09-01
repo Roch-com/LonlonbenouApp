@@ -41,6 +41,7 @@ export function SectionAxes() {
   const ouvrirAxe = useAxes((e) => e.ouvrirAxe);
   const contribuer = useAxes((e) => e.contribuer);
   const cloturer = useAxes((e) => e.cloturer);
+  const reconnaitreProgres = useAxes((e) => e.reconnaitreProgres);
 
   useEffect(() => {
     if (connecte && coupleId && partenaireId) {
@@ -128,7 +129,9 @@ export function SectionAxes() {
       {!horsLigne ? (
         <NouvelAxe
           prenomAutre={autre.prenom}
-          onOuvrir={(theme, titre) => void ouvrirAxe(coupleId!, theme, titre)}
+          onOuvrir={(theme, titre, importance) =>
+            void ouvrirAxe(coupleId!, theme, titre, importance)
+          }
         />
       ) : null}
 
@@ -158,6 +161,10 @@ export function SectionAxes() {
           }
           onCloturer={() => void cloturer(coupleId!, axe.id, true)}
           onRouvrir={() => void cloturer(coupleId!, axe.id, false)}
+          onReconnaitreProgres={() =>
+            void reconnaitreProgres(coupleId!, axe.id)
+          }
+          moiId={partenaireId}
         />
       ))}
 
@@ -177,6 +184,10 @@ export function SectionAxes() {
               }
               onCloturer={() => void cloturer(coupleId!, axe.id, true)}
               onRouvrir={() => void cloturer(coupleId!, axe.id, false)}
+              onReconnaitreProgres={() =>
+                void reconnaitreProgres(coupleId!, axe.id)
+              }
+              moiId={partenaireId}
             />
           ))}
         </>

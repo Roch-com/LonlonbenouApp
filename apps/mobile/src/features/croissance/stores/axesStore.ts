@@ -18,7 +18,11 @@
  */
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { AxeVisible, ThemeAxe } from '@lonlonbenu/shared';
+import type {
+  AxeVisible,
+  NiveauImportance,
+  ThemeAxe,
+} from '@lonlonbenu/shared';
 import { stockage } from '@/lib/stockage';
 import { ErreurApi, messageLisible } from '@/lib/api/erreurs';
 import {
@@ -26,6 +30,7 @@ import {
   contribuerServeur,
   listerAxes,
   ouvrirAxeServeur,
+  reconnaitreProgresServeur,
 } from '../api/axes.api';
 
 interface EtatAxes {
@@ -40,7 +45,13 @@ interface EtatAxes {
   erreur?: string;
 
   charger: (coupleId: string, moiId: string) => Promise<void>;
-  ouvrirAxe: (coupleId: string, theme: ThemeAxe, titre: string) => Promise<boolean>;
+  ouvrirAxe: (
+    coupleId: string,
+    theme: ThemeAxe,
+    titre: string,
+    importance?: NiveauImportance,
+  ) => Promise<boolean>;
+  reconnaitreProgres: (coupleId: string, axeId: string) => Promise<boolean>;
   contribuer: (
     coupleId: string,
     axeId: string,
@@ -115,8 +126,11 @@ export const useAxes = create<EtatAxes>()(
           }
         },
 
-        ouvrirAxe: (coupleId, theme, titre) =>
-          ecrire(() => ouvrirAxeServeur(coupleId, theme, titre)),
+        ouvrirAxe: (coupleId, theme, titre, importance) =>
+          ecrire(() => ouvrirAxeServeur(coupleId, theme, titre, importance)),
+
+        reconnaitreProgres: (coupleId, axeId) =>
+          ecrire(() => reconnaitreProgresServeur(coupleId, axeId)),
 
         contribuer: (coupleId, axeId, ressenti, besoin) =>
           ecrire(() => contribuerServeur(coupleId, axeId, ressenti, besoin)),

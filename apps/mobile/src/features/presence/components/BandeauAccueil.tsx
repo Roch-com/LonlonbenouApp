@@ -4,6 +4,7 @@ import type { Theme } from '@lonlonbenu/shared';
 import {
   LIBELLES_BANDE,
   evenementsAVenir,
+  prochaineEcheanceProjet,
   quand,
   scoreDuCouple,
 } from '@lonlonbenu/shared';
@@ -16,6 +17,7 @@ import { useViePratique } from '@/features/vie-pratique/stores/viePratiqueStore'
 import { useAutre, useMoi } from '@/features/reglages/stores/sessionStore';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 import { useMessagesNonLus } from '../stores/chatStore';
+import { useFilLisible } from '../hooks/useLecturesDechiffrees';
 import { CompteurCarte } from './CompteurCarte';
 import { Carrousel, type Diapositive } from './Carrousel';
 
@@ -43,6 +45,8 @@ export function BandeauAccueil() {
   const nonLus = useMessagesNonLus(partenaireId ?? '');
   const confidencesNonLues = useConfidencesNonLues(moi.id);
   const evenements = useViePratique((e) => e.evenements);
+  const projets = useViePratique((e) => e.projets);
+  const fil = useFilLisible();
   const gestes = useGestes();
 
   const maintenant = new Date().toISOString();
@@ -50,6 +54,26 @@ export function BandeauAccueil() {
   const aVenir = useMemo(
     () => evenementsAVenir(evenements, maintenant).slice(0, 2),
     [evenements, maintenant],
+  );
+
+  // §8.1 demande « la prochaine échéance de projet » sur l'accueil : l'agenda
+  // seul ne la portait pas, un jalon n'étant pas un événement de calendrier.
+  const echeance = useMemo(
+    () => prochaineEcheanceProjet(projets),
+    [projets],
+  );
+
+  // §8.1 demande aussi « la dernière note douce reçue ». On ne montre que
+  // celles de l'autre : relire les siennes n'a jamais fait plaisir à personne.
+  const noteRecue = useMemo(
+    () =>
+      [...fil]
+        .reverse()
+        .find(
+          (m) =>
+            m.type === 'note_douce' && m.auteurId !== partenaireId && !m.illisible,
+        ),
+    [fil, partenaireId],
   );
 
   const score = useMemo(() => {
@@ -81,6 +105,38 @@ export function BandeauAccueil() {
               </View>
             ))}
           </View>
+        </Carte>
+      ),
+    });
+  }
+
+  if (noteRecue) {
+    diapositives.push({
+      cle: 'note',
+      contenu: (
+        <Carte>
+          <Texte variante="surtitre">Un mot de {autre.prenom}</Texte>
+          <Texte variante="titre" style={styles.titre}>
+            « {noteRecue.texte} »
+          </Texte>
+          <Texte variante="meta">{quand(noteRecue.envoyeLe, maintenant)}</Texte>
+        </Carte>
+      ),
+    });
+  }
+
+  if (echeance) {
+    diapositives.push({
+      cle: 'echeance',
+      contenu: (
+        <Carte>
+          <Texte variante="surtitre">Prochaine échéance</Texte>
+          <Texte variante="titre" style={styles.titre}>
+            {echeance.jalon.titre}
+          </Texte>
+          <Texte variante="corpsDoux">
+            {echeance.projetTitre} · {quand(echeance.jalon.echeance!, maintenant)}
+          </Texte>
         </Carte>
       ),
     });
