@@ -152,12 +152,15 @@ préalable :
       natives, et une revue de confidentialité d'App Store pour les données de santé.
 - [ ] **Agrégation bancaire (§8.11, P2)** — exige un contrat d'agrégateur
       (Bridge, Powens…) et les obligations réglementaires qui vont avec.
-- [ ] **Appels audio et vidéo** — demandés, arbitrés en faveur du pair-à-pair
-      chiffré pour ne pas trahir la promesse du reste de l'application. Trois
-      préalables : un WebSocket sur l'API (le chat sonde toutes les 4 s, ce qui
-      ne peut pas établir un appel), WebRTC côté mobile, et un serveur **TURN**
-      — sur un réseau mobile les deux téléphones sont derrière un NAT opérateur
-      et ne se joignent pas directement.
+- [ ] **Appels : le serveur TURN.** Le reste est fait — signalisation scellée,
+      WebRTC pair-à-pair, écran d'appel. Sans TURN, les appels aboutissent
+      depuis une connexion domestique et échouent souvent quand les deux sont
+      en données mobiles : les opérateurs placent les téléphones derrière un
+      NAT qui interdit toute liaison directe.
+
+      Rien à recoder pour l'ajouter : `EXPO_PUBLIC_SERVEURS_ICE` accepte un
+      JSON de `RTCIceServer`. Un Coturn auto-hébergé demande un VPS avec UDP
+      (Render ne convient pas) ; sinon un service à la bande passante.
 
 Restant purement technique :
 

@@ -25,6 +25,7 @@ import { GardeOnboarding } from '@/features/reglages/components/GardeOnboarding'
 import { configurerAffichagePush } from '@/features/reglages/services/affichagePush';
 import { useInscriptionPush } from '@/features/reglages/hooks/useInscriptionPush';
 import { Ouverture } from '@/components/chrome/Ouverture';
+import { CoucheAppel } from '@/features/presence/components/CoucheAppel';
 import { demarrerLaSurveillance } from '@/lib/surveillance';
 // Import pour effet de bord : les tâches d’arrière-plan doivent être définies
 // au chargement du module. Le système peut réveiller l’application sans monter
@@ -153,6 +154,9 @@ function DispositionRacine() {
                   }}
                 />
               </Stack>
+              {/* Par-dessus la pile : un appel entrant doit s'afficher quel
+                  que soit l'écran ouvert. */}
+              <CoucheAppel />
             </GardeOnboarding>
           </GardeVerrou>
         </Ouverture>

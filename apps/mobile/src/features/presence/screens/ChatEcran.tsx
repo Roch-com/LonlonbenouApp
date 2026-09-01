@@ -45,6 +45,7 @@ import {
 } from '../hooks/useLecturesDechiffrees';
 import { useChat, useNombreDeVerification } from '../stores/chatStore';
 import { useActivite } from '../stores/activiteStore';
+import { useAppels } from '../stores/appelStore';
 import { usePresence } from '../stores/presenceStore';
 import { dureeLisible, type Theme } from '@lonlonbenu/shared';
 import { stylesDynamiques } from '@/design/stylesDynamiques';
@@ -150,6 +151,7 @@ export function ChatEcran() {
   );
 
   const envoyerVocal = useChat((e) => e.envoyerVocal);
+  const lancerAppel = useAppels((e) => e.appeler);
   /** Message d'erreur propre à l'enregistrement : micro refusé, note trop courte. */
   const [erreurVocale, setErreurVocale] = useState<string>();
 
@@ -468,6 +470,22 @@ export function ChatEcran() {
         surtitre="Nous deux"
         sousTitre={
           <LignePresence activite={activiteAutre} />
+        }
+        actions={
+          coupleId
+            ? [
+                {
+                  icone: 'phone' as const,
+                  libelle: `Appeler ${autre.prenom}`,
+                  onPress: () => void lancerAppel(coupleId, 'audio'),
+                },
+                {
+                  icone: 'video' as const,
+                  libelle: `Appeler ${autre.prenom} en vidéo`,
+                  onPress: () => void lancerAppel(coupleId, 'video'),
+                },
+              ]
+            : []
         }
       />
 

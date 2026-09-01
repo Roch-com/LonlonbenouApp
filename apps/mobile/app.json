@@ -4,7 +4,7 @@
     "slug": "lonlonbenu",
     "owner": "rochambeau",
     "scheme": "lonlonbenu",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -43,6 +43,13 @@
       "expo-splash-screen",
       "@react-native-community/datetimepicker",
       "expo-sharing",
+      [
+        "@config-plugins/react-native-webrtc",
+        {
+          "cameraPermission": "LONLONBENU utilise la caméra pour vos appels vidéo avec votre partenaire.",
+          "microphonePermission": "LONLONBENU utilise le micro pour vos appels et vos notes vocales."
+        }
+      ],
       [
         "expo-audio",
         {
