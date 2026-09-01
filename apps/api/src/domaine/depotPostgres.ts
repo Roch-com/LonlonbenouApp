@@ -45,6 +45,7 @@ import type {
   DepenseScellee,
   Depot,
   InvitationServeur,
+  NoteVocaleScellee,
   NotificationServeur,
   ReactionScellee,
 } from './depot.ts';
@@ -1052,6 +1053,22 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
             ORDER BY maj_le`,
           [rows.map((r) => r.id)],
         );
+        const vocaux = await pool.query<{
+          message_id: string;
+          audio_scelle: string;
+          duree_s: number;
+        }>(
+          `SELECT message_id, audio_scelle, duree_s
+             FROM notes_vocales WHERE message_id = ANY($1::text[])`,
+          [rows.map((r) => r.id)],
+        );
+        const vocalParMessage = new Map<string, NoteVocaleScellee>(
+          vocaux.rows.map((v) => [
+            v.message_id,
+            { audioScelle: v.audio_scelle, dureeS: v.duree_s },
+          ]),
+        );
+
         const parMessage = new Map<string, ReactionScellee[]>();
         for (const r of reactions.rows) {
           const liste = parMessage.get(r.message_id) ?? [];
@@ -1072,6 +1089,9 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
           remettreLe: iso(r.remettre_le),
           retireLe: iso(r.retire_le),
           reactions: parMessage.get(r.id) ?? [],
+          ...(vocalParMessage.has(r.id)
+            ? { vocal: vocalParMessage.get(r.id)! }
+            : {}),
         }));
       },
 
@@ -1089,6 +1109,9 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
         await pool.query('DELETE FROM reactions_message WHERE message_id = $1', [
           id,
         ]);
+        // L'audio non plus : garder le son ferait mentir « ce message a été
+        // retiré », qui est la seule chose que les deux verront désormais.
+        await pool.query('DELETE FROM notes_vocales WHERE message_id = $1', [id]);
       },
 
       async reagir(coupleId, messageId, reaction) {
@@ -1166,6 +1189,17 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
             message.remettreLe ?? null,
           ],
         );
+
+        if (message.vocal) {
+          await pool.query(
+            `INSERT INTO notes_vocales (message_id, audio_scelle, duree_s)
+                  VALUES ($1, $2, $3)
+             ON CONFLICT (message_id) DO UPDATE
+                    SET audio_scelle = EXCLUDED.audio_scelle,
+                        duree_s = EXCLUDED.duree_s`,
+            [message.id, message.vocal.audioScelle, message.vocal.dureeS],
+          );
+        }
       },
 
       async supprimer(coupleId, id) {

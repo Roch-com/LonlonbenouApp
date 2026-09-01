@@ -14,6 +14,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import {
+  DUREE_MAX_VOCAL_S,
+  DUREE_MIN_VOCAL_S,
+  dureeLisible,
+  dureeVocalValide,
   empreinteDeVerification,
   LONGUEUR_NONCE,
   scellerMessage,
@@ -37,6 +41,10 @@ import {
   type MessageScelle,
 } from '../api/chat.api';
 import { cleDeMessages, paireDeLAppareil } from '../services/clesMessages';
+import {
+  oublierVocal,
+  scellerEnregistrement,
+} from '../services/enregistrementVocal';
 
 interface EtatChat {
   /** Cache : enveloppes scellées, jamais de clair. */
@@ -67,6 +75,16 @@ interface EtatChat {
   reagir: (coupleId: string, id: string, emoji?: string) => Promise<boolean>;
   /** Épingle un message, ou décroche l'épingle sans identifiant. */
   epingler: (coupleId: string, messageId?: string) => Promise<boolean>;
+  /**
+   * Envoie une note vocale. `uri` est le fichier produit par le micro : il est
+   * scellé ici, puis effacé — l'audio ne part jamais en clair.
+   */
+  envoyerVocal: (
+    coupleId: string,
+    moiId: string,
+    uri: string,
+    dureeS: number,
+  ) => Promise<boolean>;
   vider: () => void;
 }
 
@@ -183,6 +201,9 @@ export const useChat = create<EtatChat>()(
         async retirer(coupleId, id) {
           try {
             remplacer(await retirerMessageServeur(coupleId, id));
+            // Le clair déchiffré vit dans le cache : le serveur a effacé
+            // l'enveloppe, il reste à effacer ce qu'on en avait tiré.
+            void oublierVocal(id);
             // Retirer un message épinglé décroche l'épingle côté serveur : on
             // suit, sinon le bandeau resterait sur un message qui n'est plus.
             if (get().epingle?.messageId === id) set({ epingle: undefined });
@@ -214,6 +235,46 @@ export const useChat = create<EtatChat>()(
             remplacer(
               await reagirServeur(coupleId, id, scellerMessage(cle, nonce, emoji)),
             );
+            return true;
+          } catch (erreur) {
+            set({ erreur: messageLisible(erreur) });
+            return false;
+          }
+        },
+
+        async envoyerVocal(coupleId, moiId, uri, dureeS) {
+          if (!dureeVocalValide(dureeS)) {
+            set({
+              erreur: `Une note vocale dure entre ${DUREE_MIN_VOCAL_S} seconde et ${dureeLisible(DUREE_MAX_VOCAL_S)}.`,
+            });
+            return false;
+          }
+
+          const cles = get().cles;
+          if (!cles?.autre) {
+            set({
+              erreur:
+                'Votre partenaire n’a pas encore ouvert la conversation sur son appareil. Sans sa clé, rien ne peut être chiffré pour lui.',
+            });
+            return false;
+          }
+
+          set({ erreur: undefined });
+          try {
+            const cle = await cleDeMessages(cles.autre);
+            const audioScelle = await scellerEnregistrement(cle, uri);
+
+            // Le message porte quand même une enveloppe de texte : elle dit
+            // le type, comme pour les notes douces, et garde un fil homogène
+            // pour tout ce qui ne sait pas lire une note vocale.
+            const nonce = Crypto.getRandomBytes(LONGUEUR_NONCE);
+            const charge = JSON.stringify({ type: 'vocal', texte: '' });
+            await envoyerEnveloppe(
+              coupleId,
+              scellerMessage(cle, nonce, charge),
+              { audioScelle, dureeS: Math.round(dureeS) },
+            );
+            await relire(coupleId, moiId);
             return true;
           } catch (erreur) {
             set({ erreur: messageLisible(erreur) });

@@ -13,6 +13,11 @@ export interface ReactionScellee {
   majLe: string;
 }
 
+export interface NoteVocaleScellee {
+  audioScelle: string;
+  dureeS: number;
+}
+
 export interface MessageScelle {
   id: string;
   auteurId: string;
@@ -22,6 +27,7 @@ export interface MessageScelle {
   /** Message retiré par son auteur : l'enveloppe ne contient plus rien. */
   retireLe?: string;
   reactions?: ReactionScellee[];
+  vocal?: NoteVocaleScellee;
 }
 
 export interface EpingleServeur {
@@ -64,10 +70,12 @@ export async function listerMessages(coupleId: string): Promise<MessageScelle[]>
 export async function envoyerEnveloppe(
   coupleId: string,
   enveloppe: string,
+  /** Note vocale accompagnant le message, déjà scellée. */
+  vocal?: NoteVocaleScellee,
 ): Promise<MessageScelle> {
   const { message } = await appeler<{ message: MessageScelle }>(
     `/couples/${coupleId}/chat`,
-    { methode: 'POST', corps: { enveloppe } },
+    { methode: 'POST', corps: { enveloppe, ...(vocal ? { vocal } : {}) } },
   );
   return message;
 }

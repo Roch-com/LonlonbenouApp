@@ -56,3 +56,6 @@ export * from './connexion/distance';
 // Pôle ⑤ — Journal du couple (§8.17).
 export * from './memoire/journal';
 export * from './finances/factures';
+
+// Pôle ① — notes vocales (§8.3).
+export * from './chat/vocal';

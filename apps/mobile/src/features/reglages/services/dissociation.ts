@@ -17,6 +17,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { creerPartage, type ModuleSensible } from '@lonlonbenu/shared';
 import { oublierLaCle } from '@/lib/chiffrement';
 import { useChat } from '@/features/presence/stores/chatStore';
+import { oublierTousLesVocaux } from '@/features/presence/services/enregistrementVocal';
 import { usePresence } from '@/features/presence/stores/presenceStore';
 import { useAxes } from '@/features/croissance/stores/axesStore';
 import { useConfidences } from '@/features/croissance/stores/confidencesStore';
@@ -94,6 +95,9 @@ export async function dissocierLeCouple(): Promise<RapportDissociation> {
   usePush.persist.clearStorage();
 
   useChat.getState().vider();
+  // Les enveloppes audio partent avec le reste, mais les clairs déchiffrés
+  // vivent dans le cache de l'appareil : ils survivraient à la séparation.
+  void oublierTousLesVocaux();
   usePresence.getState().vider();
   useAxes.getState().vider();
   useConfidences.getState().vider();

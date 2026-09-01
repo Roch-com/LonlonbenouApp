@@ -61,6 +61,14 @@ export interface MessageLisible {
   /** Retiré par son auteur : il n'y a plus de texte, seulement la trace. */
   retire: boolean;
   reactions: readonly ReactionLisible[];
+  /**
+   * Note vocale, encore scellée.
+   *
+   * Elle n'est pas déchiffrée ici : ouvrir chaque audio du fil écrirait sur le
+   * disque autant de fichiers qu'il y a de notes, y compris celles qu'on ne va
+   * pas écouter. C'est le lecteur qui l'ouvre, au moment où on appuie.
+   */
+  vocal?: { audioScelle: string; dureeS: number };
 }
 
 export function useFilLisible(): MessageLisible[] {
@@ -119,6 +127,7 @@ export function useFilLisible(): MessageLisible[] {
           repondA,
           illisible: clair === undefined,
           retire: false,
+          ...(m.vocal ? { vocal: m.vocal } : {}),
           // Une réaction qu'on ne sait plus ouvrir est écartée : afficher un
           // carré vide à côté d'un message n'apprend rien à personne.
           reactions: (m.reactions ?? []).flatMap((r) => {

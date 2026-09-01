@@ -273,6 +273,9 @@ export function creerDepotMemoire(): Depot {
           m.enveloppe = ENVELOPPE_RETIREE;
           m.retireLe = quand;
           m.reactions = [];
+          // Une note vocale retirée doit l'être vraiment : garder l'audio
+          // ferait mentir « ce message a été retiré ».
+          delete m.vocal;
         }
       },
       async reagir(coupleId, messageId, reaction) {

@@ -3,7 +3,12 @@
 import type { PartenaireId } from './couple';
 import type { Visibilite } from '../privacy/visibilite';
 
-export type TypeMessage = 'texte' | 'note_douce';
+export type TypeMessage =
+  | 'texte'
+  /** Mot envoyé d'un geste depuis l'accueil, sans ouvrir la conversation. */
+  | 'note_douce'
+  /** Note vocale : le texte est vide, l'audio voyage à part (§8.3). */
+  | 'vocal';
 
 export interface Message {
   id: string;

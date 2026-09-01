@@ -16,7 +16,11 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import { estScelleMessage, type PartenaireId } from '@lonlonbenu/shared';
+import {
+  dureeVocalValide,
+  estScelleMessage,
+  type PartenaireId,
+} from '@lonlonbenu/shared';
 import type {
   CoupleServeur,
   Depot,
@@ -33,6 +37,8 @@ export type RefusChat =
   | 'deja_remis'
   | 'introuvable'
   | 'cle_manquante'
+  /** Durée de note vocale hors des bornes admises. */
+  | 'duree_invalide'
   /** On ne retire que ses propres messages. */
   | 'pas_mon_message'
   /** Un message déjà retiré n'a plus rien à retirer. */
@@ -70,6 +76,8 @@ export interface ServiceChat {
      * de suite.
      */
     remettreLe?: string,
+    /** Note vocale accompagnant le message (§8.3). */
+    vocal?: { audioScelle: string; dureeS: number },
   ): Promise<{ ok: boolean; motif?: RefusChat; message?: MessageScelle }>;
   /** Messages que j'ai programmés et qui n'ont pas encore été remis. */
   enAttente(
@@ -213,7 +221,7 @@ export function creerServiceChat(depot: Depot): ServiceChat {
       return { ok: true };
     },
 
-    async envoyer(coupleId, auteurId, enveloppe, remettreLe) {
+    async envoyer(coupleId, auteurId, enveloppe, remettreLe, vocal) {
       const acces = await autoriser(depot, coupleId, auteurId);
       if ('motif' in acces) return { ok: false, motif: acces.motif };
 
@@ -222,6 +230,19 @@ export function creerServiceChat(depot: Depot): ServiceChat {
       // déposer du clair par inadvertance.
       if (!estScelleMessage(enveloppe)) {
         return { ok: false, motif: 'enveloppe_invalide' };
+      }
+
+      if (vocal) {
+        if (!estScelleMessage(vocal.audioScelle)) {
+          return { ok: false, motif: 'enveloppe_invalide' };
+        }
+        // Le plafond de durée n'est pas un confort d'interface : c'est lui qui
+        // garde le poids en base prévisible, et il ne tient que si le serveur
+        // le fait respecter. Un client modifié pourrait sinon y déposer un
+        // fichier de plusieurs méga-octets.
+        if (!dureeVocalValide(vocal.dureeS)) {
+          return { ok: false, motif: 'duree_invalide' };
+        }
       }
 
       // Une date de remise illisible ferait un message jamais délivré : il
@@ -240,6 +261,14 @@ export function creerServiceChat(depot: Depot): ServiceChat {
         remettreLe:
           remettreLe && Date.parse(remettreLe) > Date.now() ? remettreLe : undefined,
         envoyeLe: new Date().toISOString(),
+        ...(vocal
+          ? {
+              vocal: {
+                audioScelle: vocal.audioScelle,
+                dureeS: Math.round(vocal.dureeS),
+              },
+            }
+          : {}),
       };
       await depot.chat.ajouter(coupleId, message);
       return { ok: true, message };

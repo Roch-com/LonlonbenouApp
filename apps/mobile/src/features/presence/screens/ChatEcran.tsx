@@ -37,12 +37,16 @@ import { LignePresence } from '../components/LignePresence';
 import { BandeauEpingle } from '../components/BandeauEpingle';
 import { PointsDeSaisie } from '../components/PointsDeSaisie';
 import { SelecteurEmoji } from '../components/SelecteurEmoji';
+import { BoutonVocal } from '../components/BoutonVocal';
 import { SelecteurHumeur } from '../components/SelecteurHumeur';
-import { useFilLisible } from '../hooks/useLecturesDechiffrees';
+import {
+  useFilLisible,
+  type MessageLisible,
+} from '../hooks/useLecturesDechiffrees';
 import { useChat, useNombreDeVerification } from '../stores/chatStore';
 import { useActivite } from '../stores/activiteStore';
 import { usePresence } from '../stores/presenceStore';
-import type { Theme } from '@lonlonbenu/shared';
+import { dureeLisible, type Theme } from '@lonlonbenu/shared';
 import { stylesDynamiques } from '@/design/stylesDynamiques';
 
 /**
@@ -62,6 +66,18 @@ const HAUTEUR_BARRE_SAISIE = 64;
  * Ils sont volontairement tendres — c'est une conversation de couple, pas un
  * fil de commentaires.
  */
+/**
+ * Ce qu'on montre d'un message qu'on cite ou auquel on répond.
+ *
+ * Une note vocale n'a pas de texte : sans ce détour, l'aperçu serait vide et
+ * la citation ressemblerait à un défaut d'affichage.
+ */
+function apercuDuMessage(message: MessageLisible): string {
+  if (message.retire) return 'Ce message a été retiré';
+  if (message.vocal) return `Note vocale · ${dureeLisible(message.vocal.dureeS)}`;
+  return message.texte;
+}
+
 const EMOJIS_REACTION = ['❤️', '😍', '😂', '😮', '🥺', '👍'] as const;
 
 export function ChatEcran() {
@@ -132,6 +148,10 @@ export function ChatEcran() {
     () => (epingle ? fil.find((m) => m.id === epingle.messageId) : undefined),
     [epingle, fil],
   );
+
+  const envoyerVocal = useChat((e) => e.envoyerVocal);
+  /** Message d'erreur propre à l'enregistrement : micro refusé, note trop courte. */
+  const [erreurVocale, setErreurVocale] = useState<string>();
 
   const [clavierOuvert, setClavierOuvert] = useState(false);
   const [emojisOuverts, setEmojisOuverts] = useState(false);
@@ -241,7 +261,7 @@ export function ChatEcran() {
 
       table.set(message.id, {
         auteurEstMoi: source.auteurId === partenaireId,
-        texte: source.texte,
+        texte: apercuDuMessage(source),
       });
     }
 
@@ -646,7 +666,7 @@ export function ChatEcran() {
               Réponse à {reponseA.auteurId === partenaireId ? 'vous' : autre.prenom}
             </Texte>
             <Texte variante="petit" numberOfLines={1}>
-              {reponseA.texte}
+              {apercuDuMessage(reponseA)}
             </Texte>
           </View>
           <Pressable
@@ -711,22 +731,47 @@ export function ChatEcran() {
           }}
           multiline
         />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Envoyer"
-          onPress={() => void envoyerLe()}
-          disabled={!brouillon.trim() || !cles?.echangePret}
-          style={({ pressed }) => [
-            styles.envoi,
-            (!brouillon.trim() || !cles?.echangePret) && styles.envoiInactif,
-            pressed && styles.envoiPresse,
-          ]}
-        >
-          <Texte variante="sousTitre" style={styles.envoiTexte}>
-            ↑
-          </Texte>
-        </Pressable>
+        {/* Le micro cède la place à la flèche dès qu'on écrit : c'est
+            l'usage, et ça évite deux boutons d'envoi côte à côte. */}
+        {brouillon.trim() ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Envoyer"
+            onPress={() => void envoyerLe()}
+            disabled={!cles?.echangePret}
+            style={({ pressed }) => [
+              styles.envoi,
+              !cles?.echangePret && styles.envoiInactif,
+              pressed && styles.envoiPresse,
+            ]}
+          >
+            <Texte variante="sousTitre" style={styles.envoiTexte}>
+              ↑
+            </Texte>
+          </Pressable>
+        ) : (
+          <BoutonVocal
+            desactive={!cles?.echangePret}
+            onErreur={(message) => setErreurVocale(message)}
+            onEnvoyer={async (uri, dureeS) => {
+              if (!coupleId || !partenaireId) return false;
+              setErreurVocale(undefined);
+              return envoyerVocal(coupleId, partenaireId, uri, dureeS);
+            }}
+          />
+        )}
       </View>
+
+      {erreurVocale ? (
+        <Pressable
+          onPress={() => setErreurVocale(undefined)}
+          accessibilityRole="button"
+          accessibilityLabel="Masquer ce message"
+          style={styles.erreurVocale}
+        >
+          <Texte variante="petit">{erreurVocale}</Texte>
+        </Pressable>
+      ) : null}
 
       <ActionsMessage
         visible={!!visee}
@@ -763,6 +808,15 @@ export function ChatEcran() {
 }
 
 const styles = stylesDynamiques(({ colors }: Theme) => ({
+  // Au-dessus de la barre de saisie, et refermable d'un appui : c'est un
+  // message de circonstance, pas un état durable de la conversation.
+  erreurVocale: {
+    marginHorizontal: margeEcran,
+    marginBottom: espacements.xs,
+    padding: espacements.sm,
+    borderRadius: rayons.md,
+    backgroundColor: colors.fondNuance,
+  },
   fond: { flex: 1, backgroundColor: colors.fond },
   centre: { justifyContent: 'center', paddingHorizontal: margeEcran },
   intro: { marginTop: espacements.xs },

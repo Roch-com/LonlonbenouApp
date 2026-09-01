@@ -4,7 +4,7 @@
     "slug": "lonlonbenu",
     "owner": "rochambeau",
     "scheme": "lonlonbenu",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -42,7 +42,13 @@
       "@sentry/react-native",
       "expo-splash-screen",
       "@react-native-community/datetimepicker",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "LONLONBENU utilise le micro pour enregistrer les notes vocales que vous envoyez à votre partenaire."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

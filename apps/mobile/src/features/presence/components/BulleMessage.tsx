@@ -15,6 +15,7 @@ import type { MessageLisible } from '../hooks/useLecturesDechiffrees';
 import { Texte } from '@/components/ui';
 import { espacements, rayons } from '@/design/theme';
 import { heure } from '@/lib/temps';
+import { LecteurVocal } from './LecteurVocal';
 
 interface Props {
   message: MessageLisible;
@@ -191,6 +192,13 @@ export function BulleMessage({
               Ce message a été retiré
             </Texte>
           </View>
+        ) : message.vocal ? (
+          <LecteurVocal
+            messageId={message.id}
+            audioScelle={message.vocal.audioScelle}
+            dureeS={message.vocal.dureeS}
+            deMoi={deMoi}
+          />
         ) : (
           <Texte
             variante={douce ? 'sousTitre' : 'corps'}

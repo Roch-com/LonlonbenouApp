@@ -15,6 +15,7 @@ const CODES: Record<string, number> = {
   deja_remis: 409,
   pas_mon_message: 403,
   deja_retire: 409,
+  duree_invalide: 400,
 };
 
 const repondre = (motif: string | undefined) => CODES[motif ?? ''] ?? 400;
@@ -91,16 +92,29 @@ export function enregistrerRoutesChat(
     { preHandler: authentifier },
     async (requete, reponse) => {
       const { coupleId } = requete.params as { coupleId: string };
-      const corps = requete.body as { enveloppe?: string; remettreLe?: string };
+      const corps = requete.body as {
+        enveloppe?: string;
+        remettreLe?: string;
+        vocal?: { audioScelle?: string; dureeS?: number };
+      };
       if (!corps?.enveloppe) {
         return reponse.code(400).send({ motif: 'champs_manquants' });
       }
+
+      const vocal =
+        corps.vocal?.audioScelle && typeof corps.vocal.dureeS === 'number'
+          ? {
+              audioScelle: corps.vocal.audioScelle,
+              dureeS: corps.vocal.dureeS,
+            }
+          : undefined;
 
       const resultat = await chat.envoyer(
         coupleId,
         requete.identite!.partenaireId,
         corps.enveloppe,
         corps.remettreLe,
+        vocal,
       );
       if (!resultat.ok) {
         return reponse

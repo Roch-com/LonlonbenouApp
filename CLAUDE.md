@@ -133,6 +133,10 @@ Légende : **P0** = MVP obligatoire · **P1** = V1.1 · **P2** = évolution ult�
       jalons assignables), §8.18 (nom d'espace, qui ne quittait jamais le
       téléphone qui l'avait choisi)
 
+- [x] Notes vocales (§8.3) — audio scellé, rangé en base, durée plafonnée à
+      deux minutes. **Version montée à 0.2.0** : `expo-audio` est un module
+      natif, l'APK 0.1.0 ne recevra plus les mises à jour.
+
 ### Ce qui reste, et pourquoi
 
 Bloqué sur autre chose que du code — à ne pas redémarrer sans avoir levé le
@@ -148,6 +152,12 @@ préalable :
       natives, et une revue de confidentialité d'App Store pour les données de santé.
 - [ ] **Agrégation bancaire (§8.11, P2)** — exige un contrat d'agrégateur
       (Bridge, Powens…) et les obligations réglementaires qui vont avec.
+- [ ] **Appels audio et vidéo** — demandés, arbitrés en faveur du pair-à-pair
+      chiffré pour ne pas trahir la promesse du reste de l'application. Trois
+      préalables : un WebSocket sur l'API (le chat sonde toutes les 4 s, ce qui
+      ne peut pas établir un appel), WebRTC côté mobile, et un serveur **TURN**
+      — sur un réseau mobile les deux téléphones sont derrière un NAT opérateur
+      et ne se joignent pas directement.
 
 Restant purement technique :
 

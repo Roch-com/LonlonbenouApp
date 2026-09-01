@@ -87,6 +87,19 @@ export interface MessageScelle {
   retireLe?: string;
   /** Réactions, scellées comme le reste. Une par personne au maximum. */
   reactions?: readonly ReactionScellee[];
+  /**
+   * Note vocale, quand le message en porte une.
+   *
+   * L'audio est scellé ; seule la durée reste en clair, pour que l'interface
+   * dessine la barre sans déchiffrer ce qu'on ne va peut-être pas écouter.
+   */
+  vocal?: NoteVocaleScellee;
+}
+
+export interface NoteVocaleScellee {
+  /** `m1.<nonce>.<scellé>` : l'audio encodé. */
+  audioScelle: string;
+  dureeS: number;
 }
 
 export interface ReactionScellee {
