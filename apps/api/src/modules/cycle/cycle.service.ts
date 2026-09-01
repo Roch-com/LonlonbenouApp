@@ -50,6 +50,8 @@ export interface VuePorteuse {
   niveau: NiveauCycle;
   /** Durée annoncée, si la personne concernée en a fixé une. */
   dureeDeclaree?: number;
+  /** Mode « désir d'enfant ». Jamais rendu au partenaire. */
+  desirEnfant?: boolean;
   regles: Regles[];
   symptomes: Symptome[];
   etat?: ReturnType<typeof etatDuCycle>;
@@ -77,6 +79,12 @@ export interface ServiceCycle {
     coupleId: string,
     auteurId: PartenaireId,
     niveau: NiveauCycle,
+  ): Promise<{ ok: boolean; motif?: RefusCycle; partage?: PartageCycle }>;
+  /** Mode « désir d'enfant » (§8.13). Réservé à la personne concernée. */
+  definirDesirEnfant(
+    coupleId: string,
+    auteurId: PartenaireId,
+    actif: boolean,
   ): Promise<{ ok: boolean; motif?: RefusCycle; partage?: PartageCycle }>;
   /** Durée annoncée, ou `undefined` pour revenir au calcul observé. */
   definirDuree(
@@ -196,6 +204,7 @@ export function creerServiceCycle(depot: Depot): ServiceCycle {
             role: 'porteuse',
             niveau: partage.niveau,
             dureeDeclaree: partage.dureeDeclaree,
+            desirEnfant: partage.desirEnfant,
             regles,
             symptomes: await depot.cycle.symptomes(coupleId),
             etat: etatDuCycle(regles, undefined, partage.dureeDeclaree),
@@ -228,6 +237,22 @@ export function creerServiceCycle(depot: Depot): ServiceCycle {
       // `definirNiveauCycle` lève si l'auteur n'est pas la personne concernée :
       // la règle vit dans le modèle partagé, le serveur ne la réécrit pas.
       const partage = definirNiveauCycle(acces.partage, auteurId, niveau);
+      await depot.cycle.definirPartage(coupleId, partage);
+      return { ok: true, partage };
+    },
+
+    async definirDesirEnfant(coupleId, auteurId, actif) {
+      // Même garde que le niveau et la durée : ce réglage décrit un projet
+      // qui passe par le corps de la personne concernée, et l'autre n'a rien
+      // à y écrire — même en étant membre du couple.
+      const acces = await autoriserEcriture(depot, coupleId, auteurId);
+      if ('motif' in acces) return { ok: false, motif: acces.motif };
+
+      const partage: PartageCycle = {
+        ...acces.partage,
+        desirEnfant: actif,
+        majLe: new Date().toISOString(),
+      };
       await depot.cycle.definirPartage(coupleId, partage);
       return { ok: true, partage };
     },

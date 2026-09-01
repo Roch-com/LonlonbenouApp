@@ -1364,9 +1364,10 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
           porteuse_id: string;
           niveau: string;
           duree_declaree: number | null;
+          desir_enfant: boolean;
           maj_le: Date;
         }>(
-          `SELECT porteuse_id, niveau, duree_declaree, maj_le
+          `SELECT porteuse_id, niveau, duree_declaree, desir_enfant, maj_le
              FROM cycle_partage WHERE couple_id = $1`,
           [coupleId],
         );
@@ -1376,6 +1377,7 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
               porteuseId: ligne.porteuse_id,
               niveau: ligne.niveau as PartageCycle['niveau'],
               dureeDeclaree: ligne.duree_declaree ?? undefined,
+              desirEnfant: ligne.desir_enfant,
               majLe: isoRequis(ligne.maj_le),
             }
           : undefined;
@@ -1384,18 +1386,20 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
       async definirPartage(coupleId, partage) {
         await pool.query(
           `INSERT INTO cycle_partage
-                  (couple_id, porteuse_id, niveau, duree_declaree, maj_le)
-                VALUES ($1, $2, $3, $4, $5)
+                  (couple_id, porteuse_id, niveau, duree_declaree, desir_enfant, maj_le)
+                VALUES ($1, $2, $3, $4, $5, $6)
            ON CONFLICT (couple_id) DO UPDATE
                   SET porteuse_id = EXCLUDED.porteuse_id,
                       niveau = EXCLUDED.niveau,
                       duree_declaree = EXCLUDED.duree_declaree,
+                      desir_enfant = EXCLUDED.desir_enfant,
                       maj_le = EXCLUDED.maj_le`,
           [
             coupleId,
             partage.porteuseId,
             partage.niveau,
             partage.dureeDeclaree ?? null,
+            partage.desirEnfant ?? false,
             partage.majLe,
           ],
         );

@@ -340,6 +340,44 @@ describe('durée de cycle annoncée', () => {
   });
 });
 
+describe('mode « désir d’enfant »', () => {
+  const definirDesir = (app: App, qui: string, actif: boolean) =>
+    app.inject({
+      method: 'PUT',
+      url: `/couples/${COUPLE_ID}/cycle/desir-enfant`,
+      headers: entete(qui),
+      payload: { actif },
+    });
+
+  it('s’active et se relit chez la personne concernée', async () => {
+    const { app } = await monterCycle('phases');
+    expect((await definirDesir(app, GAELLE, true)).statusCode).toBe(200);
+    expect((await lire(app, GAELLE)).json().desirEnfant).toBe(true);
+
+    await definirDesir(app, GAELLE, false);
+    expect((await lire(app, GAELLE)).json().desirEnfant).toBe(false);
+  });
+
+  it('refuse le partenaire, comme le niveau et la durée', async () => {
+    // Ce réglage décrit un projet qui passe par le corps de la personne
+    // concernée : l'autre n'a rien à y écrire, même membre du couple.
+    const { app } = await monterCycle('phases');
+    expect((await definirDesir(app, ROCHAMBEAU, true)).statusCode).toBe(403);
+  });
+
+  it('ne change rien à ce que voit le partenaire', async () => {
+    // Un mode qui ouvrirait des informations supplémentaires à l'autre ferait
+    // d'un projet commun une attente surveillée.
+    const { app } = await monterCycle('phases');
+    const avant = (await lire(app, ROCHAMBEAU)).json();
+    await definirDesir(app, GAELLE, true);
+    const apres = (await lire(app, ROCHAMBEAU)).json();
+
+    expect(apres).toEqual(avant);
+    expect((await lire(app, ROCHAMBEAU)).body).not.toContain('desirEnfant');
+  });
+});
+
 describe('contrôles d’accès', () => {
   it('refuse un étranger au couple', async () => {
     const { app } = await monterCycle('phases');

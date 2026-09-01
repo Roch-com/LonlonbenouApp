@@ -66,6 +66,30 @@ export function enregistrerRoutesCycle(
   );
 
   app.put(
+    '/couples/:coupleId/cycle/desir-enfant',
+    { preHandler: authentifier },
+    async (requete, reponse) => {
+      const { coupleId } = requete.params as { coupleId: string };
+      const corps = requete.body as { actif?: boolean };
+      if (typeof corps?.actif !== 'boolean') {
+        return reponse.code(400).send({ motif: 'champs_manquants' });
+      }
+
+      const resultat = await cycle.definirDesirEnfant(
+        coupleId,
+        requete.identite!.partenaireId,
+        corps.actif,
+      );
+      if (!resultat.ok) {
+        return reponse
+          .code(repondre(resultat.motif))
+          .send({ motif: resultat.motif });
+      }
+      return { partage: resultat.partage };
+    },
+  );
+
+  app.put(
     '/couples/:coupleId/cycle/duree',
     { preHandler: authentifier },
     async (requete, reponse) => {

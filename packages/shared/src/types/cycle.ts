@@ -235,6 +235,13 @@ export interface PartageCycle {
    * Absente = on s'en remet aux cycles observés, comme avant.
    */
   dureeDeclaree?: number;
+  /**
+   * Mode « désir d'enfant » (§8.13) : met en avant la fenêtre de fertilité.
+   *
+   * Réglage de la personne concernée, comme le niveau. Il ne change rien à ce
+   * que le partenaire voit : la projection reste celle que le niveau autorise.
+   */
+  desirEnfant?: boolean;
   majLe: string;
 }
 
