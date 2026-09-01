@@ -820,15 +820,16 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
 
       async projets(coupleId) {
         const { rows } = await pool.query(
-          `SELECT id, titre, intention, echeance::text AS echeance, cree_par, cree_le,
-                  archive_le, reveler_le::text AS reveler_le
+          `SELECT id, titre, intention, categorie, echeance::text AS echeance,
+                  cree_par, cree_le, archive_le, reveler_le::text AS reveler_le
              FROM projets WHERE couple_id = $1 ORDER BY cree_le DESC`,
           [coupleId],
         );
         if (rows.length === 0) return [];
 
         const jalons = await pool.query(
-          `SELECT id, projet_id, titre, echeance::text AS echeance, fait_le, fait_par
+          `SELECT id, projet_id, titre, echeance::text AS echeance, fait_le,
+                  fait_par, assigne_a
              FROM jalons WHERE projet_id = ANY($1::text[]) ORDER BY rang`,
           [rows.map((r) => r.id)],
         );
@@ -837,6 +838,7 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
           id: r.id,
           titre: r.titre,
           intention: r.intention ?? undefined,
+          categorie: r.categorie ?? undefined,
           echeance: r.echeance ?? undefined,
           creePar: r.cree_par,
           creeLe: isoRequis(r.cree_le),
@@ -850,6 +852,8 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
               echeance: j.echeance ?? undefined,
               faitLe: iso(j.fait_le),
               faitPar: j.fait_par ?? undefined,
+              // Absent signifie « aux deux » : c'est le defaut, pas un manque.
+              assigneA: j.assigne_a ?? undefined,
             })),
         }));
       },
@@ -863,10 +867,12 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
         try {
           await client.query('BEGIN');
           await client.query(
-            `INSERT INTO projets (id, couple_id, titre, intention, echeance, cree_par, cree_le, archive_le, reveler_le)
-                  VALUES ($1,$2,$3,$4,$5::date,$6,$7,$8,$9::date)
+            `INSERT INTO projets (id, couple_id, titre, intention, categorie,
+                                 echeance, cree_par, cree_le, archive_le, reveler_le)
+                  VALUES ($1,$2,$3,$4,$5,$6::date,$7,$8,$9,$10::date)
              ON CONFLICT (id) DO UPDATE
                     SET titre = EXCLUDED.titre, intention = EXCLUDED.intention,
+                        categorie = EXCLUDED.categorie,
                         echeance = EXCLUDED.echeance, archive_le = EXCLUDED.archive_le,
                         reveler_le = EXCLUDED.reveler_le`,
             [
@@ -874,6 +880,7 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
               coupleId,
               projet.titre,
               projet.intention ?? null,
+              projet.categorie ?? null,
               projet.echeance ?? null,
               projet.creePar,
               projet.creeLe,
@@ -887,8 +894,9 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
           ]);
           for (const [rang, j] of projet.jalons.entries()) {
             await client.query(
-              `INSERT INTO jalons (id, projet_id, titre, echeance, fait_le, fait_par, rang)
-                    VALUES ($1,$2,$3,$4::date,$5,$6,$7)`,
+              `INSERT INTO jalons (id, projet_id, titre, echeance, fait_le,
+                                  fait_par, assigne_a, rang)
+                    VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8)`,
               [
                 j.id,
                 projet.id,
@@ -896,6 +904,7 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
                 j.echeance ?? null,
                 j.faitLe ?? null,
                 j.faitPar ?? null,
+                j.assigneA ?? null,
                 rang,
               ],
             );

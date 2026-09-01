@@ -2,11 +2,55 @@
 
 import type { PartenaireId } from './couple';
 
+/**
+ * Catégories de projet (§8.10).
+ *
+ * Volontairement peu nombreuses : une liste longue oblige à hésiter, et un
+ * projet mal rangé ne se retrouve pas mieux qu'un projet non rangé.
+ */
+export type CategorieProjet =
+  | 'voyage'
+  | 'maison'
+  | 'argent'
+  | 'famille'
+  | 'ensemble';
+
+export interface DefinitionCategorieProjet {
+  code: CategorieProjet;
+  libelle: string;
+  emoji: string;
+}
+
+export const CATEGORIES_PROJET: readonly DefinitionCategorieProjet[] = [
+  { code: 'voyage', libelle: 'Partir', emoji: '✈️' },
+  { code: 'maison', libelle: 'Chez nous', emoji: '🏠' },
+  { code: 'argent', libelle: 'Mettre de côté', emoji: '💶' },
+  { code: 'famille', libelle: 'Famille', emoji: '🫂' },
+  { code: 'ensemble', libelle: 'À deux', emoji: '💛' },
+] as const;
+
+export function definitionCategorieProjet(
+  code: CategorieProjet,
+): DefinitionCategorieProjet {
+  const trouve = CATEGORIES_PROJET.find((c) => c.code === code);
+  if (!trouve) throw new Error(`Catégorie de projet inconnue : ${code}`);
+  return trouve;
+}
+
 export interface Jalon {
   id: string;
   titre: string;
   /** `YYYY-MM-DD`. */
   echeance?: string;
+  /**
+   * À qui revient ce jalon (§8.10). Absent signifie « aux deux » — c'est le
+   * cas le plus fréquent dans un projet de couple, et en faire le défaut
+   * évite de demander un arbitrage à chaque ligne.
+   *
+   * Sert à savoir qui s'en occupe, **jamais** à compter : un projet de couple
+   * avance ou n'avance pas, personne n'avance plus que l'autre.
+   */
+  assigneA?: PartenaireId;
   faitLe?: string;
   /**
    * Qui a coché. Conservé pour l'affichage d'un jalon précis — **jamais
@@ -19,6 +63,7 @@ export interface Jalon {
 export interface Projet {
   id: string;
   titre: string;
+  categorie?: CategorieProjet;
   /** Le « pourquoi » du projet, qui aide à s'y remettre des mois plus tard. */
   intention?: string;
   jalons: readonly Jalon[];

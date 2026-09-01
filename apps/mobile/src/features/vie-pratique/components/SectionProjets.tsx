@@ -1,6 +1,11 @@
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { PROJETS_SUGGERES, trierProjets } from '@lonlonbenu/shared';
+import {
+  CATEGORIES_PROJET,
+  PROJETS_SUGGERES,
+  trierProjets,
+  type CategorieProjet,
+} from '@lonlonbenu/shared';
 import { Bouton, Carte, Champ, Puce, Texte } from '@/components/ui';
 import { espacements } from '@/design/theme';
 import { useSession } from '@/features/reglages/stores/sessionStore';
@@ -22,15 +27,17 @@ export function SectionProjets() {
   const [ouvert, setOuvert] = useState(false);
   const [titre, setTitre] = useState('');
   const [intention, setIntention] = useState('');
+  const [categorie, setCategorie] = useState<CategorieProjet>();
 
   const maintenant = new Date().toISOString();
   const tries = trierProjets(projets, maintenant);
 
   const valider = () => {
     if (!titre.trim()) return;
-    void creerProjet(coupleId!, partenaireId!, titre, intention);
+    void creerProjet(coupleId!, partenaireId!, titre, intention, categorie);
     setTitre('');
     setIntention('');
+    setCategorie(undefined);
     setOuvert(false);
   };
 
@@ -54,6 +61,25 @@ export function SectionProjets() {
           </View>
           <View style={styles.champs}>
             <Champ etiquette="Le projet" value={titre} onChangeText={setTitre} />
+
+            {/* §8.10 : « titre, catégorie ». Facultative — un projet mal rangé
+                ne se retrouve pas mieux qu'un projet non rangé. */}
+            <Texte variante="meta">Ranger dans (facultatif) :</Texte>
+            <View style={styles.puces}>
+              {CATEGORIES_PROJET.map((c) => (
+                <Puce
+                  key={c.code}
+                  libelle={c.libelle}
+                  emoji={c.emoji}
+                  active={categorie === c.code}
+                  onPress={() =>
+                    setCategorie((actuelle) =>
+                      actuelle === c.code ? undefined : c.code,
+                    )
+                  }
+                />
+              ))}
+            </View>
             <Champ
               etiquette="Pourquoi il compte (facultatif)"
               placeholder="Ce que vous en attendez, pour vous y remettre plus tard."
@@ -94,13 +120,14 @@ export function SectionProjets() {
             onCocher={(jalonId) =>
               void cocherJalon(coupleId!, partenaireId!, projet.id, jalonId)
             }
-            onAjouterJalon={(titreJalon, echeance) =>
+            onAjouterJalon={(titreJalon, echeance, assigneA) =>
               void ajouterJalon(
                 coupleId!,
                 partenaireId!,
                 projet.id,
                 titreJalon,
                 echeance,
+                assigneA,
               )
             }
             onArchiver={(archive) =>

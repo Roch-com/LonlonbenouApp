@@ -6,13 +6,14 @@ import { useCouleurs } from '@/design/ThemeProvider';
 import { Feather } from '@expo/vector-icons';
 import {
   avancementProjet,
+  definitionCategorieProjet,
   jalonFait,
   LIBELLES_ETAT_PROJET,
   quand,
   type Partenaire,
   type Projet,
 } from '@lonlonbenu/shared';
-import { Bouton, Carte, Champ, ChampDate, Texte } from '@/components/ui';
+import { Bouton, Carte, Champ, ChampDate, Puce, Texte } from '@/components/ui';
 import { espacements, rayons } from '@/design/theme';
 import { EnveloppeProjet } from './EnveloppeProjet';
 
@@ -21,7 +22,12 @@ interface Props {
   partenaires: readonly Partenaire[];
   maintenant: string;
   onCocher: (jalonId: string) => void;
-  onAjouterJalon: (titre: string, echeance?: string) => void;
+  onAjouterJalon: (
+    titre: string,
+    echeance?: string,
+    /** Absent : le jalon revient aux deux (§8.10). */
+    assigneA?: string,
+  ) => void;
   onArchiver: (archive: boolean) => void;
 }
 
@@ -38,15 +44,18 @@ export function CarteProjet({
   const [deplie, setDeplie] = useState(false);
   const [titreJalon, setTitreJalon] = useState('');
   const [echeance, setEcheance] = useState('');
+  const [assigneA, setAssigneA] = useState<string>();
 
   const ajouter = () => {
     if (!titreJalon.trim()) return;
     onAjouterJalon(
       titreJalon,
       /^\d{4}-\d{2}-\d{2}$/.test(echeance) ? echeance : undefined,
+      assigneA,
     );
     setTitreJalon('');
     setEcheance('');
+    setAssigneA(undefined);
   };
 
   return (
@@ -56,7 +65,12 @@ export function CarteProjet({
         accessibilityState={{ expanded: deplie }}
         onPress={() => setDeplie((d) => !d)}
       >
-        <Texte variante="titre">{projet.titre}</Texte>
+        <Texte variante="titre">
+          {projet.categorie
+            ? `${definitionCategorieProjet(projet.categorie).emoji} `
+            : ''}
+          {projet.titre}
+        </Texte>
         {projet.intention ? (
           <Texte variante="corpsDoux" style={styles.intention}>
             {projet.intention}
@@ -136,6 +150,12 @@ export function CarteProjet({
                         {jalon.echeance
                           ? quand(jalon.echeance, maintenant)
                           : 'sans date'}
+                        {jalon.assigneA
+                          ? ` · ${
+                              partenaires.find((p) => p.id === jalon.assigneA)
+                                ?.prenom ?? 'quelqu’un'
+                            }`
+                          : ' · à deux'}
                         {fait && auteur ? ` · coché par ${auteur.prenom}` : ''}
                       </Texte>
                     </View>
@@ -161,6 +181,23 @@ export function CarteProjet({
               valeur={echeance}
               onChanger={setEcheance}
             />
+            {/* §8.10 : « jalons assignables à l'un, l'autre ou aux deux ».
+                Rien de coché veut dire « aux deux » — le cas le plus fréquent,
+                et en faire le défaut évite un arbitrage à chaque ligne. */}
+            <Texte variante="meta">Qui s’en occupe (facultatif) :</Texte>
+            <View style={styles.puces}>
+              {partenaires.map((p) => (
+                <Puce
+                  key={p.id}
+                  libelle={p.prenom}
+                  active={assigneA === p.id}
+                  onPress={() =>
+                    setAssigneA((actuel) => (actuel === p.id ? undefined : p.id))
+                  }
+                />
+              ))}
+            </View>
+
             <Bouton
               libelle="Ajouter ce jalon"
               ton="secondaire"
@@ -183,6 +220,7 @@ export function CarteProjet({
 
 const styles = stylesDynamiques(({ colors }: Theme) => ({
   intention: { marginTop: espacements.xxs },
+  puces: { flexDirection: 'row', flexWrap: 'wrap', gap: espacements.xs },
   jauge: { marginTop: espacements.md, gap: espacements.xs },
   piste: {
     height: 6,

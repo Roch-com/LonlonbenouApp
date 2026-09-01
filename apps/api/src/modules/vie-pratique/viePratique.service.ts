@@ -21,9 +21,11 @@
 import { randomUUID } from 'node:crypto';
 import {
   basculerJalon,
+  CATEGORIES_PROJET,
   marquerVecue,
   programmer,
   type CategorieEvenement,
+  type CategorieProjet,
   type CategorieSortie,
   type Evenement,
   type Initiative,
@@ -89,6 +91,7 @@ export interface ServiceViePratique {
      * commun. Avant cette date, seul son auteur le voit.
      */
     revelerLe?: string,
+    categorie?: CategorieProjet,
   ): Promise<Resultat<Projet>>;
   ajouterJalon(
     coupleId: string,
@@ -96,6 +99,8 @@ export interface ServiceViePratique {
     projetId: string,
     titre: string,
     echeance?: string,
+    /** Absent : le jalon revient aux deux (§8.10). */
+    assigneA?: PartenaireId,
   ): Promise<Resultat<Projet>>;
   cocherJalon(
     coupleId: string,
@@ -261,10 +266,16 @@ export function creerServiceViePratique(depot: Depot): ServiceViePratique {
         return { ok: true };
       }),
 
-    creerProjet: (coupleId, moiId, titre, intention, revelerLe) =>
+    creerProjet: (coupleId, moiId, titre, intention, revelerLe, categorie) =>
       avecAcces(coupleId, moiId, async () => {
         const propre = titre.trim();
         if (!propre) return { ok: false, motif: 'donnees_invalides' };
+        if (
+          categorie !== undefined &&
+          !CATEGORIES_PROJET.some((c) => c.code === categorie)
+        ) {
+          return { ok: false, motif: 'donnees_invalides' };
+        }
 
         // Une date de révélation mal formée ferait un projet secret pour
         // toujours — exactement ce que le module ne promet pas.
@@ -280,23 +291,38 @@ export function creerServiceViePratique(depot: Depot): ServiceViePratique {
           creePar: moiId,
           creeLe: new Date().toISOString(),
           revelerLe,
+          ...(categorie ? { categorie } : {}),
         };
         await depot.viePratique.enregistrerProjet(coupleId, projet);
         return { ok: true, valeur: projet };
       }),
 
-    ajouterJalon: (coupleId, moiId, projetId, titre, echeance) =>
+    ajouterJalon: (coupleId, moiId, projetId, titre, echeance, assigneA) =>
       avecAcces(coupleId, moiId, async () => {
         const propre = titre.trim();
         if (!propre) return { ok: false, motif: 'donnees_invalides' };
         if (echeance !== undefined && !FORMAT_JOUR.test(echeance)) {
           return { ok: false, motif: 'donnees_invalides' };
         }
+        // On n'assigne qu'à quelqu'un du couple : un identifiant étranger
+        // afficherait un jalon attribué à personne.
+        if (assigneA !== undefined) {
+          const enregistrement = await depot.couples.parId(coupleId);
+          const membre = enregistrement?.couple.partenaires.some(
+            (p) => p.id === assigneA,
+          );
+          if (!membre) return { ok: false, motif: 'donnees_invalides' };
+        }
 
         const projet = await depot.viePratique.projetParId(coupleId, projetId);
         if (!projet) return { ok: false, motif: 'introuvable' };
 
-        const jalon: Jalon = { id: randomUUID(), titre: propre, echeance };
+        const jalon: Jalon = {
+          id: randomUUID(),
+          titre: propre,
+          echeance,
+          ...(assigneA ? { assigneA } : {}),
+        };
         const misAJour = { ...projet, jalons: [...projet.jalons, jalon] };
         await depot.viePratique.enregistrerProjet(coupleId, misAJour);
         return { ok: true, valeur: misAJour };

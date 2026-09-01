@@ -7,6 +7,7 @@
  */
 import type {
   CategorieEvenement,
+  CategorieProjet,
   CategorieSortie,
   Evenement,
   Initiative,
@@ -58,10 +59,11 @@ export function creerProjetServeur(
   coupleId: string,
   titre: string,
   intention?: string,
+  categorie?: CategorieProjet,
 ): Promise<unknown> {
   return appeler(`/couples/${coupleId}/vie-pratique/projets`, {
     methode: 'POST',
-    corps: { titre, intention },
+    corps: { titre, intention, ...(categorie ? { categorie } : {}) },
   });
 }
 
@@ -70,10 +72,12 @@ export function ajouterJalonServeur(
   projetId: string,
   titre: string,
   echeance?: string,
+  /** Absent : le jalon revient aux deux (§8.10). */
+  assigneA?: string,
 ): Promise<unknown> {
   return appeler(`/couples/${coupleId}/vie-pratique/projets/${projetId}/jalons`, {
     methode: 'POST',
-    corps: { titre, echeance },
+    corps: { titre, echeance, ...(assigneA ? { assigneA } : {}) },
   });
 }
 

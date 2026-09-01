@@ -15,6 +15,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type {
+  CategorieProjet,
   CategorieSortie,
   Evenement,
   Initiative,
@@ -66,6 +67,7 @@ interface EtatViePratique {
     moiId: string,
     titre: string,
     intention?: string,
+    categorie?: CategorieProjet,
   ) => Promise<boolean>;
   ajouterJalon: (
     coupleId: string,
@@ -73,6 +75,7 @@ interface EtatViePratique {
     projetId: string,
     titre: string,
     echeance?: string,
+    assigneA?: string,
   ) => Promise<boolean>;
   cocherJalon: (
     coupleId: string,
@@ -194,13 +197,13 @@ export const useViePratique = create<EtatViePratique>()(
         supprimerEvenement: (coupleId, moiId, id) =>
           ecrire(coupleId, moiId, () => supprimerEvenementServeur(coupleId, id)),
 
-        creerProjet: (coupleId, moiId, titre, intention) =>
+        creerProjet: (coupleId, moiId, titre, intention, categorie) =>
           ecrire(coupleId, moiId, () =>
-            creerProjetServeur(coupleId, titre, intention),
+            creerProjetServeur(coupleId, titre, intention, categorie),
           ),
-        ajouterJalon: (coupleId, moiId, projetId, titre, echeance) =>
+        ajouterJalon: (coupleId, moiId, projetId, titre, echeance, assigneA) =>
           ecrire(coupleId, moiId, () =>
-            ajouterJalonServeur(coupleId, projetId, titre, echeance),
+            ajouterJalonServeur(coupleId, projetId, titre, echeance, assigneA),
           ),
         cocherJalon: (coupleId, moiId, projetId, jalonId) =>
           ecrire(coupleId, moiId, () =>

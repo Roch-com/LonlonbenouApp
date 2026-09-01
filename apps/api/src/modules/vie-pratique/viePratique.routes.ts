@@ -1,5 +1,9 @@
 import type { FastifyInstance, preHandlerHookHandler } from 'fastify';
-import type { CategorieEvenement, CategorieSortie } from '@lonlonbenu/shared';
+import type {
+  CategorieEvenement,
+  CategorieProjet,
+  CategorieSortie,
+} from '@lonlonbenu/shared';
 import type { ServiceViePratique } from './viePratique.service.ts';
 
 const CODES: Record<string, number> = {
@@ -107,6 +111,7 @@ export function enregistrerRoutesViePratique(
         titre?: string;
         intention?: string;
         revelerLe?: string;
+        categorie?: CategorieProjet;
       };
       if (!corps?.titre) {
         return reponse.code(400).send({ motif: 'champs_manquants' });
@@ -118,6 +123,7 @@ export function enregistrerRoutesViePratique(
         corps.titre,
         corps.intention,
         corps.revelerLe,
+        corps.categorie,
       );
       if (!resultat.ok) {
         return reponse
@@ -136,7 +142,11 @@ export function enregistrerRoutesViePratique(
         coupleId: string;
         projetId: string;
       };
-      const corps = requete.body as { titre?: string; echeance?: string };
+      const corps = requete.body as {
+        titre?: string;
+        echeance?: string;
+        assigneA?: string;
+      };
       if (!corps?.titre) {
         return reponse.code(400).send({ motif: 'champs_manquants' });
       }
@@ -147,6 +157,7 @@ export function enregistrerRoutesViePratique(
         projetId,
         corps.titre,
         corps.echeance,
+        corps.assigneA,
       );
       if (!resultat.ok) {
         return reponse
