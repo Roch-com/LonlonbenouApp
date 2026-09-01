@@ -13,6 +13,7 @@
 
 import {
   basculerConsentement,
+  creerPartage,
   estPartageActif,
   type ModuleSensible,
   type PartageReciproque,
@@ -72,6 +73,28 @@ function versEtat(partage: PartageReciproque, moiId: PartenaireId): EtatPartage 
   };
 }
 
+/**
+ * Partage existant, ou partage neuf et éteint.
+ *
+ * `MODULES_SENSIBLES` grandit avec l'application ; les enregistrements de
+ * couple, eux, sont figés au moment de l'appairage. Sans cette fonction, tout
+ * module ajouté ensuite serait inaccessible aux couples déjà formés — ce qui
+ * est exactement arrivé à `activite`.
+ *
+ * Le partage neuf est éteint des deux côtés : personne n'a consenti à quoi que
+ * ce soit en installant une mise à jour.
+ */
+function partageOuNeuf(
+  enregistrement: CoupleServeur,
+  module: ModuleSensible,
+): PartageReciproque {
+  const existant = enregistrement.partages[module];
+  if (existant) return existant;
+
+  const [a, b] = enregistrement.couple.partenaires;
+  return creerPartage(module, a!.id, b!.id, false);
+}
+
 export function creerServicePartages(
   depot: Depot,
   expediteur: Expediteur,
@@ -81,10 +104,15 @@ export function creerServicePartages(
       const acces = await autoriser(depot, coupleId, lecteurId);
       if ('motif' in acces) return { ok: false, motif: acces.motif };
 
+      // La liste des modules fait autorité, pas l'enregistrement du couple.
+      // Un couple appairé avant l'ajout d'un module n'a aucune ligne pour lui :
+      // s'en tenir à ce qui est stocké le rendait invisible à l'écran, donc
+      // impossible à activer — l'interrupteur s'affichait mais restait grisé,
+      // faute d'état à montrer.
       return {
         ok: true,
-        partages: Object.values(acces.couple.partages).map((p) =>
-          versEtat(p, lecteurId),
+        partages: MODULES_SENSIBLES.map((module) =>
+          versEtat(partageOuNeuf(acces.couple, module), lecteurId),
         ),
       };
     },
@@ -97,8 +125,9 @@ export function creerServicePartages(
       const acces = await autoriser(depot, coupleId, moiId);
       if ('motif' in acces) return { ok: false, motif: acces.motif };
 
-      const partage = acces.couple.partages[module];
-      if (!partage) return { ok: false, motif: 'module_inconnu' };
+      // Créé à la volée s'il manque : un module ajouté après l'appairage doit
+      // pouvoir s'activer, sinon il reste mort pour les couples existants.
+      const partage = partageOuNeuf(acces.couple, module as ModuleSensible);
 
       const moi = acces.couple.couple.partenaires.find((p) => p.id === moiId);
       const resultat = basculerConsentement(
