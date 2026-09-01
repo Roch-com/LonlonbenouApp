@@ -111,16 +111,21 @@ Légende : **P0** = MVP obligatoire · **P1** = V1.1 · **P2** = évolution ult�
 - [x] P1 : Carte & Présence, pôle ⑤ (Souvenirs, Love Map), Finances partagées
 - [x] P1 : Parcours guidé (§8.7), Complicité & connexion (§8.14)
 - [x] P2 : Journal du couple (§8.17) — module de synthèse, ne stocke rien
-- [x] §8.11 completé : enveloppes de projet, factures récurrentes et leurs rappels
+- [x] §8.11 complété : enveloppes de projet, factures récurrentes et leurs rappels
+- [x] **Audit ligne à ligne du cahier v1.1** — six manques trouvés et comblés :
+      §8.1 (prochaine échéance de projet, dernière note douce reçue), §8.5
+      (importance, progrès reconnu, limite d'axes actifs), §8.10 (catégorie,
+      jalons assignables), §8.18 (nom d'espace, qui ne quittait jamais le
+      téléphone qui l'avait choisi)
 
 ### Ce qui reste, et pourquoi
 
 Bloqué sur autre chose que du code — à ne pas redémarrer sans avoir levé le
 préalable :
 
-- [ ] **Photos et vidéos dans l'album (§8.15)** — aucun stockage d'objets n'est
-      provisionné, et la base actuelle n'a pas la capacité. Demande un compartiment
-      (R2, S3 ou équivalent) avant toute ligne de code.
+- [ ] **Photos, vidéos et images de couverture (§8.15, §8.10)** — aucun stockage
+      d'objets n'est provisionné, et la base actuelle n'a pas la capacité.
+      Demande un compartiment (R2, S3 ou équivalent) avant toute ligne de code.
 - [ ] **Widgets écran verrouillé (§8.4, P1)** — cibles natives WidgetKit (iOS) et
       App Widgets (Android) : `expo prebuild`, du Swift et du Kotlin, et rien de
       vérifiable sans build sur appareil.
