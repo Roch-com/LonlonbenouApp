@@ -108,5 +108,28 @@ Légende : **P0** = MVP obligatoire · **P1** = V1.1 · **P2** = évolution ult�
 - [x] Chat (①) chiffré de bout en bout (X25519 + XChaCha20-Poly1305) et Présence (①) adossés au serveur
 - [x] Vie pratique (③) adossée au serveur ; rappels émis par un planificateur serveur via `deciderRemise`, la boucle mobile est supprimée
 - [x] **Tous les pôles sont adossés au serveur** — plus aucune source de vérité locale
+- [x] P1 : Carte & Présence, pôle ⑤ (Souvenirs, Love Map), Finances partagées
+- [x] P1 : Parcours guidé (§8.7), Complicité & connexion (§8.14)
+- [x] P2 : Journal du couple (§8.17) — module de synthèse, ne stocke rien
+- [x] §8.11 completé : enveloppes de projet, factures récurrentes et leurs rappels
+
+### Ce qui reste, et pourquoi
+
+Bloqué sur autre chose que du code — à ne pas redémarrer sans avoir levé le
+préalable :
+
+- [ ] **Photos et vidéos dans l'album (§8.15)** — aucun stockage d'objets n'est
+      provisionné, et la base actuelle n'a pas la capacité. Demande un compartiment
+      (R2, S3 ou équivalent) avant toute ligne de code.
+- [ ] **Widgets écran verrouillé (§8.4, P1)** — cibles natives WidgetKit (iOS) et
+      App Widgets (Android) : `expo prebuild`, du Swift et du Kotlin, et rien de
+      vérifiable sans build sur appareil.
+- [ ] **Synchro santé (§8.13, P1)** — Apple Health / Google Fit : autorisations
+      natives, et une revue de confidentialité d'App Store pour les données de santé.
+- [ ] **Agrégation bancaire (§8.11, P2)** — exige un contrat d'agrégateur
+      (Bridge, Powens…) et les obligations réglementaires qui vont avec.
+
+Restant purement technique :
+
 - [ ] Chat : passer à un double ratchet (bibliothèque auditée) pour la confidentialité persistante
 - [ ] Tests avec le couple pilote Rochaelle
