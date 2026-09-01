@@ -20,8 +20,8 @@
     "@fastify/websocket": "^11.3.0",
     "@lonlonbenu/shared": "*",
     "@sentry/node": "^10.71.0",
-    "fastify": "^5.2.1",
-    "jose": "^6.2.8",
+    "fastify": "^5.12.1",
+    "jose": "^6.2.10",
     "pg": "^8.23.0",
     "tsx": "^4.23.12"
   },
