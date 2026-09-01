@@ -21,6 +21,14 @@ import type { PartenaireId } from '../types/couple';
 import type { Evenement } from '../types/calendrier';
 import type { Initiative } from '../types/initiatives';
 import type { Projet } from '../types/projets';
+import { facturesAVenir, texteRappelFacture } from '../finances/factures';
+import type { FactureScellee } from '../finances/factures';
+
+/** Ce qu'un rappel a besoin de savoir d'une facture : sa cadence, jamais son objet. */
+export type FactureRappelable = Pick<
+  FactureScellee,
+  'id' | 'premiereEcheance' | 'periodicite' | 'arreteeLe'
+>;
 
 export interface RappelPlanifie {
   /** Identifiant stable : un rappel déjà émis ne se réémet pas. */
@@ -33,6 +41,12 @@ export interface SourcesRappel {
   evenements: readonly Evenement[];
   projets: readonly Projet[];
   initiatives: readonly Initiative[];
+  /**
+   * Factures communes (§8.11). Absentes quand le module finances est éteint :
+   * le cahier le veut « entièrement optionnel », ce qui vaut aussi pour ses
+   * rappels.
+   */
+  factures?: readonly FactureRappelable[];
 }
 
 const MS_PAR_HEURE = 3_600_000;
@@ -110,6 +124,13 @@ export function rappelsDus(
       `initiative:${initiative.id}:${jour}`,
       `C’est aujourd’hui : ${initiative.titre}.`,
     );
+  }
+
+  // Les factures ferment la marche : le texte ne les nomme pas, le serveur ne
+  // les a jamais lues. C'est le prix du chiffrement exigé par le §8.11, et il
+  // vaut mieux qu'une notification plus jolie.
+  for (const facture of facturesAVenir(sources.factures ?? [], jour)) {
+    ajouter(facture.cle, texteRappelFacture(facture.dans));
   }
 
   return rappels;

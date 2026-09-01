@@ -37,16 +37,26 @@ export async function executerLesRappels(
   let emis = 0;
 
   for (const enregistrement of couples) {
-    const [evenements, projets, initiatives, dejaEmis] = await Promise.all([
-      depot.viePratique.evenements(enregistrement.id),
-      depot.viePratique.projets(enregistrement.id),
-      depot.viePratique.initiatives(enregistrement.id),
-      depot.viePratique.rappelsEmis(enregistrement.id),
-    ]);
+    const [evenements, projets, initiatives, dejaEmis, reglages, factures] =
+      await Promise.all([
+        depot.viePratique.evenements(enregistrement.id),
+        depot.viePratique.projets(enregistrement.id),
+        depot.viePratique.initiatives(enregistrement.id),
+        depot.viePratique.rappelsEmis(enregistrement.id),
+        depot.finances.reglages(enregistrement.id),
+        depot.finances.factures(enregistrement.id),
+      ]);
 
     const [a, b] = enregistrement.couple.partenaires;
     const rappels = rappelsDus(
-      { evenements, projets, initiatives },
+      {
+        evenements,
+        projets,
+        initiatives,
+        // Module éteint, pas de rappel : le §8.11 le veut « entièrement
+        // optionnel et désactivable », ce qui vaut aussi pour ses notifications.
+        factures: reglages?.actif ? factures : [],
+      },
       [a.id, b.id],
       dejaEmis,
       maintenant.toISOString(),

@@ -14,6 +14,7 @@ import {
 } from '@lonlonbenu/shared';
 import { Bouton, Carte, Champ, ChampDate, Texte } from '@/components/ui';
 import { espacements, rayons } from '@/design/theme';
+import { EnveloppeProjet } from './EnveloppeProjet';
 
 interface Props {
   projet: Projet;
@@ -143,6 +144,10 @@ export function CarteProjet({
               })}
             </View>
           )}
+
+          {/* Muette tant que le module finances est éteint : le §8.11 le veut
+              entièrement optionnel. */}
+          <EnveloppeProjet projetId={projet.id} />
 
           <View style={styles.ajout}>
             <Champ

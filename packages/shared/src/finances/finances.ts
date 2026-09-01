@@ -245,7 +245,31 @@ export interface LectureBudget {
 const SEUIL_PROCHE = 0.85;
 
 /**
- * Lecture d'un budget mensuel (§8.11 : « alertes douces de dépassement »).
+ * Le cadre d'un budget : le mois du foyer, ou l'enveloppe d'un projet.
+ *
+ * Les deux se lisent pareil mais ne se disent pas pareil. « Le budget de ce
+ * mois est dépassé » n'a aucun sens pour un voyage dont l'enveloppe a été
+ * fixée une fois pour toutes.
+ */
+export type CadreBudget = 'mois' | 'projet';
+
+const TEXTES_BUDGET: Record<CadreBudget, Record<EtatBudget, string>> = {
+  mois: {
+    depasse:
+      'Le budget de ce mois est dépassé. Cela arrive — c’est un repère, pas une limite à tenir.',
+    proche: 'Vous approchez du budget que vous vous étiez fixé pour ce mois.',
+    dans_le_budget: 'Vous êtes dans ce que vous aviez prévu.',
+  },
+  projet: {
+    depasse:
+      'L’enveloppe de ce projet est dépassée. Il reste à décider ensemble ce que vous en faites.',
+    proche: 'Vous approchez de l’enveloppe prévue pour ce projet.',
+    dans_le_budget: 'Ce projet tient dans son enveloppe.',
+  },
+};
+
+/**
+ * Lecture d'un budget (§8.11 : « alertes douces de dépassement »).
  *
  * Le mot « douces » n'est pas décoratif. Un budget dépassé n'est pas une faute :
  * c'est un mois où la vie a coûté plus cher que prévu, souvent pour des raisons
@@ -256,31 +280,24 @@ const SEUIL_PROCHE = 0.85;
 export function lectureBudget(
   depense: number,
   budget: number | undefined,
+  cadre: CadreBudget = 'mois',
 ): LectureBudget | undefined {
   if (!budget || budget <= 0) return undefined;
 
   const part = depense / budget;
+  const textes = TEXTES_BUDGET[cadre];
 
-  if (part > 1) {
-    return {
-      etat: 'depasse',
-      part,
-      lecture:
-        'Le budget de ce mois est dépassé. Cela arrive — c’est un repère, pas une limite à tenir.',
-    };
-  }
-  if (part >= SEUIL_PROCHE) {
-    return {
-      etat: 'proche',
-      part,
-      lecture: 'Vous approchez du budget que vous vous étiez fixé pour ce mois.',
-    };
-  }
-  return {
-    etat: 'dans_le_budget',
-    part,
-    lecture: 'Vous êtes dans ce que vous aviez prévu.',
-  };
+  if (part > 1) return { etat: 'depasse', part, lecture: textes.depasse };
+  if (part >= SEUIL_PROCHE) return { etat: 'proche', part, lecture: textes.proche };
+  return { etat: 'dans_le_budget', part, lecture: textes.dans_le_budget };
+}
+
+/** Dépenses rattachées à un projet (§8.11 : « budget partagé par projet »). */
+export function depensesDuProjet<T extends { projetId?: string }>(
+  depenses: readonly T[],
+  projetId: string,
+): T[] {
+  return depenses.filter((d) => d.projetId === projetId);
 }
 
 /** Montant en toutes lettres, dans la devise du couple. */

@@ -18,9 +18,29 @@ export interface DepenseScellee {
   creeLe: string;
 }
 
+/** Une facture côté serveur : une échéance, une cadence, une enveloppe. */
+export interface FactureScelleeServeur {
+  id: string;
+  premiereEcheance: string;
+  periodicite: 'mensuelle' | 'trimestrielle' | 'annuelle';
+  contenuScelle: string;
+  creePar: string;
+  creeLe: string;
+  arreteeLe?: string;
+}
+
+/** L'enveloppe d'un projet. Le montant est scellé comme le reste. */
+export interface BudgetProjetScelleServeur {
+  projetId: string;
+  montantScelle: string;
+  majLe: string;
+}
+
 export interface VueFinancesServeur {
   reglages: ReglagesFinancesServeur;
   depenses: DepenseScellee[];
+  factures: FactureScelleeServeur[];
+  budgets: BudgetProjetScelleServeur[];
 }
 
 export function lireFinances(coupleId: string): Promise<VueFinancesServeur> {
@@ -59,6 +79,48 @@ export function supprimerDepenseServeur(
   id: string,
 ): Promise<void> {
   return appeler<void>(`/couples/${coupleId}/finances/depenses/${id}`, {
+    methode: 'DELETE',
+  });
+}
+
+export function ajouterFactureServeur(
+  coupleId: string,
+  premiereEcheance: string,
+  periodicite: string,
+  contenuScelle: string,
+): Promise<unknown> {
+  return appeler(`/couples/${coupleId}/finances/factures`, {
+    methode: 'POST',
+    corps: { premiereEcheance, periodicite, contenuScelle },
+  });
+}
+
+/** Arrêt, jamais suppression : des dépenses passées renvoient à la facture. */
+export function arreterFactureServeur(
+  coupleId: string,
+  id: string,
+): Promise<unknown> {
+  return appeler(`/couples/${coupleId}/finances/factures/${id}/arreter`, {
+    methode: 'POST',
+  });
+}
+
+export function definirBudgetServeur(
+  coupleId: string,
+  projetId: string,
+  montantScelle: string,
+): Promise<unknown> {
+  return appeler(`/couples/${coupleId}/finances/budgets/${projetId}`, {
+    methode: 'PUT',
+    corps: { montantScelle },
+  });
+}
+
+export function supprimerBudgetServeur(
+  coupleId: string,
+  projetId: string,
+): Promise<void> {
+  return appeler<void>(`/couples/${coupleId}/finances/budgets/${projetId}`, {
     methode: 'DELETE',
   });
 }

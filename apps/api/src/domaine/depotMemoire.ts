@@ -16,6 +16,7 @@ import {
   type Evenement,
   type Initiative,
   type Projet,
+  type FactureScellee,
   type ParcoursEngage,
   type PartageCycle,
   type ReponsesLangages,
@@ -30,6 +31,7 @@ import type {
   CoupleServeur,
   Depot,
   InvitationServeur,
+  BudgetProjetScelle,
   DepenseScellee,
   MessageScelle,
   ReponseCompliciteServeur,
@@ -62,6 +64,8 @@ export function creerDepotMemoire(): Depot {
   const complicite = new Map<string, ReponseCompliciteServeur[]>();
   const parcours = new Map<string, ParcoursEngage[]>();
   const langages = new Map<string, ReponsesLangages[]>();
+  const factures = new Map<string, FactureScellee[]>();
+  const budgets = new Map<string, BudgetProjetScelle[]>();
   const reglagesFinances = new Map<string, ReglagesFinancesServeur>();
   const positions = new Map<string, PositionServeur[]>();
   const statuts = new Map<string, StatutServeur[]>();
@@ -362,9 +366,41 @@ export function creerDepotMemoire(): Depot {
           (depenses.get(coupleId) ?? []).filter((d) => d.id !== id),
         );
       },
+      async factures(coupleId) {
+        return copie(factures.get(coupleId) ?? []);
+      },
+      async factureParId(coupleId, id) {
+        const trouve = (factures.get(coupleId) ?? []).find((f) => f.id === id);
+        return trouve ? copie(trouve) : undefined;
+      },
+      async enregistrerFacture(coupleId, facture) {
+        const liste = (factures.get(coupleId) ?? []).filter(
+          (f) => f.id !== facture.id,
+        );
+        liste.push(copie(facture));
+        factures.set(coupleId, liste);
+      },
+      async budgets(coupleId) {
+        return copie(budgets.get(coupleId) ?? []);
+      },
+      async definirBudget(coupleId, budget) {
+        const liste = (budgets.get(coupleId) ?? []).filter(
+          (b) => b.projetId !== budget.projetId,
+        );
+        liste.push(copie(budget));
+        budgets.set(coupleId, liste);
+      },
+      async supprimerBudget(coupleId, projetId) {
+        budgets.set(
+          coupleId,
+          (budgets.get(coupleId) ?? []).filter((b) => b.projetId !== projetId),
+        );
+      },
       async effacerPourCouple(coupleId) {
         depenses.delete(coupleId);
         reglagesFinances.delete(coupleId);
+        factures.delete(coupleId);
+        budgets.delete(coupleId);
       },
     },
 

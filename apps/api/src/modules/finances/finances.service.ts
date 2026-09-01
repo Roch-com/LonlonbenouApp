@@ -27,9 +27,12 @@ import { randomUUID } from 'node:crypto';
 import {
   DEVISES,
   estScelleMessage,
+  PERIODICITES,
+  type FactureScellee,
   type PartenaireId,
 } from '@lonlonbenu/shared';
 import type {
+  BudgetProjetScelle,
   CoupleServeur,
   DepenseScellee,
   Depot,
@@ -49,6 +52,10 @@ export interface VueFinances {
   reglages: ReglagesFinancesServeur;
   /** Vide tant que le module n'est pas activé. */
   depenses: DepenseScellee[];
+  /** Factures récurrentes (§8.11). Vides elles aussi si le module est éteint. */
+  factures: FactureScellee[];
+  /** Enveloppes de projet, scellées. */
+  budgets: BudgetProjetScelle[];
 }
 
 export interface ServiceFinances {
@@ -71,6 +78,31 @@ export interface ServiceFinances {
     coupleId: string,
     auteurId: PartenaireId,
     id: string,
+  ): Promise<{ ok: boolean; motif?: RefusFinances }>;
+  ajouterFacture(
+    coupleId: string,
+    auteurId: PartenaireId,
+    facture: {
+      premiereEcheance: string;
+      periodicite: string;
+      contenuScelle: string;
+    },
+  ): Promise<{ ok: boolean; motif?: RefusFinances; facture?: FactureScellee }>;
+  arreterFacture(
+    coupleId: string,
+    auteurId: PartenaireId,
+    id: string,
+  ): Promise<{ ok: boolean; motif?: RefusFinances; facture?: FactureScellee }>;
+  definirBudget(
+    coupleId: string,
+    auteurId: PartenaireId,
+    projetId: string,
+    montantScelle: string,
+  ): Promise<{ ok: boolean; motif?: RefusFinances; budget?: BudgetProjetScelle }>;
+  supprimerBudget(
+    coupleId: string,
+    auteurId: PartenaireId,
+    projetId: string,
   ): Promise<{ ok: boolean; motif?: RefusFinances }>;
 }
 
@@ -118,6 +150,8 @@ export function creerServiceFinances(depot: Depot): ServiceFinances {
           reglages,
           // Éteint, le module ne rend rien — sans effacer pour autant.
           depenses: reglages.actif ? await depot.finances.depenses(coupleId) : [],
+          factures: reglages.actif ? await depot.finances.factures(coupleId) : [],
+          budgets: reglages.actif ? await depot.finances.budgets(coupleId) : [],
         },
       };
     },
@@ -182,6 +216,87 @@ export function creerServiceFinances(depot: Depot): ServiceFinances {
 
       await depot.finances.enregistrerDepense(coupleId, depense);
       return { ok: true, depense };
+    },
+
+    async ajouterFacture(coupleId, auteurId, entree) {
+      const acces = await autoriser(depot, coupleId, auteurId);
+      if ('motif' in acces) return { ok: false, motif: acces.motif };
+      if (!(await exigerActif(coupleId))) {
+        return { ok: false, motif: 'module_inactif' };
+      }
+
+      if (!FORMAT_JOUR.test(entree.premiereEcheance)) {
+        return { ok: false, motif: 'donnees_invalides' };
+      }
+      if (!PERIODICITES.some((p) => p.code === entree.periodicite)) {
+        return { ok: false, motif: 'donnees_invalides' };
+      }
+      if (!estScelleMessage(entree.contenuScelle)) {
+        return { ok: false, motif: 'contenu_non_scelle' };
+      }
+
+      const facture: FactureScellee = {
+        id: randomUUID(),
+        premiereEcheance: entree.premiereEcheance,
+        periodicite: entree.periodicite as FactureScellee['periodicite'],
+        contenuScelle: entree.contenuScelle,
+        creePar: auteurId,
+        creeLe: new Date().toISOString(),
+      };
+
+      await depot.finances.enregistrerFacture(coupleId, facture);
+      return { ok: true, facture };
+    },
+
+    /**
+     * Arrête une facture sans l'effacer.
+     *
+     * Des dépenses passées y renvoient : la supprimer les rendrait orphelines,
+     * et l'historique d'un couple n'a pas à se trouer parce qu'un abonnement
+     * s'est terminé.
+     */
+    async arreterFacture(coupleId, auteurId, id) {
+      const acces = await autoriser(depot, coupleId, auteurId);
+      if ('motif' in acces) return { ok: false, motif: acces.motif };
+
+      const existante = await depot.finances.factureParId(coupleId, id);
+      if (!existante) return { ok: false, motif: 'introuvable' };
+      if (existante.arreteeLe) return { ok: true, facture: existante };
+
+      const facture: FactureScellee = {
+        ...existante,
+        arreteeLe: new Date().toISOString(),
+      };
+      await depot.finances.enregistrerFacture(coupleId, facture);
+      return { ok: true, facture };
+    },
+
+    async definirBudget(coupleId, auteurId, projetId, montantScelle) {
+      const acces = await autoriser(depot, coupleId, auteurId);
+      if ('motif' in acces) return { ok: false, motif: acces.motif };
+      if (!(await exigerActif(coupleId))) {
+        return { ok: false, motif: 'module_inactif' };
+      }
+      if (!projetId) return { ok: false, motif: 'donnees_invalides' };
+      if (!estScelleMessage(montantScelle)) {
+        return { ok: false, motif: 'contenu_non_scelle' };
+      }
+
+      const budget: BudgetProjetScelle = {
+        projetId,
+        montantScelle,
+        majLe: new Date().toISOString(),
+      };
+      await depot.finances.definirBudget(coupleId, budget);
+      return { ok: true, budget };
+    },
+
+    async supprimerBudget(coupleId, auteurId, projetId) {
+      const acces = await autoriser(depot, coupleId, auteurId);
+      if ('motif' in acces) return { ok: false, motif: acces.motif };
+
+      await depot.finances.supprimerBudget(coupleId, projetId);
+      return { ok: true };
     },
 
     async supprimerDepense(coupleId, auteurId, id) {

@@ -24,6 +24,7 @@ import {
   useReglesPartage,
 } from '../stores/financesStore';
 import { ReglagesFinances } from './ReglagesFinances';
+import { SectionFactures } from './SectionFactures';
 
 const aujourdhui = () => new Date().toISOString().slice(0, 10);
 const moisCourant = () => aujourdhui().slice(0, 7);
@@ -305,6 +306,8 @@ export function SectionFinances() {
           </View>
         </Carte>
       ) : null}
+
+      <SectionFactures coupleId={coupleId} partenaireId={partenaireId} />
 
       <ReglagesFinances />
     </View>

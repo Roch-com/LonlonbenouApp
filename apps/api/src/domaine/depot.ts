@@ -20,6 +20,7 @@ import type {
   ModuleSensible,
   PartageReciproque,
   PartageCycle,
+  FactureScellee,
   ParcoursEngage,
   PartenaireId,
   ReponsesLangages,
@@ -121,6 +122,13 @@ export interface DepenseScellee {
   contenuScelle: string;
   creePar: PartenaireId;
   creeLe: string;
+}
+
+/** Enveloppe d'un projet. Le serveur range un budget, il n'en connaît pas la hauteur. */
+export interface BudgetProjetScelle {
+  projetId: string;
+  montantScelle: string;
+  majLe: string;
 }
 
 export interface PositionServeur {
@@ -284,6 +292,17 @@ export interface Depot {
     depenseParId(coupleId: string, id: string): Promise<DepenseScellee | undefined>;
     enregistrerDepense(coupleId: string, depense: DepenseScellee): Promise<void>;
     supprimerDepense(coupleId: string, id: string): Promise<void>;
+    /** Factures récurrentes. Échéance en clair, libellé et montant scellés. */
+    factures(coupleId: string): Promise<FactureScellee[]>;
+    factureParId(
+      coupleId: string,
+      id: string,
+    ): Promise<FactureScellee | undefined>;
+    enregistrerFacture(coupleId: string, facture: FactureScellee): Promise<void>;
+    /** Enveloppes de projet, scellées elles aussi. */
+    budgets(coupleId: string): Promise<BudgetProjetScelle[]>;
+    definirBudget(coupleId: string, budget: BudgetProjetScelle): Promise<void>;
+    supprimerBudget(coupleId: string, projetId: string): Promise<void>;
     effacerPourCouple(coupleId: string): Promise<void>;
   };
   /** Pôle ⑤ — souvenirs et lieux visités, scellés. */

@@ -23,6 +23,7 @@ import {
   type Couple,
   type Evenement,
   type Initiative,
+  type FactureScellee,
   type ParcoursEngage,
   type PartageCycle,
   type Projet,
@@ -157,6 +158,29 @@ function versSouvenir(ligne: LigneSouvenir): SouvenirScelle {
     contenuScelle: ligne.contenu_scelle,
     creePar: ligne.cree_par,
     creeLe: isoRequis(ligne.cree_le),
+  };
+}
+
+interface LigneFacture {
+  id: string;
+  premiere_echeance: Date | string;
+  periodicite: string;
+  contenu_scelle: string;
+  cree_par: string;
+  cree_le: Date;
+  arretee_le: Date | null;
+}
+
+function versFacture(ligne: LigneFacture): FactureScellee {
+  const arreteeLe = iso(ligne.arretee_le);
+  return {
+    id: ligne.id,
+    premiereEcheance: jourCivil(ligne.premiere_echeance),
+    periodicite: ligne.periodicite as FactureScellee['periodicite'],
+    contenuScelle: ligne.contenu_scelle,
+    creePar: ligne.cree_par,
+    creeLe: isoRequis(ligne.cree_le),
+    ...(arreteeLe ? { arreteeLe } : {}),
   };
 }
 
@@ -1293,9 +1317,94 @@ export function creerDepotPostgres(pool: pg.Pool): Depot {
         ]);
       },
 
+      async factures(coupleId) {
+        const { rows } = await pool.query<LigneFacture>(
+          `SELECT id, premiere_echeance, periodicite, contenu_scelle,
+                  cree_par, cree_le, arretee_le
+             FROM factures WHERE couple_id = $1
+            ORDER BY premiere_echeance`,
+          [coupleId],
+        );
+        return rows.map(versFacture);
+      },
+
+      async factureParId(coupleId, id) {
+        const { rows } = await pool.query<LigneFacture>(
+          `SELECT id, premiere_echeance, periodicite, contenu_scelle,
+                  cree_par, cree_le, arretee_le
+             FROM factures WHERE couple_id = $1 AND id = $2`,
+          [coupleId, id],
+        );
+        return rows[0] ? versFacture(rows[0]) : undefined;
+      },
+
+      async enregistrerFacture(coupleId, facture) {
+        await pool.query(
+          `INSERT INTO factures
+                  (id, couple_id, premiere_echeance, periodicite,
+                   contenu_scelle, cree_par, cree_le, arretee_le)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+           ON CONFLICT (id) DO UPDATE
+                  SET premiere_echeance = EXCLUDED.premiere_echeance,
+                      periodicite = EXCLUDED.periodicite,
+                      contenu_scelle = EXCLUDED.contenu_scelle,
+                      arretee_le = EXCLUDED.arretee_le`,
+          [
+            facture.id,
+            coupleId,
+            facture.premiereEcheance,
+            facture.periodicite,
+            facture.contenuScelle,
+            facture.creePar,
+            facture.creeLe,
+            facture.arreteeLe ?? null,
+          ],
+        );
+      },
+
+      async budgets(coupleId) {
+        const { rows } = await pool.query<{
+          projet_id: string;
+          montant_scelle: string;
+          maj_le: Date;
+        }>(
+          `SELECT projet_id, montant_scelle, maj_le
+             FROM budgets_projet WHERE couple_id = $1`,
+          [coupleId],
+        );
+        return rows.map((r) => ({
+          projetId: r.projet_id,
+          montantScelle: r.montant_scelle,
+          majLe: isoRequis(r.maj_le),
+        }));
+      },
+
+      async definirBudget(coupleId, budget) {
+        await pool.query(
+          `INSERT INTO budgets_projet
+                  (couple_id, projet_id, montant_scelle, maj_le)
+                VALUES ($1, $2, $3, $4)
+           ON CONFLICT (couple_id, projet_id) DO UPDATE
+                  SET montant_scelle = EXCLUDED.montant_scelle,
+                      maj_le = EXCLUDED.maj_le`,
+          [coupleId, budget.projetId, budget.montantScelle, budget.majLe],
+        );
+      },
+
+      async supprimerBudget(coupleId, projetId) {
+        await pool.query(
+          'DELETE FROM budgets_projet WHERE couple_id = $1 AND projet_id = $2',
+          [coupleId, projetId],
+        );
+      },
+
       async effacerPourCouple(coupleId) {
         await pool.query('DELETE FROM depenses WHERE couple_id = $1', [coupleId]);
         await pool.query('DELETE FROM reglages_finances WHERE couple_id = $1', [
+          coupleId,
+        ]);
+        await pool.query('DELETE FROM factures WHERE couple_id = $1', [coupleId]);
+        await pool.query('DELETE FROM budgets_projet WHERE couple_id = $1', [
           coupleId,
         ]);
       },

@@ -111,7 +111,9 @@ describe('rien n’entre en clair', () => {
     await ajouter(app, GAELLE);
 
     expect(Object.keys((await lire(app, GAELLE)).json()).sort()).toEqual([
+      'budgets',
       'depenses',
+      'factures',
       'reglages',
     ]);
   });

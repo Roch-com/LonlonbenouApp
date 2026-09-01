@@ -16,7 +16,10 @@ import {
   ouvrirMessage,
   scellerMessage,
   type ContenuDepense,
+  type ContenuFacture,
   type Depense,
+  type Facture,
+  type Periodicite,
   type ReglesPartage,
 } from '@lonlonbenu/shared';
 import { stockage } from '@/lib/stockage';
@@ -25,10 +28,16 @@ import { cleDeMessages } from '@/features/presence/services/clesMessages';
 import { useChat } from '@/features/presence/stores/chatStore';
 import {
   ajouterDepenseServeur,
+  ajouterFactureServeur,
+  arreterFactureServeur,
+  definirBudgetServeur,
   definirReglagesServeur,
   lireFinances,
+  supprimerBudgetServeur,
   supprimerDepenseServeur,
+  type BudgetProjetScelleServeur,
   type DepenseScellee,
+  type FactureScelleeServeur,
   type ReglagesFinancesServeur,
 } from '../api/finances.api';
 
@@ -44,6 +53,8 @@ async function cleDuCouple(): Promise<Uint8Array | undefined> {
 interface EtatFinances {
   reglages: ReglagesFinancesServeur;
   scellees: DepenseScellee[];
+  facturesScellees: FactureScelleeServeur[];
+  budgetsScelles: BudgetProjetScelleServeur[];
   cachePour?: string;
   synchroniseeLe?: string;
 
@@ -74,6 +85,29 @@ interface EtatFinances {
     contenu: ContenuDepense,
   ) => Promise<boolean>;
   supprimer: (coupleId: string, moiId: string, id: string) => Promise<boolean>;
+  ajouterFacture: (
+    coupleId: string,
+    moiId: string,
+    premiereEcheance: string,
+    periodicite: Periodicite,
+    contenu: ContenuFacture,
+  ) => Promise<boolean>;
+  arreterFacture: (
+    coupleId: string,
+    moiId: string,
+    id: string,
+  ) => Promise<boolean>;
+  definirBudget: (
+    coupleId: string,
+    moiId: string,
+    projetId: string,
+    montant: number,
+  ) => Promise<boolean>;
+  supprimerBudget: (
+    coupleId: string,
+    moiId: string,
+    projetId: string,
+  ) => Promise<boolean>;
   vider: () => void;
 }
 
@@ -91,6 +125,8 @@ export const useFinances = create<EtatFinances>()(
         set({
           reglages: vue.reglages,
           scellees: vue.depenses,
+          facturesScellees: vue.factures,
+          budgetsScelles: vue.budgets,
           cachePour: moiId,
           synchroniseeLe: new Date().toISOString(),
           horsLigne: false,
@@ -123,6 +159,8 @@ export const useFinances = create<EtatFinances>()(
       return {
         reglages: REGLAGES_INITIAUX,
         scellees: [],
+        facturesScellees: [],
+        budgetsScelles: [],
         chargement: false,
         horsLigne: false,
 
@@ -138,7 +176,12 @@ export const useFinances = create<EtatFinances>()(
             if (erreur instanceof ErreurApi && erreur.genre === 'hors_ligne') {
               set({ horsLigne: true });
             } else {
-              set({ erreur: messageLisible(erreur), scellees: [] });
+              set({
+              erreur: messageLisible(erreur),
+              scellees: [],
+              facturesScellees: [],
+              budgetsScelles: [],
+            });
             }
           } finally {
             set({ chargement: false });
@@ -188,10 +231,55 @@ export const useFinances = create<EtatFinances>()(
         supprimer: (coupleId, moiId, id) =>
           ecrire(coupleId, moiId, () => supprimerDepenseServeur(coupleId, id)),
 
+        async ajouterFacture(coupleId, moiId, premiereEcheance, periodicite, contenu) {
+          const cle = await cleDuCouple();
+          if (!cle) {
+            set({ erreur: MESSAGE_SANS_CLE });
+            return false;
+          }
+          const nonce = Crypto.getRandomBytes(LONGUEUR_NONCE);
+          return ecrire(coupleId, moiId, () =>
+            ajouterFactureServeur(
+              coupleId,
+              premiereEcheance,
+              periodicite,
+              scellerMessage(cle, nonce, JSON.stringify(contenu)),
+            ),
+          );
+        },
+
+        arreterFacture: (coupleId, moiId, id) =>
+          ecrire(coupleId, moiId, () => arreterFactureServeur(coupleId, id)),
+
+        async definirBudget(coupleId, moiId, projetId, montant) {
+          const cle = await cleDuCouple();
+          if (!cle) {
+            set({ erreur: MESSAGE_SANS_CLE });
+            return false;
+          }
+          const nonce = Crypto.getRandomBytes(LONGUEUR_NONCE);
+          return ecrire(coupleId, moiId, () =>
+            definirBudgetServeur(
+              coupleId,
+              projetId,
+              // Un nombre seul se scelle mal à relire : on garde un objet,
+              // comme pour les dépenses, pour pouvoir l'étendre sans migration.
+              scellerMessage(cle, nonce, JSON.stringify({ montant })),
+            ),
+          );
+        },
+
+        supprimerBudget: (coupleId, moiId, projetId) =>
+          ecrire(coupleId, moiId, () =>
+            supprimerBudgetServeur(coupleId, projetId),
+          ),
+
         vider: () =>
           set({
             reglages: REGLAGES_INITIAUX,
             scellees: [],
+            facturesScellees: [],
+            budgetsScelles: [],
             cachePour: undefined,
             synchroniseeLe: undefined,
             horsLigne: false,
@@ -205,6 +293,8 @@ export const useFinances = create<EtatFinances>()(
       partialize: (e) => ({
         reglages: e.reglages,
         scellees: e.scellees,
+        facturesScellees: e.facturesScellees,
+        budgetsScelles: e.budgetsScelles,
         cachePour: e.cachePour,
         synchroniseeLe: e.synchroniseeLe,
       }),
@@ -276,4 +366,61 @@ export function useReglesPartage(): ReglesPartage {
       return { mode: 'egal' };
     }
   }, [scellees, cle]);
+}
+
+/**
+ * Factures ouvertes, prêtes à afficher.
+ *
+ * Comme pour les dépenses, celles qu'on ne sait plus ouvrir sont écartées :
+ * une facture sans montant lisible n'aide à rien et fausserait un total.
+ */
+export function useFacturesLisibles(): Facture[] {
+  const scellees = useFinances((e) => e.facturesScellees);
+  const cle = useCleDuCouple();
+
+  return useMemo(() => {
+    if (!cle) return [];
+    return scellees
+      .map(({ contenuScelle, ...reste }) => {
+        try {
+          return {
+            ...reste,
+            contenu: JSON.parse(
+              ouvrirMessage(cle, contenuScelle),
+            ) as ContenuFacture,
+          };
+        } catch {
+          return undefined;
+        }
+      })
+      .filter((f): f is Facture => !!f);
+  }, [scellees, cle]);
+}
+
+/**
+ * Enveloppes de projet ouvertes, indexées par projet.
+ *
+ * Une `Map` plutôt qu'une liste : l'écran d'un projet cherche la sienne, il ne
+ * parcourt pas les autres.
+ */
+export function useBudgetsLisibles(): Map<string, number> {
+  const scelles = useFinances((e) => e.budgetsScelles);
+  const cle = useCleDuCouple();
+
+  return useMemo(() => {
+    const budgets = new Map<string, number>();
+    if (!cle) return budgets;
+
+    for (const { projetId, montantScelle } of scelles) {
+      try {
+        const { montant } = JSON.parse(ouvrirMessage(cle, montantScelle)) as {
+          montant: number;
+        };
+        if (Number.isFinite(montant)) budgets.set(projetId, montant);
+      } catch {
+        // Enveloppe illisible : pas de budget plutôt qu'un budget inventé.
+      }
+    }
+    return budgets;
+  }, [scelles, cle]);
 }
