@@ -13,7 +13,8 @@
       "env": {
         "EXPO_PUBLIC_ENV": "development",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
-      }
+      },
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
@@ -24,7 +25,8 @@
         "EXPO_PUBLIC_ENV": "preview",
         "EXPO_PUBLIC_API_URL": "https://lonlonbenu-api.onrender.com",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
@@ -35,7 +37,8 @@
         "EXPO_PUBLIC_ENV": "production",
         "EXPO_PUBLIC_API_URL": "https://lonlonbenu-api.onrender.com",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {
