@@ -152,8 +152,12 @@ export function ChatEcran() {
 
   const envoyerVocal = useChat((e) => e.envoyerVocal);
   const lancerAppel = useAppels((e) => e.appeler);
-  /** Message d'erreur propre à l'enregistrement : micro refusé, note trop courte. */
+  /**
+   * Message de circonstance : micro refusé, note trop courte, appel qui ne
+   * peut pas partir. Refermable d'un appui.
+   */
   const [erreurVocale, setErreurVocale] = useState<string>();
+  const erreurAppel = useAppels((e) => e.erreur);
 
   const [clavierOuvert, setClavierOuvert] = useState(false);
   const [emojisOuverts, setEmojisOuverts] = useState(false);
@@ -477,12 +481,18 @@ export function ChatEcran() {
                 {
                   icone: 'phone' as const,
                   libelle: `Appeler ${autre.prenom}`,
-                  onPress: () => void lancerAppel(coupleId, 'audio'),
+                  onPress: () => {
+                    setErreurVocale(undefined);
+                    void lancerAppel(coupleId, 'audio');
+                  },
                 },
                 {
                   icone: 'video' as const,
                   libelle: `Appeler ${autre.prenom} en vidéo`,
-                  onPress: () => void lancerAppel(coupleId, 'video'),
+                  onPress: () => {
+                    setErreurVocale(undefined);
+                    void lancerAppel(coupleId, 'video');
+                  },
                 },
               ]
             : []
@@ -780,14 +790,14 @@ export function ChatEcran() {
         )}
       </View>
 
-      {erreurVocale ? (
+      {erreurVocale || erreurAppel ? (
         <Pressable
           onPress={() => setErreurVocale(undefined)}
           accessibilityRole="button"
           accessibilityLabel="Masquer ce message"
           style={styles.erreurVocale}
         >
-          <Texte variante="petit">{erreurVocale}</Texte>
+          <Texte variante="petit">{erreurVocale ?? erreurAppel}</Texte>
         </Pressable>
       ) : null}
 

@@ -24,6 +24,7 @@
  * maison, et échouent parfois en déplacement. C'est un compromis assumé pour
  * livrer sans attendre un service payant.
  */
+import { PermissionsAndroid, Platform } from 'react-native';
 import {
   RTCPeerConnection,
   RTCSessionDescription,
@@ -31,6 +32,44 @@ import {
   mediaDevices,
   type MediaStream,
 } from 'react-native-webrtc';
+
+/** Levée quand le micro ou la caméra a été refusé. */
+export class PermissionRefusee extends Error {
+  constructor(readonly video: boolean) {
+    super(
+      video
+        ? 'Sans accès au micro et à la caméra, l’appel vidéo ne peut pas démarrer. Vous pouvez les autoriser dans les réglages du téléphone.'
+        : 'Sans accès au micro, l’appel ne peut pas démarrer. Vous pouvez l’autoriser dans les réglages du téléphone.',
+    );
+    this.name = 'PermissionRefusee';
+  }
+}
+
+/**
+ * Demande micro et caméra avant d'ouvrir le matériel.
+ *
+ * Les déclarer au manifeste ne suffit pas sur Android : sans demande à
+ * l'exécution, `getUserMedia` échoue. C'est ce qui empêchait tout appel
+ * d'aboutir — l'erreur remontait, l'appel se nettoyait, et rien à l'écran ne
+ * disait pourquoi.
+ *
+ * Sur iOS, le système demande de lui-même au premier accès : il n'y a rien à
+ * faire ici.
+ */
+async function demanderLeMateriel(video: boolean): Promise<void> {
+  if (Platform.OS !== 'android') return;
+
+  const voulues = [
+    PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+    ...(video ? [PermissionsAndroid.PERMISSIONS.CAMERA] : []),
+  ];
+  const reponses = await PermissionsAndroid.requestMultiple(voulues);
+
+  const toutAccorde = voulues.every(
+    (p) => reponses[p] === PermissionsAndroid.RESULTS.GRANTED,
+  );
+  if (!toutAccorde) throw new PermissionRefusee(video);
+}
 
 /**
  * Serveurs de découverte réseau.
@@ -99,6 +138,8 @@ export async function ouvrirLiaison({
   onFluxDistant,
   onEchec,
 }: Options): Promise<Liaison> {
+  await demanderLeMateriel(video);
+
   const fluxLocal = (await mediaDevices.getUserMedia({
     audio: true,
     video: video ? { facingMode: 'user' } : false,

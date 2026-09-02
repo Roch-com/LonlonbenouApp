@@ -33,6 +33,7 @@ import {
   creerOffre,
   creerReponse,
   ouvrirLiaison,
+  PermissionRefusee,
   type Liaison,
 } from '../services/pairAPair';
 import {
@@ -78,6 +79,18 @@ let cle: Uint8Array | undefined;
 let coupleCourant: string | undefined;
 /** Candidats reçus avant que la liaison n'existe : rejoués ensuite. */
 let candidatsEnAttente: unknown[] = [];
+
+/**
+ * Le message à montrer.
+ *
+ * Un refus de micro porte déjà sa propre explication : la passer à
+ * `messageLisible` la remplacerait par « réessayez dans un instant », ce qui
+ * n'aide personne à trouver le réglage.
+ */
+function lireLErreur(erreur: unknown): string {
+  if (erreur instanceof PermissionRefusee) return erreur.message;
+  return messageLisible(erreur);
+}
 
 export const useAppels = create<EtatAppels>()((set, get) => {
   /** Ferme tout le matériel et remet l'écran au repos. */
@@ -134,7 +147,11 @@ export const useAppels = create<EtatAppels>()((set, get) => {
         case 'sonne': {
           // On ne touche à rien : ni micro, ni caméra. L'écran d'appel entrant
           // s'affiche, et c'est le décrochage qui ouvrira le matériel.
-          set({ appel: message.appel as Appel, jappelle: false });
+          set({
+            appel: message.appel as Appel,
+            jappelle: false,
+            erreur: undefined,
+          });
           return;
         }
 
@@ -216,6 +233,24 @@ export const useAppels = create<EtatAppels>()((set, get) => {
 
     async appeler(coupleId, sorte) {
       set({ erreur: undefined });
+
+      // Sans canal ouvert, l'appel partirait côté serveur mais aucun signal ne
+      // circulerait : ça sonnerait dans le vide, sans rien à l'écran pour
+      // l'expliquer. On refuse en le disant.
+      if (!canal?.ouvert()) {
+        set({
+          erreur:
+            'La liaison d’appel n’est pas encore prête. Réessayez dans quelques secondes.',
+        });
+        return false;
+      }
+      if (!cle) {
+        set({
+          erreur: `Vos clés de chiffrement ne sont pas encore échangées. Ouvrez la conversation une fois sur chacun de vos téléphones.`,
+        });
+        return false;
+      }
+
       try {
         const { appel } = await appeler<{ appel: Appel }>(
           `/couples/${coupleId}/appels`,
@@ -227,7 +262,7 @@ export const useAppels = create<EtatAppels>()((set, get) => {
         await preparer(appel);
         return true;
       } catch (erreur) {
-        set({ erreur: messageLisible(erreur) });
+        set({ erreur: lireLErreur(erreur) });
         nettoyer();
         return false;
       }
@@ -247,8 +282,11 @@ export const useAppels = create<EtatAppels>()((set, get) => {
         set({ appel: reponse.appel });
         return true;
       } catch (erreur) {
-        set({ erreur: messageLisible(erreur) });
-        nettoyer();
+        // On garde l'écran d'appel : sans lui, un refus de micro ferait tout
+        // disparaître et la personne ne saurait pas pourquoi elle n'a pas pu
+        // décrocher. `preparer` n'a rien laissé derrière lui s'il a échoué —
+        // le bouton rouge reste là pour décliner.
+        set({ erreur: lireLErreur(erreur) });
         return false;
       }
     },

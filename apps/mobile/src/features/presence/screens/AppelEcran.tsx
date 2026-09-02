@@ -42,6 +42,7 @@ export function AppelEcran() {
   const basculerMicro = useAppels((e) => e.basculerMicro);
   const basculerCamera = useAppels((e) => e.basculerCamera);
   const retournerLaCamera = useAppels((e) => e.retournerLaCamera);
+  const erreur = useAppels((e) => e.erreur);
 
   const [secondes, setSecondes] = useState(0);
 
@@ -105,6 +106,14 @@ export function AppelEcran() {
           {etatLisible}
         </Texte>
       </View>
+
+      {erreur ? (
+        <View style={styles.erreur}>
+          <Texte variante="petit" style={styles.erreurTexte}>
+            {erreur}
+          </Texte>
+        </View>
+      ) : null}
 
       <View style={styles.commandes}>
         {enCours ? (
@@ -228,6 +237,18 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
   },
   nom: { color: colors.texteInverse },
   etat: { color: colors.texteInverse, opacity: 0.8 },
+  // Juste au-dessus des commandes : c'est là que le regard va quand on
+  // cherche pourquoi le décrochage n'a rien donné.
+  erreur: {
+    position: 'absolute',
+    bottom: 140,
+    left: margeEcran,
+    right: margeEcran,
+    padding: espacements.md,
+    borderRadius: rayons.md,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  erreurTexte: { color: colors.texteInverse },
   commandes: {
     position: 'absolute',
     bottom: 56,
