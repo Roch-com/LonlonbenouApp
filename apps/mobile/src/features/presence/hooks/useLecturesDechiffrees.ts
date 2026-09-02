@@ -6,6 +6,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { ouvrirMessage, type TypeMessage } from '@lonlonbenu/shared';
+import type { MessageScelle } from '../api/chat.api';
 import { cleDeMessages } from '../services/clesMessages';
 import { useChat } from '../stores/chatStore';
 import { usePresence } from '../stores/presenceStore';
@@ -71,14 +72,91 @@ export interface MessageLisible {
   vocal?: { audioScelle: string; dureeS: number };
 }
 
+/**
+ * Messages déjà ouverts, gardés d'un sondage à l'autre.
+ *
+ * La conversation se relit toutes les quatre secondes, et chaque relecture
+ * rendait un tableau neuf : tout l'historique était redéchiffré et toutes les
+ * bulles se refaisaient. Sur une conversation de plusieurs centaines de
+ * messages, c'est ce qui rendait l'application lourde et le défilement saccadé.
+ *
+ * La clé est l'empreinte de ce qui peut changer dans un message. Tant qu'elle
+ * ne bouge pas, on rend **le même objet** — ce qui permet aussi à React de ne
+ * pas refaire la bulle.
+ */
+const ouverts = new Map<string, MessageLisible>();
+/** La clé courante. Si elle change, tout ce qui précède est illisible. */
+let cleDuCache: Uint8Array | undefined;
+
+/** Au-delà, on oublie les plus anciens : un cache sans borne finit par peser. */
+const TAILLE_MAX_CACHE = 2000;
+
+/**
+ * Le dernier fil rendu.
+ *
+ * Garder les messages en cache ne suffisait pas : `map` rend un tableau neuf à
+ * chaque sondage, et tout ce qui en dépend — les citations, la liste — se
+ * recalculait quand même. On rend donc le tableau précédent tel quel quand
+ * rien n'a bougé.
+ */
+let dernierFil: MessageLisible[] = [];
+
+function memeFil(a: MessageLisible[], b: MessageLisible[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((element, i) => element === b[i]);
+}
+
+function empreinte(m: MessageScelle): string {
+  const reactions = (m.reactions ?? [])
+    .map((r) => `${r.partenaireId}:${r.majLe}`)
+    .join(',');
+  return [
+    m.id,
+    m.enveloppe,
+    m.luLe ?? '',
+    m.retireLe ?? '',
+    m.vocal?.dureeS ?? '',
+    reactions,
+  ].join('|');
+}
+
 export function useFilLisible(): MessageLisible[] {
   const messages = useChat((e) => e.messages);
   const cle = useCleDuCouple();
 
   return useMemo(
-    () =>
-      messages.map((m) => {
-        // Un message retiré n'a plus d'enveloppe à ouvrir : essayer
+    () => {
+      // Changement de clé : ce qui était ouvert avec l'ancienne ne vaut plus.
+      if (cle !== cleDuCache) {
+        ouverts.clear();
+        cleDuCache = cle;
+      }
+      if (ouverts.size > TAILLE_MAX_CACHE) ouverts.clear();
+
+      const fil = messages.map((m) => {
+        const signature = empreinte(m);
+        const connu = ouverts.get(signature);
+        if (connu) return connu;
+
+        const lisible = ouvrirLeMessage(m, cle);
+        ouverts.set(signature, lisible);
+        return lisible;
+      });
+
+      if (memeFil(fil, dernierFil)) return dernierFil;
+      dernierFil = fil;
+      return fil;
+    },
+    [messages, cle],
+  );
+}
+
+/** Ouvre un message. Séparé pour que le cache reste lisible. */
+function ouvrirLeMessage(
+  m: MessageScelle,
+  cle: Uint8Array | undefined,
+): MessageLisible {
+  // Un message retiré n'a plus d'enveloppe à ouvrir : essayer
         // produirait un « illisible », qui se lit comme une panne de clé
         // alors que rien n'est cassé.
         if (m.retireLe) {
@@ -134,10 +212,7 @@ export function useFilLisible(): MessageLisible[] {
             const emoji = ouvrir(cle, r.emojiScelle);
             return emoji ? [{ partenaireId: r.partenaireId, emoji }] : [];
           }),
-        };
-      }),
-    [messages, cle],
-  );
+  };
 }
 
 export interface PresenceLisible {

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { memo, useRef } from 'react';
 import {
   Animated,
   PanResponder,
@@ -26,9 +26,15 @@ interface Props {
   dernierDuGroupe?: boolean;
   /** Message cité, déjà résolu par l'appelant. */
   cite?: { auteurEstMoi: boolean; texte: string };
-  onAppuiLong?: () => void;
+  /**
+   * Rappels **stables** : ils reçoivent le message plutôt que de le capturer.
+   *
+   * Une fermeture recréée à chaque rendu annulerait la mémoïsation, et chaque
+   * bulle se referait à chaque sondage — c'est ce qui alourdissait le fil.
+   */
+  onAppuiLong?: (message: MessageLisible) => void;
   /** Glissement vers la droite : le geste de réponse des messageries. */
-  onGlisserPourRepondre?: () => void;
+  onGlisserPourRepondre?: (message: MessageLisible) => void;
 }
 
 /**
@@ -59,7 +65,12 @@ interface Props {
  * livrer cet écran par mise à jour à distance, et obligé à réinstaller
  * l'application pour un geste.
  */
-export function BulleMessage({
+/**
+ * Mémoïsée : le fil se relit toutes les quatre secondes, et sans cela chaque
+ * bulle se refaisait à chaque relecture. `useFilLisible` rend le même objet
+ * pour un message inchangé, ce qui suffit à la comparaison par défaut.
+ */
+export const BulleMessage = memo(function BulleMessage({
   message,
   deMoi,
   suiteDuPrecedent,
@@ -94,7 +105,7 @@ export function BulleMessage({
         }
       },
       onPanResponderRelease: (_e, g) => {
-        if (g.dx >= SEUIL_REPONSE) onGlisserPourRepondre?.();
+        if (g.dx >= SEUIL_REPONSE) onGlisserPourRepondre?.(message);
         declenche.current = false;
         Animated.spring(glissement, {
           toValue: 0,
@@ -136,7 +147,7 @@ export function BulleMessage({
         </Animated.View>
       ) : null}
       <Pressable
-        onLongPress={onAppuiLong}
+        onLongPress={() => onAppuiLong?.(message)}
         delayLongPress={280}
         disabled={!onAppuiLong}
         accessibilityRole={onAppuiLong ? 'button' : undefined}
@@ -243,7 +254,7 @@ export function BulleMessage({
       </Pressable>
     </Animated.View>
   );
-}
+});
 
 /** Distance à parcourir pour que le glissement compte comme une réponse. */
 const SEUIL_REPONSE = 56;

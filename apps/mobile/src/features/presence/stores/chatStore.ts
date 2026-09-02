@@ -88,6 +88,9 @@ interface EtatChat {
   vider: () => void;
 }
 
+/** Un message affiché avant que le serveur ne l'ait confirmé. */
+const estProvisoire = (id: string) => id.startsWith('local-');
+
 export const useChat = create<EtatChat>()(
   persist(
     (set, get) => {
@@ -104,8 +107,12 @@ export const useChat = create<EtatChat>()(
           listerMessages(coupleId),
           lireEpingleServeur(coupleId).catch(() => undefined),
         ]);
+        // Les messages encore en vol survivent à la relecture : le serveur ne
+        // les connaît pas encore, et les perdre les ferait disparaître de
+        // l'écran entre l'envoi et la réponse.
+        const enVol = get().messages.filter((m) => estProvisoire(m.id));
         set({
-          messages,
+          messages: enVol.length > 0 ? [...messages, ...enVol] : messages,
           epingle,
           cachePour: moiId,
           synchroniseeLe: new Date().toISOString(),
@@ -176,9 +183,50 @@ export const useChat = create<EtatChat>()(
             // structure de la conversation, qui se lit sans le texte.
             const charge = JSON.stringify({ type, texte: propre, repondA });
             // Le clair ne sort jamais d'ici : c'est l'enveloppe qui part.
-            await envoyerEnveloppe(coupleId, scellerMessage(cle, nonce, charge));
-            await relire(coupleId, moiId);
-            return true;
+            const enveloppe = scellerMessage(cle, nonce, charge);
+
+            // Le message paraît dans le fil **avant** la réponse du serveur.
+            // Attendre l'aller-retour donnait une latence d'une seconde ou
+            // deux pendant laquelle rien ne bougeait : on croyait que ça
+            // n'était pas parti, on réappuyait, et le message partait autant
+            // de fois qu'on avait appuyé.
+            const idProvisoire = `local-${Crypto.randomUUID()}`;
+            const provisoire: MessageScelle = {
+              id: idProvisoire,
+              auteurId: moiId,
+              enveloppe,
+              envoyeLe: new Date().toISOString(),
+            };
+            set((e) => ({ messages: [...e.messages, provisoire] }));
+
+            try {
+              const envoye = await envoyerEnveloppe(coupleId, enveloppe);
+              // On remplace au lieu de tout relire : recharger l'historique
+              // entier à chaque envoi le faisait redéchiffrer en entier.
+              set((e) => {
+                const connu = e.messages.some((m) => m.id === idProvisoire);
+                if (connu) {
+                  return {
+                    messages: e.messages.map((m) =>
+                      m.id === idProvisoire ? envoye : m,
+                    ),
+                  };
+                }
+                // Une relecture est passée entre-temps et a emporté le
+                // provisoire : on ajoute le vrai, sauf s'il y est déjà.
+                return e.messages.some((m) => m.id === envoye.id)
+                  ? {}
+                  : { messages: [...e.messages, envoye] };
+              });
+              return true;
+            } catch (erreur) {
+              // L'envoi a échoué : le message provisoire disparaît, sans quoi
+              // il resterait affiché comme s'il était parti.
+              set((e) => ({
+                messages: e.messages.filter((m) => m.id !== idProvisoire),
+              }));
+              throw erreur;
+            }
           } catch (erreur) {
             set({
               erreur:

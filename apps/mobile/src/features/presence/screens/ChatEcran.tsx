@@ -159,6 +159,16 @@ export function ChatEcran() {
   const [erreurVocale, setErreurVocale] = useState<string>();
   const erreurAppel = useAppels((e) => e.erreur);
 
+  const [envoiEnCours, setEnvoiEnCours] = useState(false);
+
+  /** Stable d'un rendu à l'autre : les bulles sont mémoïsées. */
+  const viser = useCallback((message: MessageLisible) => {
+    // Un retour tactile confirme que l'appui long a été compris, avant même
+    // que la feuille n'apparaisse.
+    void Haptics.selectionAsync();
+    setVisee(message);
+  }, []);
+
   const [clavierOuvert, setClavierOuvert] = useState(false);
   const [emojisOuverts, setEmojisOuverts] = useState(false);
   const navigation = useNavigation();
@@ -447,17 +457,48 @@ export function ChatEcran() {
       ]
     : [];
 
+  /**
+   * Envoi d'un message.
+   *
+   * ## Le champ se vide avant la réponse du serveur
+   *
+   * Il attendait l'aller-retour complet. Pendant ce temps le texte restait
+   * visible et le bouton actif : on croyait que rien n'était parti, on
+   * réappuyait, et le message partait autant de fois qu'on avait appuyé — dix
+   * fois n'était pas rare. Vider tout de suite supprime la cause.
+   *
+   * ## Et un verrou par-dessus
+   *
+   * Le champ vidé ne suffit pas : deux appuis très rapprochés peuvent tomber
+   * avant le premier rendu. `envoiEnCours` ferme la porte jusqu'au retour.
+   *
+   * En cas d'échec, le texte revient dans le champ. Un message perdu parce
+   * que le réseau a lâché serait pire que le voir partir deux fois.
+   */
   const envoyerLe = async (type: 'texte' | 'note_douce' = 'texte') => {
-    if (!brouillon.trim() || !coupleId || !partenaireId) return;
-    if (await envoyer(coupleId, partenaireId, brouillon, type, reponseA?.id)) {
-      setBrouillon('');
-      setReponseA(undefined);
-      // Le message est parti : on n'écrit plus. Sans ce signal, « écrit… »
-      // s'afficherait encore chez l'autre au-dessus du message reçu.
-      if (ecritRef.current) {
-        ecritRef.current = false;
-        void battre(coupleId, false);
+    const texte = brouillon.trim();
+    if (!texte || !coupleId || !partenaireId || envoiEnCours) return;
+
+    const citation = reponseA;
+    setBrouillon('');
+    setReponseA(undefined);
+    setEnvoiEnCours(true);
+
+    // Le message est parti : on n'écrit plus. Sans ce signal, « écrit… »
+    // s'afficherait encore chez l'autre au-dessus du message reçu.
+    if (ecritRef.current) {
+      ecritRef.current = false;
+      void battre(coupleId, false);
+    }
+
+    try {
+      const ok = await envoyer(coupleId, partenaireId, texte, type, citation?.id);
+      if (!ok) {
+        setBrouillon(texte);
+        if (citation) setReponseA(citation);
       }
+    } finally {
+      setEnvoiEnCours(false);
     }
   };
 
@@ -529,6 +570,17 @@ export function ChatEcran() {
         ref={liste}
         data={lignes}
         keyExtractor={(l) => l.cle}
+        // Virtualisation resserrée. Par défaut, la liste garde une vingtaine
+        // d'écrans montés de part et d'autre : sur un long fil et un téléphone
+        // modeste, c'est ce qui fait saccader le défilement.
+        //
+        // `removeClippedSubviews` n'est pas activé : il vide les vues sorties
+        // du champ, et sur des bulles de hauteurs inégales il laisse des trous
+        // blancs à la remontée.
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={11}
+        updateCellsBatchingPeriod={50}
         contentContainerStyle={[styles.contenu, { paddingTop: espacements.md }]}
         ListHeaderComponent={
           <View style={styles.entete}>
@@ -624,15 +676,10 @@ export function ChatEcran() {
               suiteDuPrecedent={item.suiteDuPrecedent}
               dernierDuGroupe={item.dernierDuGroupe}
               cite={citations.get(item.message.id)}
-              onAppuiLong={() => {
-                // Un retour tactile confirme que l'appui long a été compris,
-                // avant même que la feuille n'apparaisse.
-                void Haptics.selectionAsync();
-                setVisee(item.message);
-              }}
+              onAppuiLong={viser}
               {...(item.message.retire || item.message.illisible
                 ? {}
-                : { onGlisserPourRepondre: () => setReponseA(item.message) })}
+                : { onGlisserPourRepondre: setReponseA })}
             />
           )
         }
@@ -766,10 +813,10 @@ export function ChatEcran() {
             accessibilityRole="button"
             accessibilityLabel="Envoyer"
             onPress={() => void envoyerLe()}
-            disabled={!cles?.echangePret}
+            disabled={!cles?.echangePret || envoiEnCours}
             style={({ pressed }) => [
               styles.envoi,
-              !cles?.echangePret && styles.envoiInactif,
+              (!cles?.echangePret || envoiEnCours) && styles.envoiInactif,
               pressed && styles.envoiPresse,
             ]}
           >
