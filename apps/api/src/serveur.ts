@@ -21,6 +21,7 @@ import { enregistrerRoutesParcours } from './modules/parcours/parcours.routes.ts
 import { creerServiceConnexion } from './modules/connexion/connexion.service.ts';
 import { enregistrerRoutesConnexion } from './modules/connexion/connexion.routes.ts';
 import websocket from '@fastify/websocket';
+import { creerCanalTempsReel } from './temps-reel/canal.ts';
 import { creerServiceAppels } from './modules/appels/appels.service.ts';
 import { enregistrerRoutesAppels } from './modules/appels/appels.routes.ts';
 import { creerServiceJournal } from './modules/journal/journal.service.ts';
@@ -129,6 +130,8 @@ export async function creerServeur(options: OptionsServeur = {}) {
   const connexion = creerServiceConnexion(depot);
   const journal = creerServiceJournal(depot);
   const appels = creerServiceAppels(depot);
+  // Un seul canal pour tout le temps réel : les appels et le chat s'y branchent.
+  const canal = creerCanalTempsReel();
   const cycle = creerServiceCycle(depot);
   const confidences = creerServiceConfidences(depot);
   const chat = creerServiceChat(depot);
@@ -262,11 +265,17 @@ export async function creerServeur(options: OptionsServeur = {}) {
   enregistrerRoutesParcours(app, parcours, authentifier);
   enregistrerRoutesConnexion(app, connexion, authentifier);
   enregistrerRoutesJournal(app, journal, authentifier);
-  enregistrerRoutesAppels(app, appels, autorisation, authentifier);
+  enregistrerRoutesAppels(app, appels, autorisation, authentifier, canal);
   enregistrerRoutesActivite(app, activite, authentifier);
   enregistrerRoutesCycle(app, cycle, authentifier);
   enregistrerRoutesConfidences(app, confidences, authentifier);
-  enregistrerRoutesChat(app, chat, authentifier);
+  enregistrerRoutesChat(
+    app,
+    chat,
+    authentifier,
+    canal,
+    appels.partenaireOppose,
+  );
   enregistrerRoutesPresence(app, presence, authentifier);
   enregistrerRoutesViePratique(app, viePratique, authentifier);
 

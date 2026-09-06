@@ -76,6 +76,15 @@ interface EtatChat {
   /** Épingle un message, ou décroche l'épingle sans identifiant. */
   epingler: (coupleId: string, messageId?: string) => Promise<boolean>;
   /**
+   * Intègre un message poussé par le serveur.
+   *
+   * Remplace s'il est déjà là — un retrait ou une réaction arrivent par le même
+   * chemin qu'un message neuf, et portent le même identifiant.
+   */
+  integrer: (message: MessageScelle) => void;
+  /** Intègre une épingle poussée. `undefined` la décroche. */
+  integrerEpingle: (epingle?: EpingleServeur) => void;
+  /**
    * Envoie une note vocale. `uri` est le fichier produit par le micro : il est
    * scellé ici, puis effacé — l'audio ne part jamais en clair.
    */
@@ -328,6 +337,27 @@ export const useChat = create<EtatChat>()(
             set({ erreur: messageLisible(erreur) });
             return false;
           }
+        },
+
+        integrer(message) {
+          set((e) => {
+            const connu = e.messages.some((m) => m.id === message.id);
+            if (connu) {
+              return {
+                messages: e.messages.map((m) =>
+                  m.id === message.id ? message : m,
+                ),
+              };
+            }
+            // Les messages restent triés du plus ancien au plus récent : le
+            // fil s'affiche dans cet ordre sans avoir à le retrier à chaque
+            // rendu.
+            return { messages: [...e.messages, message] };
+          });
+        },
+
+        integrerEpingle(epingle) {
+          set({ epingle });
         },
 
         async epingler(coupleId, messageId) {

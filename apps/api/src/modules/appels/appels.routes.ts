@@ -23,9 +23,9 @@
  */
 
 import type { FastifyInstance, preHandlerHookHandler } from 'fastify';
-import type { WebSocket } from 'ws';
 import type { RaisonFin, SignalAppel, SorteAppel } from '@lonlonbenu/shared';
 import type { ServeurAutorisation } from '../../securite/oauth/serveurAutorisation.ts';
+import type { CanalTempsReel } from '../../temps-reel/canal.ts';
 import type { ServiceAppels } from './appels.service.ts';
 
 const CODES: Record<string, number> = {
@@ -46,26 +46,10 @@ export function enregistrerRoutesAppels(
   appels: ServiceAppels,
   autorisation: ServeurAutorisation,
   authentifier: preHandlerHookHandler,
+  canal: CanalTempsReel,
 ): void {
-  /**
-   * Les sockets ouverts, par partenaire.
-   *
-   * Un seul par personne : une connexion plus récente remplace la précédente.
-   * Sans cela, un socket resté ouvert après une coupure réseau capterait les
-   * signaux sans que personne ne les reçoive.
-   */
-  const annuaire = new Map<string, WebSocket>();
-
-  const pousser = (partenaireId: string, charge: unknown): boolean => {
-    const socket = annuaire.get(partenaireId);
-    if (!socket || socket.readyState !== socket.OPEN) return false;
-    try {
-      socket.send(JSON.stringify(charge));
-      return true;
-    } catch {
-      return false;
-    }
-  };
+  const pousser = (partenaireId: string, charge: unknown) =>
+    canal.pousser(partenaireId, charge);
 
   app.get('/appels/signal', { websocket: true }, async (socket, requete) => {
     // Le jeton passe en paramètre de requête : les en-têtes ne traversent pas
@@ -78,12 +62,8 @@ export function enregistrerRoutesAppels(
     }
 
     const moi = identite.partenaireId;
-    annuaire.get(moi)?.close(4000, 'remplace');
-    annuaire.set(moi, socket);
-
-    socket.on('close', () => {
-      if (annuaire.get(moi) === socket) annuaire.delete(moi);
-    });
+    canal.attacher(moi, socket);
+    socket.on('close', () => canal.detacher(moi, socket));
 
     socket.on('message', (brut: Buffer) => {
       void (async () => {

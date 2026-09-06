@@ -30,7 +30,38 @@ export type MessageRecu =
   | { sorte: 'sonne'; appel: unknown; coupleId: string }
   | { sorte: 'decroche'; appel: unknown; coupleId: string }
   | { sorte: 'fin'; appel: unknown; coupleId: string }
+  /** Un message de la conversation vient de changer — nouveau, retiré, réagi. */
+  | { sorte: 'message'; message: unknown; coupleId: string }
+  /** L'épingle de la conversation a bougé. `epingle` est nulle si décrochée. */
+  | { sorte: 'epingle'; epingle: unknown; coupleId: string }
   | (SignalAppel & { de: string });
+
+/**
+ * Abonnés au canal, par-delà les appels.
+ *
+ * Le socket est ouvert par la couche d'appel, qui est montée à la racine et
+ * vit donc tout le temps. Le chat s'y branche plutôt que d'en ouvrir un
+ * second : deux sockets doubleraient les connexions et les reconnexions pour
+ * transporter des charges qui tiennent dans la même enveloppe.
+ */
+const abonnes = new Set<(message: MessageRecu) => void>();
+
+export function ecouterLeCanal(
+  ecouter: (message: MessageRecu) => void,
+): () => void {
+  abonnes.add(ecouter);
+  return () => abonnes.delete(ecouter);
+}
+
+function diffuser(message: MessageRecu): void {
+  for (const ecouter of abonnes) {
+    try {
+      ecouter(message);
+    } catch {
+      // Un abonné qui échoue ne doit pas priver les autres du message.
+    }
+  }
+}
 
 interface Options {
   jeton: string;
@@ -76,7 +107,9 @@ export function ouvrirSignalisation({
 
     socket.onmessage = (evenement) => {
       try {
-        onMessage(JSON.parse(String(evenement.data)) as MessageRecu);
+        const message = JSON.parse(String(evenement.data)) as MessageRecu;
+        onMessage(message);
+        diffuser(message);
       } catch {
         // Un message illisible est ignoré : il n'y a rien à réparer, et
         // laisser remonter l'erreur couperait le canal pour rien.

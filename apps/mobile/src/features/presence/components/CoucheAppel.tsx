@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { useAppels } from '../stores/appelStore';
 import { useChat } from '../stores/chatStore';
+import { ecouterLeCanal } from '../services/signalisation';
+import type { EpingleServeur, MessageScelle } from '../api/chat.api';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 import { AppelEcran } from '../screens/AppelEcran';
 
@@ -31,6 +33,8 @@ export function CoucheAppel() {
   const coupleId = useSessionServeur((e) => e.coupleId);
   const clePubliqueAutre = useChat((e) => e.cles?.autre);
   const preparerLesCles = useChat((e) => e.preparerLesCles);
+  const integrer = useChat((e) => e.integrer);
+  const integrerEpingle = useChat((e) => e.integrerEpingle);
 
   const appel = useAppels((e) => e.appel);
   const brancher = useAppels((e) => e.brancher);
@@ -47,6 +51,25 @@ export function CoucheAppel() {
     brancher(jeton, coupleId, clePubliqueAutre);
     return () => debrancher();
   }, [jeton, coupleId, clePubliqueAutre, brancher, debrancher]);
+
+  /**
+   * Les messages poussés par le serveur.
+   *
+   * Écoutés ici et non dans la conversation : un message doit entrer dans le
+   * fil même quand on regarde ailleurs, sans quoi le compteur de non-lus et
+   * l'accueil resteraient en retard jusqu'à l'ouverture du chat.
+   */
+  useEffect(
+    () =>
+      ecouterLeCanal((message) => {
+        if (message.sorte === 'message') {
+          integrer(message.message as MessageScelle);
+        } else if (message.sorte === 'epingle') {
+          integrerEpingle((message.epingle ?? undefined) as EpingleServeur | undefined);
+        }
+      }),
+    [integrer, integrerEpingle],
+  );
 
   if (!appel) return null;
   return <AppelEcran />;

@@ -79,6 +79,14 @@ function apercuDuMessage(message: MessageLisible): string {
   return message.texte;
 }
 
+/**
+ * Rythme du sondage de repli.
+ *
+ * Trente secondes : assez rare pour ne rien coûter, assez fréquent pour qu'une
+ * panne de canal ne se remarque pas.
+ */
+const INTERVALLE_FILET_MS = 30_000;
+
 const EMOJIS_REACTION = ['❤️', '😍', '😂', '😮', '🥺', '👍'] as const;
 
 export function ChatEcran() {
@@ -304,22 +312,21 @@ export function ChatEcran() {
     marquerLus,
   ]);
   /**
-   * Relecture régulière tant que la conversation est à l'écran.
+   * Filet de sécurité, pas mécanisme principal.
    *
-   * Le fil ne se chargeait qu'au montage : un message envoyé par l'autre
-   * n'apparaissait qu'en quittant l'écran et en y revenant. D'où l'impression
-   * de messages qui mettent « deux minutes » — ils étaient là depuis le début,
-   * personne n'était allé les chercher.
+   * Les messages arrivent maintenant par le canal ouvert, poussés par le
+   * serveur : c'est instantané et ça ne coûte rien tant que rien ne se passe.
+   * Ce sondage ne sert plus qu'aux cas où le canal a lâché sans qu'on le
+   * sache — réseau qui bascule, socket fermé par un intermédiaire, serveur
+   * redémarré.
    *
-   * Quatre secondes : assez pour qu'une conversation vive se sente immédiate,
-   * assez peu pour ne pas transformer chaque discussion en salve de requêtes.
-   * Ce n'est pas du temps réel — un canal ouvert le ferait mieux et coûterait
-   * moins — mais c'est ce qui donne le plus de confort pour le moins de travail
-   * à ce stade.
+   * D'où trente secondes au lieu de quatre. L'ancien rythme redemandait tout
+   * l'historique quinze fois par minute ; sur une conversation qui grandit,
+   * c'est ce qui chauffait le téléphone et vidait le forfait pour ne
+   * découvrir, la plupart du temps, rien de neuf.
    *
-   * Le sondage s'arrête dès que l'écran perd le premier plan, et dès que
-   * l'application passe en arrière-plan : interroger le serveur toutes les
-   * quatre secondes dans la poche de quelqu'un userait sa batterie pour rien.
+   * Il s'arrête dès que l'écran perd le premier plan et dès que l'application
+   * passe en arrière-plan.
    */
   useFocusEffect(
     useCallback(() => {
@@ -333,7 +340,7 @@ export function ChatEcran() {
       };
 
       relire();
-      const minuterie = setInterval(relire, 4000);
+      const minuterie = setInterval(relire, INTERVALLE_FILET_MS);
 
       return () => {
         vivant = false;

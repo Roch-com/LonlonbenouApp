@@ -1,4 +1,5 @@
 import type { FastifyInstance, preHandlerHookHandler } from 'fastify';
+import type { CanalTempsReel } from '../../temps-reel/canal.ts';
 import type { ServiceChat } from './chat.service.ts';
 import type { ServicePresence } from '../presence/presence.service.ts';
 
@@ -24,7 +25,28 @@ export function enregistrerRoutesChat(
   app: FastifyInstance,
   chat: ServiceChat,
   authentifier: preHandlerHookHandler,
+  canal: CanalTempsReel,
+  /** L'autre membre du couple, pour savoir à qui pousser. */
+  partenaireOppose: (
+    coupleId: string,
+    moiId: string,
+  ) => Promise<string | undefined>,
 ): void {
+  /**
+   * Prévient l'autre qu'une chose a changé dans la conversation.
+   *
+   * Sans conséquence s'il n'est pas connecté : le sondage de repli le lui
+   * apprendra. C'est une accélération, pas un canal dont dépend la
+   * cohérence — un message poussé qui se perd doit rester rattrapable.
+   */
+  const prevenir = async (
+    coupleId: string,
+    moiId: string,
+    charge: Record<string, unknown>,
+  ): Promise<void> => {
+    const autreId = await partenaireOppose(coupleId, moiId);
+    if (autreId) canal.pousser(autreId, { ...charge, coupleId });
+  };
   /**
    * Publication de la clé publique d'échange. Il n'existe **aucune** route
    * acceptant une clé privée, et il ne doit jamais en exister.
@@ -121,6 +143,14 @@ export function enregistrerRoutesChat(
           .code(repondre(resultat.motif))
           .send({ motif: resultat.motif });
       }
+      // Un message programmé n'a pas à être poussé : il n'existe pas encore
+      // pour l'autre, et le lui envoyer le ferait apparaître avant l'heure.
+      if (!resultat.message?.remettreLe) {
+        await prevenir(coupleId, requete.identite!.partenaireId, {
+          sorte: 'message',
+          message: resultat.message,
+        });
+      }
       return reponse.code(201).send({ message: resultat.message });
     },
   );
@@ -197,6 +227,10 @@ export function enregistrerRoutesChat(
           .code(repondre(resultat.motif))
           .send({ motif: resultat.motif });
       }
+      await prevenir(coupleId, requete.identite!.partenaireId, {
+        sorte: 'message',
+        message: resultat.message,
+      });
       return { message: resultat.message };
     },
   );
@@ -220,6 +254,10 @@ export function enregistrerRoutesChat(
           .code(repondre(resultat.motif))
           .send({ motif: resultat.motif });
       }
+      await prevenir(coupleId, requete.identite!.partenaireId, {
+        sorte: 'message',
+        message: resultat.message,
+      });
       return { message: resultat.message };
     },
   );
@@ -260,6 +298,10 @@ export function enregistrerRoutesChat(
           .code(repondre(resultat.motif))
           .send({ motif: resultat.motif });
       }
+      await prevenir(coupleId, requete.identite!.partenaireId, {
+        sorte: 'epingle',
+        epingle: resultat.epingle ?? null,
+      });
       return { epingle: resultat.epingle ?? null };
     },
   );
