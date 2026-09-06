@@ -8,12 +8,19 @@ import { espacements, margeEcran } from '@/design/theme';
 import { observerLeReveil, serveurSeReveille } from '@/lib/api/client';
 
 /**
- * Bandeau affiché pendant qu'on attend un serveur endormi.
+ * Bandeau affiché pendant une première requête qui tarde.
  *
- * L'API est hébergée sur un palier gratuit qui met le serveur en veille après
- * un quart d'heure d'inactivité : la première action de la journée peut
- * attendre près d'une minute. Sans ce bandeau, l'écran resterait figé sans
- * raison apparente — et une attente inexpliquée passe pour une panne.
+ * ## Ce qu'il dit, et ce qu'il tait
+ *
+ * Il disait « le serveur se réveille ». C'est vrai — l'API dort après un quart
+ * d'heure d'inactivité — mais ça n'a rien à faire sous les yeux d'un couple :
+ * personne n'a à connaître l'hébergement de l'application pour s'en servir, et
+ * nommer le serveur transforme une lenteur en panne annoncée.
+ *
+ * Il dit maintenant ce que la personne peut constater : la synchronisation est
+ * en cours, et rien n'est perdu. C'est vrai dans tous les cas — serveur
+ * endormi, réseau lent, requête simplement longue — là où l'ancienne
+ * formulation ne l'était que dans un seul.
  *
  * Il disparaît de lui-même dès la réponse. Rien à fermer, rien à faire.
  */
@@ -29,7 +36,7 @@ export function BandeauReveil() {
     <View style={styles.bandeau} accessibilityLiveRegion="polite">
       <ActivityIndicator size="small" color={colors.accentFonce} />
       <Texte variante="meta" numberOfLines={2} style={styles.texte}>
-        Le serveur se réveille — quelques secondes. Rien n’est perdu.
+        Synchronisation en cours…
       </Texte>
     </View>
   );

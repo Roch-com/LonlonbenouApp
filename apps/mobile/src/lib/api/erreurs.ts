@@ -97,7 +97,7 @@ export function messageLisible(erreur: unknown): string {
     case 'hors_ligne':
       return 'Pas de connexion. Ce que vous voyez date de la dernière synchronisation.';
     case 'reveil_trop_long':
-      return 'Le serveur met du temps à se réveiller. Réessayez dans un instant, rien n’est perdu.';
+      return 'La connexion tarde. Réessayez dans un instant — rien n’est perdu.';
     case 'non_authentifie':
       return 'Votre session a expiré. Reconnectez-vous.';
     case 'interdit':

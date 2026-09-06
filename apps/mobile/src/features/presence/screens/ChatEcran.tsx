@@ -159,6 +159,8 @@ export function ChatEcran() {
   const [erreurVocale, setErreurVocale] = useState<string>();
   const erreurAppel = useAppels((e) => e.erreur);
 
+  /** Faux jusqu'au premier cadrage de la liste. Voir `onContentSizeChange`. */
+  const premierCadrage = useRef(false);
   const [envoiEnCours, setEnvoiEnCours] = useState(false);
 
   /** Stable d'un rendu à l'autre : les bulles sont mémoïsées. */
@@ -704,6 +706,17 @@ export function ChatEcran() {
         }}
         scrollEventThrottle={64}
         onContentSizeChange={() => {
+          // À l'ouverture, on **saute** au dernier message au lieu d'y
+          // défiler. L'animation traversait tout l'historique : sur une
+          // conversation de plusieurs mois, on regardait la liste dérouler
+          // des semaines de messages avant d'arriver au dernier.
+          if (!premierCadrage.current) {
+            premierCadrage.current = true;
+            liste.current?.scrollToEnd({ animated: false });
+            return;
+          }
+          // Ensuite seulement, l'animation a du sens : elle accompagne
+          // l'arrivée d'un message pendant qu'on regarde.
           if (presDuBasRef.current) {
             liste.current?.scrollToEnd({ animated: true });
           }

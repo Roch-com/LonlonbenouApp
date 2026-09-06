@@ -20,10 +20,10 @@ import {
   useCouleurs,
 } from '@/design/ThemeProvider';
 import { GardeVerrou } from '@/features/reglages/components/GardeVerrou';
-import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 import { GardeOnboarding } from '@/features/reglages/components/GardeOnboarding';
 import { configurerAffichagePush } from '@/features/reglages/services/affichagePush';
 import { useInscriptionPush } from '@/features/reglages/hooks/useInscriptionPush';
+import { useRepriseAuPremierPlan } from '@/features/reglages/hooks/useRepriseAuPremierPlan';
 import { Ouverture } from '@/components/chrome/Ouverture';
 import { CoucheAppel } from '@/features/presence/components/CoucheAppel';
 import { demarrerLaSurveillance } from '@/lib/surveillance';
@@ -50,10 +50,12 @@ function DispositionRacine() {
 
   useEffect(() => {
     configurerAffichagePush();
-    // Reprise de session : le jeton d'accès n'est jamais persisté, il se
-    // regagne au démarrage à partir du jeton de rafraîchissement du trousseau.
-    void useSessionServeur.getState().restaurer();
   }, []);
+
+  // Réveille le serveur et renouvelle la session à chaque retour à l'écran.
+  // Remplace la restauration au seul démarrage : après quelques heures en
+  // arrière-plan, le jeton avait expiré et la première requête le découvrait.
+  useRepriseAuPremierPlan();
 
   useInscriptionPush();
 

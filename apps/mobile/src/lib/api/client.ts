@@ -12,7 +12,10 @@
  */
 
 import * as Crypto from 'expo-crypto';
-import { CONFIGURATION_API } from './configuration';
+import {
+  CONFIGURATION_API,
+  estConfigurationManquante,
+} from './configuration';
 import { ErreurApi, genreDepuisStatut } from './erreurs';
 
 export { volUnique } from './volUnique';
@@ -67,6 +70,34 @@ function signalerReveil(enCours: boolean): void {
   if (reveilEnCours === enCours) return;
   reveilEnCours = enCours;
   for (const ecouter of observateurs) ecouter(enCours);
+}
+
+/**
+ * Réveille le serveur sans rien attendre de lui.
+ *
+ * L'API dort après un quart d'heure sans requête, et la première ensuite paie
+ * la trentaine de secondes du démarrage. Lancer ce ping dès l'ouverture de
+ * l'application fait courir ce démarrage **pendant** que l'écran d'accueil
+ * s'affiche : quand on ouvre enfin la conversation, le serveur est souvent
+ * déjà debout.
+ *
+ * Sans jeton et sans conséquence : `/sante` ne touche pas la base, et un échec
+ * ne remonte nulle part. Ce n'est pas une requête dont le résultat compte,
+ * c'est un coup de sonnette.
+ */
+export function reveillerLeServeur(): void {
+  if (estConfigurationManquante()) return;
+
+  signalerReveil(true);
+  const abandon = new AbortController();
+  const minuterie = setTimeout(() => abandon.abort(), DELAI_REVEIL_MS);
+
+  void fetch(`${CONFIGURATION_API.base}/sante`, { signal: abandon.signal })
+    .catch(() => undefined)
+    .finally(() => {
+      clearTimeout(minuterie);
+      signalerReveil(false);
+    });
 }
 
 /** Branché une fois au démarrage par le store de session. */
