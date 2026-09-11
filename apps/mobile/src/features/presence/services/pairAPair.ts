@@ -25,6 +25,7 @@
  * livrer sans attendre un service payant.
  */
 import { PermissionsAndroid, Platform } from 'react-native';
+import { setAudioModeAsync } from 'expo-audio';
 import {
   RTCPeerConnection,
   RTCSessionDescription,
@@ -115,6 +116,30 @@ export interface Liaison {
   couperLaCamera: (coupe: boolean) => void;
   /** Bascule entre caméra avant et arrière. */
   retournerLaCamera: () => void;
+  /**
+   * Allume la caméra en cours d'appel et rend le flux local mis à jour.
+   *
+   * Rend `undefined` si une piste vidéo est déjà là, ou si la caméra est
+   * refusée. L'appelant doit renégocier après : ajouter une piste ne la fait
+   * pas traverser toute seule.
+   */
+  allumerLaCamera: () => Promise<MediaStream | undefined>;
+}
+
+/**
+ * Route le son vers le haut-parleur, ou vers l'écouteur.
+ *
+ * `shouldRouteThroughEarpiece` est l'inverse de ce qu'on manipule : à `true`,
+ * le son sort de l'écouteur, contre l'oreille. Un appel audio démarre donc
+ * ainsi, et un appel vidéo au haut-parleur — on ne tient pas un appel vidéo
+ * contre son oreille.
+ */
+export async function router(hautParleur: boolean): Promise<void> {
+  await setAudioModeAsync({
+    allowsRecording: true,
+    playsInSilentMode: true,
+    shouldRouteThroughEarpiece: !hautParleur,
+  }).catch(() => undefined);
 }
 
 interface Options {
@@ -151,18 +176,18 @@ export async function ouvrirLiaison({
     connexion.addTrack(piste, fluxLocal);
   }
 
-  let distant: MediaStream | undefined;
-
   connexion.onicecandidate = (evenement: { candidate: unknown }) => {
     if (evenement.candidate) onCandidat(evenement.candidate);
   };
 
   connexion.ontrack = (evenement: { streams: MediaStream[] }) => {
     const flux = evenement.streams[0];
-    if (flux && flux !== distant) {
-      distant = flux;
-      onFluxDistant(flux);
-    }
+    if (!flux) return;
+    // Prévenir à **chaque** piste, pas seulement à la première : quand l'autre
+    // allume sa caméra en cours d'appel, la vidéo rejoint le flux déjà connu.
+    // Ne signaler que les flux nouveaux laissait l'écran en mode audio alors
+    // que l'image arrivait.
+    onFluxDistant(flux);
   };
 
   connexion.onconnectionstatechange = () => {
@@ -202,6 +227,27 @@ export async function ouvrirLiaison({
         _switchCamera?: () => void;
       };
       piste?._switchCamera?.();
+    },
+
+    async allumerLaCamera() {
+      if (trouverPiste('video')) return undefined;
+
+      let camera: MediaStream;
+      try {
+        camera = (await mediaDevices.getUserMedia({
+          video: { facingMode: 'user' },
+        })) as MediaStream;
+      } catch {
+        return undefined;
+      }
+
+      for (const piste of camera.getVideoTracks()) {
+        // La piste rejoint le flux local *et* la connexion : le premier sert à
+        // l'aperçu, la seconde à ce que l'autre reçoit.
+        fluxLocal.addTrack(piste);
+        connexion.addTrack(piste, fluxLocal);
+      }
+      return fluxLocal;
     },
   };
 }

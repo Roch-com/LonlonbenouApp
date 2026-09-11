@@ -53,6 +53,10 @@ export function AppelEcran() {
   const basculerMicro = useAppels((e) => e.basculerMicro);
   const basculerCamera = useAppels((e) => e.basculerCamera);
   const retournerLaCamera = useAppels((e) => e.retournerLaCamera);
+  const hautParleur = useAppels((e) => e.hautParleur);
+  const basculerHautParleur = useAppels((e) => e.basculerHautParleur);
+  const passerEnVideo = useAppels((e) => e.passerEnVideo);
+  const passageEnVideo = useAppels((e) => e.passageEnVideo);
   const erreur = useAppels((e) => e.erreur);
 
   const [secondes, setSecondes] = useState(0);
@@ -114,20 +118,29 @@ export function AppelEcran() {
         </Texte>
       </View>
 
-      {video && fluxLocal && !cameraCoupee && enCours ? (
+      {video && enCours && !cameraCoupee ? (
         <Pressable
           onPress={retournerLaCamera}
           accessibilityRole="button"
           accessibilityLabel="Changer de caméra"
-          style={styles.vignette}
+          hitSlop={8}
+          style={({ pressed }) => [styles.flottant, pressed && styles.presse]}
         >
+          <Feather name="refresh-cw" size={20} color={TEXTE} />
+        </Pressable>
+      ) : null}
+
+      {/* Simple aperçu : le bouton flottant porte le changement de caméra.
+          Deux gestes pour la même action laissent croire qu'ils diffèrent. */}
+      {video && fluxLocal && !cameraCoupee && enCours ? (
+        <View style={styles.vignette} accessibilityElementsHidden>
           <RTCView
             streamURL={fluxLocal.toURL()}
             objectFit="cover"
             mirror
             style={styles.vignetteFlux}
           />
-        </Pressable>
+        </View>
       ) : null}
 
       {erreur ? (
@@ -138,25 +151,46 @@ export function AppelEcran() {
         </View>
       ) : null}
 
-      {/* Une barre unique, posée en bas, comme dans toutes les messageries :
-          la main tombe dessus sans chercher. */}
+      {/* Une barre unique, posée en bas : la main tombe dessus sans chercher.
+          Les commandes restent au même endroit d'un état à l'autre, et seule
+          leur disponibilité change — un bouton qui se déplace se rate. */}
       <View style={styles.barre}>
         {enCours ? (
-          <Rond
-            icone={microCoupe ? 'mic-off' : 'mic'}
-            libelle={microCoupe ? 'Réactiver le micro' : 'Couper le micro'}
-            actif={microCoupe}
-            onPress={basculerMicro}
-          />
-        ) : null}
-
-        {enCours && video ? (
-          <Rond
-            icone={cameraCoupee ? 'video-off' : 'video'}
-            libelle={cameraCoupee ? 'Réactiver la caméra' : 'Couper la caméra'}
-            actif={cameraCoupee}
-            onPress={basculerCamera}
-          />
+          <>
+            <Rond
+              icone={video && !cameraCoupee ? 'video' : 'video-off'}
+              libelle={
+                !video
+                  ? 'Passer en vidéo'
+                  : cameraCoupee
+                    ? 'Réactiver la caméra'
+                    : 'Couper la caméra'
+              }
+              actif={video && !cameraCoupee}
+              occupe={passageEnVideo}
+              onPress={() => {
+                if (!video) {
+                  if (coupleId) void passerEnVideo(coupleId);
+                } else {
+                  basculerCamera();
+                }
+              }}
+            />
+            <Rond
+              icone={hautParleur ? 'volume-2' : 'volume-1'}
+              libelle={
+                hautParleur ? 'Couper le haut-parleur' : 'Mettre le haut-parleur'
+              }
+              actif={hautParleur}
+              onPress={basculerHautParleur}
+            />
+            <Rond
+              icone={microCoupe ? 'mic-off' : 'mic'}
+              libelle={microCoupe ? 'Réactiver le micro' : 'Couper le micro'}
+              actif={microCoupe}
+              onPress={basculerMicro}
+            />
+          </>
         ) : null}
 
         {entrant ? (
@@ -181,6 +215,7 @@ export function AppelEcran() {
           }}
         />
       </View>
+
     </View>
   );
 }
@@ -189,12 +224,15 @@ function Rond({
   icone,
   libelle,
   actif,
+  occupe,
   teinte,
   onPress,
 }: {
   icone: keyof typeof Feather.glyphMap;
   libelle: string;
   actif?: boolean;
+  /** Une action est en cours : le bouton ne doit pas repartir. */
+  occupe?: boolean;
   /** Couleur de fond imposée — décrocher et raccrocher. */
   teinte?: string;
   onPress: () => void;
@@ -202,14 +240,16 @@ function Rond({
   return (
     <Pressable
       onPress={onPress}
+      disabled={occupe}
       accessibilityRole="button"
       accessibilityLabel={libelle}
-      accessibilityState={{ selected: !!actif }}
+      accessibilityState={{ selected: !!actif, disabled: !!occupe }}
       hitSlop={8}
       style={({ pressed }) => [
         styles.rond,
         teinte ? { backgroundColor: teinte } : null,
         !teinte && actif ? styles.rondActif : null,
+        occupe && styles.occupe,
         pressed && styles.presse,
       ]}
     >
@@ -289,5 +329,17 @@ const styles = StyleSheet.create({
     backgroundColor: COMMANDE,
   },
   rondActif: { backgroundColor: COMMANDE_ACTIVE },
+  occupe: { opacity: 0.5 },
+  flottant: {
+    position: 'absolute',
+    top: 150,
+    left: margeEcran,
+    width: 44,
+    height: 44,
+    borderRadius: rayons.rond,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COMMANDE,
+  },
   presse: { opacity: 0.7 },
 });

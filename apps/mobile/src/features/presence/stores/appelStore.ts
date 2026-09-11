@@ -34,6 +34,7 @@ import {
   creerReponse,
   ouvrirLiaison,
   PermissionRefusee,
+  router,
   type Liaison,
 } from '../services/pairAPair';
 import {
@@ -52,6 +53,10 @@ interface EtatAppels {
   fluxDistant?: MediaStream;
   microCoupe: boolean;
   cameraCoupee: boolean;
+  /** Son au haut-parleur plutôt qu'à l'écouteur. */
+  hautParleur: boolean;
+  /** Vrai pendant qu'on allume la caméra : le bouton ne doit pas repartir. */
+  passageEnVideo: boolean;
   erreur?: string;
 
   /**
@@ -81,7 +86,19 @@ interface EtatAppels {
   raccrocher: (coupleId: string, raison?: RaisonFin) => Promise<void>;
   basculerMicro: () => void;
   basculerCamera: () => void;
+  basculerHautParleur: () => void;
   retournerLaCamera: () => void;
+  /**
+   * Allume sa caméra au milieu d'un appel audio.
+   *
+   * Ajouter une piste ne suffit pas : il faut renégocier, sinon elle ne
+   * traverse jamais. On réutilise pour cela l'échange offre/réponse du
+   * décrochage, qui n'a rien de propre au premier établissement.
+   *
+   * On n'attend pas l'accord de l'autre : c'est *sa* caméra qu'on allume, pas
+   * la sienne. Lui décide de la sienne avec le même bouton.
+   */
+  passerEnVideo: (coupleId: string) => Promise<void>;
 }
 
 /**
@@ -116,6 +133,8 @@ export const useAppels = create<EtatAppels>()((set, get) => {
     liaison?.raccrocher();
     liaison = undefined;
     candidatsEnAttente = [];
+    // Sans cela, la musique jouée après l'appel sortirait de l'écouteur.
+    void router(false);
     set({
       appel: undefined,
       jappelle: false,
@@ -123,6 +142,8 @@ export const useAppels = create<EtatAppels>()((set, get) => {
       fluxDistant: undefined,
       microCoupe: false,
       cameraCoupee: false,
+      hautParleur: false,
+      passageEnVideo: false,
     });
   };
 
@@ -139,14 +160,28 @@ export const useAppels = create<EtatAppels>()((set, get) => {
           coupleId: coupleCourant,
         });
       },
-      onFluxDistant: (flux) => set({ fluxDistant: flux }),
+      onFluxDistant: (flux) => {
+        // Une piste vidéo qui arrive fait passer l'appel en vidéo de ce
+        // côté-ci : l'autre a allumé sa caméra, on doit la montrer.
+        const avecVideo = flux.getVideoTracks().length > 0;
+        const courant = get().appel;
+        set({
+          fluxDistant: flux,
+          ...(avecVideo && courant && courant.sorte !== 'video'
+            ? { appel: { ...courant, sorte: 'video' as const } }
+            : {}),
+        });
+      },
       onEchec: () => {
         void get().raccrocher(coupleCourant ?? '', 'echec_reseau');
       },
     });
 
     liaison = nouvelle;
-    set({ fluxLocal: nouvelle.fluxLocal });
+    // Un appel vidéo démarre au haut-parleur, un appel audio à l'écouteur.
+    const hautParleur = appel.sorte === 'video';
+    void router(hautParleur);
+    set({ fluxLocal: nouvelle.fluxLocal, hautParleur });
 
     // Les candidats arrivés pendant la préparation du matériel.
     for (const candidat of candidatsEnAttente) {
@@ -233,6 +268,8 @@ export const useAppels = create<EtatAppels>()((set, get) => {
     jappelle: false,
     microCoupe: false,
     cameraCoupee: false,
+    hautParleur: false,
+    passageEnVideo: false,
 
     brancher(jeton, coupleId) {
       coupleCourant = coupleId;
@@ -343,8 +380,52 @@ export const useAppels = create<EtatAppels>()((set, get) => {
       set({ cameraCoupee: coupee });
     },
 
+    basculerHautParleur() {
+      const vers = !get().hautParleur;
+      void router(vers);
+      set({ hautParleur: vers });
+    },
+
     retournerLaCamera() {
       liaison?.retournerLaCamera();
+    },
+
+    async passerEnVideo(coupleId) {
+      const appel = get().appel;
+      if (!appel || !liaison || get().passageEnVideo) return;
+
+      set({ passageEnVideo: true, erreur: undefined });
+      try {
+        const flux = await liaison.allumerLaCamera();
+        if (!flux) {
+          set({
+            erreur:
+              'La caméra n’a pas pu être allumée. Vous pouvez l’autoriser dans les réglages du téléphone.',
+          });
+          return;
+        }
+
+        // Un appel vidéo se tient devant soi, pas contre l'oreille.
+        if (!get().hautParleur) {
+          void router(true);
+          set({ hautParleur: true });
+        }
+
+        set({ fluxLocal: flux, appel: { ...appel, sorte: 'video' } });
+
+        if (!cle) return;
+        const offre = await creerOffre(liaison.connexion);
+        canal?.envoyer({
+          sorte: 'accepte',
+          appelId: appel.id,
+          charge: scellerCharge(cle, offre),
+          coupleId,
+        });
+      } catch (erreur) {
+        set({ erreur: lireLErreur(erreur) });
+      } finally {
+        set({ passageEnVideo: false });
+      }
     },
   };
 });
