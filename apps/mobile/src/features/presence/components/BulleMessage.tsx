@@ -81,6 +81,7 @@ export const BulleMessage = memo(function BulleMessage({
 }: Props) {
   const colors = useCouleurs();
   const douce = message.type === 'note_douce';
+  const estAppel = message.type === 'appel';
 
   const glissement = useRef(new Animated.Value(0)).current;
   const declenche = useRef(false);
@@ -203,6 +204,20 @@ export const BulleMessage = memo(function BulleMessage({
               Ce message a été retiré
             </Texte>
           </View>
+        ) : estAppel ? (
+          <View style={styles.appel}>
+            <Feather
+              name={message.texte.includes('manqu') ? 'phone-missed' : 'phone'}
+              size={15}
+              color={deMoi ? colors.texteInverse : colors.texteDoux}
+            />
+            <Texte
+              variante="corps"
+              style={deMoi ? styles.metaMienne : undefined}
+            >
+              {message.texte}
+            </Texte>
+          </View>
         ) : message.vocal ? (
           <LecteurVocal
             messageId={message.id}
@@ -265,6 +280,7 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
   // bulle au repos.
   indiceReponse: { position: 'absolute', left: -28 },
   retire: { flexDirection: 'row', alignItems: 'center', gap: espacements.xs },
+  appel: { flexDirection: 'row', alignItems: 'center', gap: espacements.xs },
   // En bas de la bulle, légèrement débordantes : c'est ainsi qu'on les
   // reconnaît d'un coup d'œil comme un ajout et non comme du texte.
   reactions: {

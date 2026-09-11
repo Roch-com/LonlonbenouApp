@@ -8,7 +8,17 @@ export type TypeMessage =
   /** Mot envoyé d'un geste depuis l'accueil, sans ouvrir la conversation. */
   | 'note_douce'
   /** Note vocale : le texte est vide, l'audio voyage à part (§8.3). */
-  | 'vocal';
+  | 'vocal'
+  /**
+   * Trace d'un appel : manqué, décliné, ou sa durée.
+   *
+   * C'est un message comme un autre — scellé, rangé dans le fil, à sa place
+   * chronologique. L'alternative aurait été un journal d'appels séparé, mais
+   * cette application n'en tient pas : qui appelle qui et quand est exactement
+   * l'historique qu'elle refuse de conserver ailleurs. Dans la conversation,
+   * la trace appartient au couple et s'efface avec elle.
+   */
+  | 'appel';
 
 export interface Message {
   id: string;

@@ -24,7 +24,10 @@ import {
   type SorteAppel,
 } from '@lonlonbenu/shared';
 import type { MediaStream } from 'react-native-webrtc';
+import { dureeLisible, lectureAppel } from '@lonlonbenu/shared';
 import { appeler } from '@/lib/api/client';
+import { useChat } from './chatStore';
+import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
 import { messageLisible } from '@/lib/api/erreurs';
 import { cleDeMessages } from '../services/clesMessages';
 import {
@@ -112,6 +115,8 @@ let liaison: Liaison | undefined;
 let canal: Signalisation | undefined;
 let cle: Uint8Array | undefined;
 let coupleCourant: string | undefined;
+/** Notre identifiant, retenu à l'ouverture du canal. */
+let partenaireCourant: string | undefined;
 /** Candidats reçus avant que la liaison n'existe : rejoués ensuite. */
 let candidatsEnAttente: unknown[] = [];
 
@@ -128,6 +133,29 @@ function lireLErreur(erreur: unknown): string {
 }
 
 export const useAppels = create<EtatAppels>()((set, get) => {
+  /**
+   * Dépose la trace de l'appel dans la conversation.
+   *
+   * Seul **l'appelant** l'écrit. Si les deux le faisaient, chaque appel
+   * laisserait deux lignes ; et c'est lui qui connaît la sorte d'appel dès le
+   * départ, là où celui qu'on appelle peut n'avoir jamais décroché.
+   *
+   * Un échec d'écriture ne remonte nulle part : l'appel a eu lieu, et un
+   * message d'erreur après avoir raccroché n'apprendrait rien d'utile.
+   */
+  const laisserLaTrace = (appel: Appel) => {
+    const coupleId = coupleCourant;
+    const moiId = appel.appelantId;
+    if (!coupleId) return;
+
+    const lecture = lectureAppel(appel, moiId, dureeLisible);
+    const texte = lecture.detail
+      ? `${lecture.titre} · ${lecture.detail}`
+      : lecture.titre;
+
+    void useChat.getState().envoyer(coupleId, moiId, texte, 'appel');
+  };
+
   /** Ferme tout le matériel et remet l'écran au repos. */
   const nettoyer = () => {
     liaison?.raccrocher();
@@ -194,7 +222,21 @@ export const useAppels = create<EtatAppels>()((set, get) => {
 
   const surMessage = (message: MessageRecu) => {
     void (async () => {
-      if (!cle) return;
+      // La clé ne sert qu'à ouvrir une négociation scellée. Un garde global
+      // sur `cle` jetait **tout**, sonnerie comprise : le socket recevait bien
+      // l'appel, et le téléphone le mettait à la poubelle sans rien afficher.
+      // C'est la raison pour laquelle rien ne sonnait.
+      const scelle =
+        message.sorte === 'accepte' ||
+        message.sorte === 'propose' ||
+        message.sorte === 'candidat';
+      if (scelle && !cle) {
+        set({
+          erreur:
+            'Vos clés de chiffrement ne sont pas encore échangées. Ouvrez la conversation une fois sur chacun de vos téléphones.',
+        });
+        return;
+      }
 
       switch (message.sorte) {
         case 'sonne': {
@@ -218,27 +260,34 @@ export const useAppels = create<EtatAppels>()((set, get) => {
           canal?.envoyer({
             sorte: 'accepte',
             appelId: appel.id,
-            charge: scellerCharge(cle, offre),
+            charge: scellerCharge(cle!, offre),
             coupleId: coupleCourant ?? '',
           });
           return;
         }
 
         case 'fin': {
+          // C'est l'autre qui a raccroché ou décliné : le serveur nous rend
+          // l'appel clos, avec sa raison. On laisse la trace si c'est nous qui
+          // appelions.
+          // Le serveur pousse l'appel clos ; un signal « fin » relayé de
+          // téléphone à téléphone n'en porte pas.
+          const clos = (message as { appel?: unknown }).appel as Appel | undefined;
+          if (clos && clos.appelantId === partenaireCourant) laisserLaTrace(clos);
           nettoyer();
           return;
         }
 
         case 'accepte': {
           // Une offre nous parvient : nous sommes celui qui a décroché.
-          const offre = ouvrirCharge<unknown>(cle, message.charge);
+          const offre = ouvrirCharge<unknown>(cle!, message.charge);
           if (!offre || !liaison) return;
           const reponse = await creerReponse(liaison.connexion, offre);
           canal?.envoyer({
             sorte: 'propose',
             appelId: message.appelId,
             appel: get().appel?.sorte ?? 'audio',
-            charge: scellerCharge(cle, reponse),
+            charge: scellerCharge(cle!, reponse),
             coupleId: coupleCourant ?? '',
           });
           return;
@@ -246,14 +295,14 @@ export const useAppels = create<EtatAppels>()((set, get) => {
 
         case 'propose': {
           // La réponse de celui qui a décroché.
-          const reponse = ouvrirCharge<unknown>(cle, message.charge);
+          const reponse = ouvrirCharge<unknown>(cle!, message.charge);
           if (!reponse || !liaison) return;
           await accepterReponse(liaison.connexion, reponse);
           return;
         }
 
         case 'candidat': {
-          const candidat = ouvrirCharge<unknown>(cle, message.charge);
+          const candidat = ouvrirCharge<unknown>(cle!, message.charge);
           if (!candidat) return;
           // Reçu avant que le matériel ne soit prêt : mis de côté.
           if (!liaison) candidatsEnAttente.push(candidat);
@@ -273,6 +322,7 @@ export const useAppels = create<EtatAppels>()((set, get) => {
 
     brancher(jeton, coupleId) {
       coupleCourant = coupleId;
+      partenaireCourant = useSessionServeur.getState().partenaireId;
       canal?.fermer();
       canal = ouvrirSignalisation({ jeton, onMessage: surMessage });
     },
@@ -355,13 +405,15 @@ export const useAppels = create<EtatAppels>()((set, get) => {
 
     async raccrocher(coupleId, raison = 'raccroche') {
       const appel = get().appel;
+      const jappelais = get().jappelle;
       nettoyer();
       if (!appel || !coupleId) return;
       try {
-        await appeler(`/couples/${coupleId}/appels/${appel.id}/fin`, {
-          methode: 'POST',
-          corps: { raison },
-        });
+        const { appel: clos } = await appeler<{ appel: Appel }>(
+          `/couples/${coupleId}/appels/${appel.id}/fin`,
+          { methode: 'POST', corps: { raison } },
+        );
+        if (jappelais) laisserLaTrace(clos);
       } catch {
         // Le matériel est déjà coupé de notre côté. Le serveur finira par
         // clore l'appel de lui-même, et insister n'apporterait rien.
