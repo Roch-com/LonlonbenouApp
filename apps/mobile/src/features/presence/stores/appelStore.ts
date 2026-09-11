@@ -54,9 +54,27 @@ interface EtatAppels {
   cameraCoupee: boolean;
   erreur?: string;
 
-  /** Ouvre le canal de signalisation. À faire une fois, à la connexion. */
-  brancher: (jeton: string, coupleId: string, clePubliqueAutre: string) => void;
+  /**
+   * Ouvre le canal de signalisation.
+   *
+   * **La clé n'est pas requise pour ouvrir.** Une version précédente attendait
+   * les clés du couple : tant qu'elles n'étaient pas chargées, aucun socket
+   * n'existait, donc aucun appel ne sonnait — et rien à l'écran ne le disait.
+   * Le canal s'ouvre maintenant dès qu'on a un jeton ; la clé arrive à part et
+   * ne sert qu'à sceller la négociation.
+   */
+  brancher: (jeton: string, coupleId: string) => void;
+  /** Fournit la clé du couple, quand elle est connue. */
+  definirCle: (clePubliqueAutre: string) => void;
   debrancher: () => void;
+  /**
+   * Relance le canal s'il est tombé.
+   *
+   * Appelé au retour de l'application au premier plan : le téléphone a pu
+   * dormir des heures, et sans cela on attendrait le prochain report du délai
+   * de reconnexion — assez pour manquer un appel.
+   */
+  reveillerLeCanal: () => void;
 
   appeler: (coupleId: string, sorte: SorteAppel) => Promise<boolean>;
   decrocher: (coupleId: string) => Promise<boolean>;
@@ -216,13 +234,20 @@ export const useAppels = create<EtatAppels>()((set, get) => {
     microCoupe: false,
     cameraCoupee: false,
 
-    brancher(jeton, coupleId, clePubliqueAutre) {
+    brancher(jeton, coupleId) {
       coupleCourant = coupleId;
+      canal?.fermer();
+      canal = ouvrirSignalisation({ jeton, onMessage: surMessage });
+    },
+
+    definirCle(clePubliqueAutre) {
       void cleDeMessages(clePubliqueAutre).then((derivee) => {
         cle = derivee;
       });
-      canal?.fermer();
-      canal = ouvrirSignalisation({ jeton, onMessage: surMessage });
+    },
+
+    reveillerLeCanal() {
+      canal?.reveiller();
     },
 
     debrancher() {

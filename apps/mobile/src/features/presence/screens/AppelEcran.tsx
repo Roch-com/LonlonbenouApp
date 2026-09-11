@@ -1,11 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { RTCView } from 'react-native-webrtc';
-import { dureeLisible, type Theme } from '@lonlonbenu/shared';
-import { stylesDynamiques } from '@/design/stylesDynamiques';
-import { useCouleurs } from '@/design/ThemeProvider';
-import { Avatar, Texte } from '@/components/ui';
+import { dureeLisible } from '@lonlonbenu/shared';
+import { Texte } from '@/components/ui';
 import { espacements, margeEcran, rayons } from '@/design/theme';
 import { useAutre } from '@/features/reglages/stores/sessionStore';
 import { useSessionServeur } from '@/features/reglages/stores/sessionServeurStore';
@@ -14,20 +12,33 @@ import { useAppels } from '../stores/appelStore';
 /**
  * L'écran d'un appel, entrant comme sortant.
  *
- * ## Il couvre tout
+ * ## Il ne suit pas le thème, et c'est délibéré
  *
- * Un appel n'est pas un panneau qu'on consulte : c'est ce qu'on fait. Le
- * reste de l'application disparaît derrière, et il n'y a pas de bouton
- * « retour » — on quitte un appel en raccrochant, pas en s'en allant.
+ * Toutes ses couleurs sont fixes. Un appel vidéo se regarde, souvent le soir :
+ * un fond clair rayonne sur le visage. Mais surtout, les jetons du thème
+ * basculent en mode nuit — `texteInverse` y devient de l'encre — et une
+ * première version affichait le prénom en bleu sombre sur fond sombre, donc
+ * invisible. Sur une surface qui ne bascule pas, le texte ne doit pas basculer
+ * non plus.
  *
- * ## Raccrocher est toujours à portée
+ * ## Raccrocher est toujours au même endroit
  *
- * Le bouton rouge est le plus gros, au même endroit dans tous les états. Sur
- * un appel qu'on veut interrompre — parce qu'on a composé par erreur, parce
- * que ça tourne mal — chercher comment raccrocher est insupportable.
+ * Le bouton rouge ne bouge d'aucun état à l'autre. Sur un appel qu'on veut
+ * interrompre — composé par erreur, ou qui tourne mal — chercher comment
+ * raccrocher est insupportable.
  */
+
+/** Couleurs propres à l'écran, hors thème. Voir l'en-tête. */
+const SURFACE = '#0E1726';
+const TEXTE = '#FFFFFF';
+const TEXTE_DOUX = 'rgba(255, 255, 255, 0.68)';
+const COMMANDE = 'rgba(255, 255, 255, 0.14)';
+const COMMANDE_ACTIVE = '#FFFFFF';
+const RACCROCHER = '#D93025';
+const DECROCHER = '#1E9E52';
+const AVATAR = '#1D4E89';
+
 export function AppelEcran() {
-  const colors = useCouleurs();
   const autre = useAutre();
   const coupleId = useSessionServeur((e) => e.coupleId);
 
@@ -62,8 +73,9 @@ export function AppelEcran() {
   const video = appel.sorte === 'video';
   const enCours = appel.etat === 'en_cours';
   const entrant = !jappelle && appel.etat === 'sonne';
+  const videoEtablie = video && enCours && !!fluxDistant;
 
-  const etatLisible = enCours
+  const etat = enCours
     ? dureeLisible(secondes)
     : jappelle
       ? 'Sonnerie…'
@@ -73,22 +85,42 @@ export function AppelEcran() {
 
   return (
     <View style={styles.fond}>
-      {/* La vidéo distante occupe tout le fond ; la nôtre se pose en vignette,
-          comme partout — on regarde l'autre, pas soi. */}
-      {video && fluxDistant ? (
+      {videoEtablie ? (
         <RTCView
           streamURL={fluxDistant.toURL()}
           objectFit="cover"
           style={styles.distant}
         />
-      ) : (
-        <View style={styles.portrait}>
-          <Avatar partenaire={autre} taille={96} />
-        </View>
-      )}
+      ) : null}
 
-      {video && fluxLocal && !cameraCoupee ? (
-        <Pressable onPress={retournerLaCamera} style={styles.vignette}>
+      {/* Le portrait reste tant que l'image d'en face n'est pas là : un écran
+          noir pendant l'établissement se lit comme un appel qui a échoué. */}
+      {!videoEtablie ? (
+        <View style={styles.portrait}>
+          <View style={styles.pastille}>
+            <Texte variante="titre" style={styles.initiales}>
+              {autre.initiales}
+            </Texte>
+          </View>
+        </View>
+      ) : null}
+
+      <View style={styles.entete}>
+        <Texte variante="sousTitre" style={styles.nom}>
+          {autre.prenom}
+        </Texte>
+        <Texte variante="petit" style={styles.etat}>
+          {etat}
+        </Texte>
+      </View>
+
+      {video && fluxLocal && !cameraCoupee && enCours ? (
+        <Pressable
+          onPress={retournerLaCamera}
+          accessibilityRole="button"
+          accessibilityLabel="Changer de caméra"
+          style={styles.vignette}
+        >
           <RTCView
             streamURL={fluxLocal.toURL()}
             objectFit="cover"
@@ -98,15 +130,6 @@ export function AppelEcran() {
         </Pressable>
       ) : null}
 
-      <View style={styles.entete}>
-        <Texte variante="titre" style={styles.nom}>
-          {autre.prenom}
-        </Texte>
-        <Texte variante="corpsDoux" style={styles.etat}>
-          {etatLisible}
-        </Texte>
-      </View>
-
       {erreur ? (
         <View style={styles.erreur}>
           <Texte variante="petit" style={styles.erreurTexte}>
@@ -115,158 +138,156 @@ export function AppelEcran() {
         </View>
       ) : null}
 
-      <View style={styles.commandes}>
+      {/* Une barre unique, posée en bas, comme dans toutes les messageries :
+          la main tombe dessus sans chercher. */}
+      <View style={styles.barre}>
         {enCours ? (
-          <>
-            <Bouton
-              icone={microCoupe ? 'mic-off' : 'mic'}
-              libelle={microCoupe ? 'Réactiver le micro' : 'Couper le micro'}
-              actif={microCoupe}
-              onPress={basculerMicro}
-            />
-            {video ? (
-              <Bouton
-                icone={cameraCoupee ? 'video-off' : 'video'}
-                libelle={
-                  cameraCoupee ? 'Réactiver la caméra' : 'Couper la caméra'
-                }
-                actif={cameraCoupee}
-                onPress={basculerCamera}
-              />
-            ) : null}
-          </>
+          <Rond
+            icone={microCoupe ? 'mic-off' : 'mic'}
+            libelle={microCoupe ? 'Réactiver le micro' : 'Couper le micro'}
+            actif={microCoupe}
+            onPress={basculerMicro}
+          />
+        ) : null}
+
+        {enCours && video ? (
+          <Rond
+            icone={cameraCoupee ? 'video-off' : 'video'}
+            libelle={cameraCoupee ? 'Réactiver la caméra' : 'Couper la caméra'}
+            actif={cameraCoupee}
+            onPress={basculerCamera}
+          />
         ) : null}
 
         {entrant ? (
-          <Pressable
+          <Rond
+            icone="phone"
+            libelle="Décrocher"
+            teinte={DECROCHER}
             onPress={() => coupleId && void decrocher(coupleId)}
-            accessibilityRole="button"
-            accessibilityLabel="Décrocher"
-            style={({ pressed }) => [
-              styles.rond,
-              { backgroundColor: colors.accent },
-              pressed && styles.pressee,
-            ]}
-          >
-            <Feather name="phone" size={26} color={colors.texteInverse} />
-          </Pressable>
+          />
         ) : null}
 
-        <Pressable
-          onPress={() =>
-            coupleId &&
-            void raccrocher(coupleId, entrant ? 'refuse' : jappelle && !enCours ? 'annule' : 'raccroche')
-          }
-          accessibilityRole="button"
-          accessibilityLabel={entrant ? 'Décliner' : 'Raccrocher'}
-          style={({ pressed }) => [
-            styles.rond,
-            styles.raccrocher,
-            pressed && styles.pressee,
-          ]}
-        >
-          <Feather name="phone-off" size={26} color={colors.texteInverse} />
-        </Pressable>
+        <Rond
+          icone="phone-off"
+          libelle={entrant ? 'Décliner' : 'Raccrocher'}
+          teinte={RACCROCHER}
+          onPress={() => {
+            if (!coupleId) return;
+            void raccrocher(
+              coupleId,
+              entrant ? 'refuse' : jappelle && !enCours ? 'annule' : 'raccroche',
+            );
+          }}
+        />
       </View>
     </View>
   );
 }
 
-function Bouton({
+function Rond({
   icone,
   libelle,
   actif,
+  teinte,
   onPress,
 }: {
   icone: keyof typeof Feather.glyphMap;
   libelle: string;
-  actif: boolean;
+  actif?: boolean;
+  /** Couleur de fond imposée — décrocher et raccrocher. */
+  teinte?: string;
   onPress: () => void;
 }) {
-  const colors = useCouleurs();
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={libelle}
-      accessibilityState={{ selected: actif }}
+      accessibilityState={{ selected: !!actif }}
+      hitSlop={8}
       style={({ pressed }) => [
         styles.rond,
-        styles.secondaire,
-        actif && styles.secondaireActif,
-        pressed && styles.pressee,
+        teinte ? { backgroundColor: teinte } : null,
+        !teinte && actif ? styles.rondActif : null,
+        pressed && styles.presse,
       ]}
     >
-      <Feather name={icone} size={22} color={colors.texte} />
+      <Feather
+        name={icone}
+        size={24}
+        // Un rond clair demande une icône sombre : l'inverse serait illisible.
+        color={!teinte && actif ? SURFACE : TEXTE}
+      />
     </Pressable>
   );
 }
 
-const styles = stylesDynamiques(({ colors }: Theme) => ({
-  /**
-   * Sombre dans les deux thèmes, et c'est le seul écran dans ce cas.
-   *
-   * Un appel vidéo se regarde : un fond clair rayonne sur le visage et fatigue
-   * les yeux le soir, qui est l'heure où l'on s'appelle. La valeur est fixée
-   * plutôt que prise au thème, faute d'un jeton qui reste sombre des deux
-   * côtés — `texte` deviendrait clair en mode nuit et le fond disparaîtrait.
-   */
-  fond: {
-    ...({ position: 'absolute' } as const),
-    inset: 0,
-    backgroundColor: '#1A1614',
-  },
-  distant: { ...({ position: 'absolute' } as const), inset: 0 },
+const styles = StyleSheet.create({
+  fond: { position: 'absolute', inset: 0, backgroundColor: SURFACE },
+  distant: { position: 'absolute', inset: 0 },
   portrait: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  vignette: {
-    position: 'absolute',
-    top: 96,
-    right: margeEcran,
-    width: 108,
-    height: 152,
-    borderRadius: rayons.md,
-    overflow: 'hidden',
+  pastille: {
+    width: 132,
+    height: 132,
+    borderRadius: rayons.rond,
+    backgroundColor: AVATAR,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  vignetteFlux: { flex: 1 },
+  initiales: { color: TEXTE, fontSize: 46 },
   entete: {
     position: 'absolute',
-    top: 72,
+    top: 76,
     left: margeEcran,
     right: margeEcran,
+    alignItems: 'center',
     gap: espacements.xxs,
   },
-  nom: { color: colors.texteInverse },
-  etat: { color: colors.texteInverse, opacity: 0.8 },
-  // Juste au-dessus des commandes : c'est là que le regard va quand on
-  // cherche pourquoi le décrochage n'a rien donné.
+  nom: { color: TEXTE, fontSize: 24 },
+  etat: { color: TEXTE_DOUX },
+  vignette: {
+    position: 'absolute',
+    top: 150,
+    right: margeEcran,
+    width: 104,
+    height: 148,
+    borderRadius: rayons.md,
+    overflow: 'hidden',
+    backgroundColor: SURFACE,
+  },
+  vignetteFlux: { flex: 1 },
   erreur: {
     position: 'absolute',
-    bottom: 140,
+    bottom: 152,
     left: margeEcran,
     right: margeEcran,
     padding: espacements.md,
     borderRadius: rayons.md,
     backgroundColor: 'rgba(255, 255, 255, 0.12)',
   },
-  erreurTexte: { color: colors.texteInverse },
-  commandes: {
+  erreurTexte: { color: TEXTE, textAlign: 'center' },
+  barre: {
     position: 'absolute',
-    bottom: 56,
+    bottom: 44,
     left: margeEcran,
     right: margeEcran,
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: espacements.lg,
+    gap: espacements.md,
+    paddingVertical: espacements.sm,
+    paddingHorizontal: espacements.md,
+    borderRadius: rayons.lg,
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
   },
   rond: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 62,
+    height: 62,
+    borderRadius: rayons.rond,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: COMMANDE,
   },
-  secondaire: { backgroundColor: colors.fondEleve },
-  secondaireActif: { backgroundColor: colors.accentDoux },
-  raccrocher: { backgroundColor: colors.tendresse },
-  pressee: { opacity: 0.7 },
-}));
+  rondActif: { backgroundColor: COMMANDE_ACTIVE },
+  presse: { opacity: 0.7 },
+});

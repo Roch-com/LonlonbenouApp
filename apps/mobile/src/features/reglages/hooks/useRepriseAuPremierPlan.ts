@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { AppState } from 'react-native';
 import { reveillerLeServeur } from '@/lib/api/client';
 import { useSessionServeur } from '../stores/sessionServeurStore';
+import { useAppels } from '@/features/presence/stores/appelStore';
 
 /**
  * Ce qu'il faut faire quand l'application revient au premier plan.
@@ -39,6 +40,9 @@ export function useRepriseAuPremierPlan(): void {
 
       reveillerLeServeur();
       void useSessionServeur.getState().restaurer();
+      // Et le canal des appels : sans lui, rien ne sonne, et rien à l'écran ne
+      // dit pourquoi.
+      useAppels.getState().reveillerLeCanal();
     };
 
     // Au montage aussi : l'ouverture depuis zéro est le cas le plus fréquent,

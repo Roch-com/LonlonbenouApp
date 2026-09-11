@@ -73,13 +73,33 @@ export interface Signalisation {
   /** Envoie un signal. Rend faux si le canal n'est pas ouvert. */
   envoyer: (signal: SignalAppel & { coupleId: string }) => boolean;
   fermer: () => void;
+  /** Relance tout de suite si le canal est tombé. */
+  reveiller: () => void;
   ouvert: () => boolean;
 }
 
-const ESSAIS_MAX = 5;
+/**
+ * Attente avant reconnexion : 1 s, 2 s, 4 s… plafonnée à 15 s.
+ *
+ * **On n'abandonne jamais.** Une version précédente s'arrêtait après cinq
+ * essais : une fois le canal perdu — réseau qui bascule, téléphone en veille,
+ * serveur redémarré — il ne revenait plus, et plus aucun appel ne sonnait.
+ * Rien à l'écran ne l'expliquait, et c'est la cause des appels qui
+ * n'aboutissaient pas.
+ */
+const attente = (essai: number) => Math.min(1000 * 2 ** essai, 15_000);
 
-/** Attente avant reconnexion : 1 s, 2 s, 4 s… plafonnée à 10 s. */
-const attente = (essai: number) => Math.min(1000 * 2 ** essai, 10_000);
+/**
+ * Battement de cœur.
+ *
+ * Un WebSocket silencieux est fermé par les intermédiaires — l'hébergeur, le
+ * routeur de l'opérateur — au bout d'une minute environ. Sans trafic, le canal
+ * meurt sans que personne ne le sache : le socket reste « ouvert » côté
+ * téléphone alors que plus rien ne passe.
+ *
+ * Vingt-cinq secondes passent sous tous les seuils que l'on rencontre.
+ */
+const BATTEMENT_MS = 25_000;
 
 export function ouvrirSignalisation({
   jeton,
@@ -90,6 +110,12 @@ export function ouvrirSignalisation({
   let essais = 0;
   let ferme = false;
   let minuterie: ReturnType<typeof setTimeout> | undefined;
+  let coeur: ReturnType<typeof setInterval> | undefined;
+
+  const arreterLeCoeur = () => {
+    if (coeur) clearInterval(coeur);
+    coeur = undefined;
+  };
 
   const adresse = () => {
     const base = CONFIGURATION_API.base.replace(/^http/, 'ws');
@@ -103,6 +129,15 @@ export function ouvrirSignalisation({
     socket.onopen = () => {
       essais = 0;
       onEtat?.(true);
+      arreterLeCoeur();
+      coeur = setInterval(() => {
+        if (socket?.readyState !== WebSocket.OPEN) return;
+        try {
+          socket.send(JSON.stringify({ sorte: 'battement' }));
+        } catch {
+          // Le socket est mort sans le dire : `onclose` suivra et relancera.
+        }
+      }, BATTEMENT_MS);
     };
 
     socket.onmessage = (evenement) => {
@@ -117,8 +152,9 @@ export function ouvrirSignalisation({
     };
 
     socket.onclose = () => {
+      arreterLeCoeur();
       onEtat?.(false);
-      if (ferme || essais >= ESSAIS_MAX) return;
+      if (ferme) return;
       minuterie = setTimeout(connecter, attente(essais));
       essais += 1;
     };
@@ -143,8 +179,22 @@ export function ouvrirSignalisation({
     fermer() {
       ferme = true;
       if (minuterie) clearTimeout(minuterie);
+      arreterLeCoeur();
       socket?.close();
       socket = undefined;
+    },
+    /**
+     * Force une reconnexion immédiate si le canal est tombé.
+     *
+     * Appelé au retour de l'application au premier plan : le téléphone a pu
+     * dormir des heures, et attendre le prochain report du délai ferait
+     * manquer les appels de la première minute.
+     */
+    reveiller() {
+      if (ferme || socket?.readyState === WebSocket.OPEN) return;
+      if (minuterie) clearTimeout(minuterie);
+      essais = 0;
+      connecter();
     },
     ouvert: () => socket?.readyState === WebSocket.OPEN,
   };

@@ -41,6 +41,9 @@ const CODES: Record<string, number> = {
 
 const repondre = (motif: string | undefined) => CODES[motif ?? ''] ?? 400;
 
+/** Sous le seuil de fermeture des intermédiaires, qui tourne autour d'une minute. */
+const BATTEMENT_MS = 25_000;
+
 export function enregistrerRoutesAppels(
   app: FastifyInstance,
   appels: ServiceAppels,
@@ -63,7 +66,28 @@ export function enregistrerRoutesAppels(
 
     const moi = identite.partenaireId;
     canal.attacher(moi, socket);
-    socket.on('close', () => canal.detacher(moi, socket));
+
+    /**
+     * Battement côté serveur.
+     *
+     * Les intermédiaires ferment un WebSocket silencieux au bout d'une minute
+     * environ, et un socket mort dont personne ne le sait est pire qu'un
+     * socket fermé : le serveur croit pouvoir pousser, et l'appel ne sonne
+     * nulle part. Le `ping` du protocole vérifie le lien sans charge utile.
+     */
+    const coeur = setInterval(() => {
+      if (socket.readyState !== socket.OPEN) return;
+      try {
+        socket.ping();
+      } catch {
+        // Rompu : `close` suivra et détachera.
+      }
+    }, BATTEMENT_MS);
+
+    socket.on('close', () => {
+      clearInterval(coeur);
+      canal.detacher(moi, socket);
+    });
 
     socket.on('message', (brut: Buffer) => {
       void (async () => {
@@ -75,6 +99,9 @@ export function enregistrerRoutesAppels(
         } catch {
           return;
         }
+        // Le battement du téléphone ne demande rien : le recevoir suffit à
+        // tenir le lien ouvert de bout en bout.
+        if ((signal as { sorte?: string }).sorte === 'battement') return;
         if (!signal?.coupleId || !signal.appelId) return;
 
         // Le destinataire est résolu avant toute action : c'est lui, et

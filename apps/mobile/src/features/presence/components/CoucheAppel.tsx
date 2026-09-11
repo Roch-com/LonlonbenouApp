@@ -38,6 +38,7 @@ export function CoucheAppel() {
 
   const appel = useAppels((e) => e.appel);
   const brancher = useAppels((e) => e.brancher);
+  const definirCle = useAppels((e) => e.definirCle);
   const debrancher = useAppels((e) => e.debrancher);
 
   // Les clés d'abord, sans attendre que la conversation soit ouverte.
@@ -46,11 +47,18 @@ export function CoucheAppel() {
     void preparerLesCles(coupleId);
   }, [coupleId, clePubliqueAutre, preparerLesCles]);
 
+  // Le canal d'abord, sans attendre les clés : un socket fermé ne sonne pas,
+  // et rien à l'écran n'expliquerait pourquoi.
   useEffect(() => {
-    if (!jeton || !coupleId || !clePubliqueAutre) return;
-    brancher(jeton, coupleId, clePubliqueAutre);
+    if (!jeton || !coupleId) return;
+    brancher(jeton, coupleId);
     return () => debrancher();
-  }, [jeton, coupleId, clePubliqueAutre, brancher, debrancher]);
+  }, [jeton, coupleId, brancher, debrancher]);
+
+  // La clé suit quand elle est là. Elle ne sert qu'à sceller la négociation.
+  useEffect(() => {
+    if (clePubliqueAutre) definirCle(clePubliqueAutre);
+  }, [clePubliqueAutre, definirCle]);
 
   /**
    * Les messages poussés par le serveur.
