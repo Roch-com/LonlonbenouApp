@@ -27,6 +27,7 @@ from PIL import Image, ImageChops, ImageDraw
 BLEU = (0x1D, 0x4E, 0x89)
 BLEU_FONCE = (0x12, 0x36, 0x61)
 OR = (0xA9, 0x8A, 0x4C)
+OR_CLAIR = (0xC9, 0xA9, 0x6A)
 IVOIRE = (0xF5, 0xF8, 0xFC)
 BLANC = (0xFF, 0xFF, 0xFF)
 
@@ -229,6 +230,42 @@ def coeur_svg(facteur=0.64, centre_y=50.0):
     return d + 'Z'
 
 
+def couper(points, x, garder_gauche):
+    """Sutherland-Hodgman contre une verticale.
+
+    Le demi-plan est convexe : l'algorithme y est exact, et il suffit ici.
+    """
+    def dedans(p):
+        return p[0] <= x if garder_gauche else p[0] >= x
+
+    sortie = []
+    for a, b in zip(points, points[1:] + points[:1]):
+        a_dedans, b_dedans = dedans(a), dedans(b)
+        if a_dedans:
+            sortie.append(a)
+        if a_dedans != b_dedans and a[0] != b[0]:
+            t = (x - a[0]) / (b[0] - a[0])
+            sortie.append((x, a[1] + (b[1] - a[1]) * t))
+    return sortie
+
+
+def demi_svg(garder_gauche, x_coupe=50.0, pas=6):
+    """Une moitié de sceau, le creux déjà retiré.
+
+    Deux sous-tracés remplis en « pair-impair » : la moitié de sceau, puis la
+    moitié de cœur qu'elle contient. Le cœur étant entièrement à l'intérieur du
+    sceau, l'inversion du second donne exactement la soustraction voulue — ce
+    qui n'était pas le cas pour la ligne d'or, bien plus étroite que lui.
+    """
+    # On allège les contours AVANT de les couper, jamais après : la coupe
+    # introduit les deux sommets qui tiennent le bord droit, et les décimer
+    # ensuite en supprimait un sur six — le bord devenait une diagonale qui
+    # traversait le sceau. Cela s'est vu tout de suite sur la moitié droite.
+    sceau = couper(SCEAU[::pas], x_coupe, garder_gauche)
+    creux = couper(COEUR[::pas], x_coupe, garder_gauche)
+    return f'{polyligne_svg(sceau, 1)} {polyligne_svg(creux, 1)}'
+
+
 def jointure_svg(haut=4.0, bas=96.0, pas=0.1):
     """La ligne d'or, déjà privée du creux.
 
@@ -277,6 +314,29 @@ ENTETE_TS = '''// Généré par design/logo/creux.py — ne pas modifier à la m
 export const SCEAU =
   {sceau};
 
+/**
+ * Les deux moitiés, le creux déjà retiré de chacune. Se remplissent en
+ * « pair-impair » : second sous-tracé = la part de cœur que la moitié porte.
+ *
+ * Séparées, ces deux entailles ne ressemblent à rien. C'est le propos.
+ */
+export const SCEAU_GAUCHE =
+  {sceau_gauche};
+
+export const SCEAU_DROITE =
+  {sceau_droite};
+
+/**
+ * La version d'une seule matière : le creux ET la jointure y restent des vides.
+ * Pour les surfaces où la couleur ne passe pas — notification Android, tampon,
+ * gravure, marque en filigrane sur une photographie.
+ */
+export const MONO_GAUCHE =
+  {mono_gauche};
+
+export const MONO_DROITE =
+  {mono_droite};
+
 /** Le creux central — un vide, jamais une forme posée par-dessus. */
 export const COEUR =
   {coeur};
@@ -292,6 +352,15 @@ export const JOINTURE =
 export const BLEU_GAUCHE = '{bleu}';
 export const BLEU_DROITE = '{bleu_fonce}';
 export const OR_JOINTURE = '{ligne_or}';
+
+/**
+ * L'or s'éclaircit sur fond sombre. Le ton nominal y perd son éclat et vire au
+ * gris : ce n'est plus de l'or, c'est une rayure.
+ */
+export const OR_JOINTURE_SOMBRE = '{ligne_or_clair}';
+
+/** Le fond ivoire des déclinaisons posées, et la matière des versions inversées. */
+export const IVOIRE = '{ivoire}';
 '''
 
 
@@ -305,7 +374,13 @@ def en_typescript():
         jointure=f"'{jointure_svg()}'",
         bleu=couleur(BLEU),
         bleu_fonce=couleur(BLEU_FONCE),
+        sceau_gauche=f"'{demi_svg(True)}'",
+        sceau_droite=f"'{demi_svg(False)}'",
+        mono_gauche=f"'{demi_svg(True, 50.0 - LARGEUR_JOINTURE / 2)}'",
+        mono_droite=f"'{demi_svg(False, 50.0 + LARGEUR_JOINTURE / 2)}'",
         ligne_or=couleur(OR),
+        ligne_or_clair=couleur(OR_CLAIR),
+        ivoire=couleur(IVOIRE),
     )
 
 

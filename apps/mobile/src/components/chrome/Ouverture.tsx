@@ -11,11 +11,11 @@ import { espacements } from '@/design/theme';
 /**
  * Le temps que la marque reste seule à l'écran, une fois l'app prête.
  *
- * Plus court qu'avant : la marque ne se contente plus d'apparaître, elle se
- * construit. Ce mouvement occupe déjà l'œil, et lui ajouter le repos d'origine
- * aurait allongé chaque lancement sans rien donner de plus à voir.
+ * Il commence après le rapprochement, et le nom s'y inscrit : c'est le moment
+ * où la marque est entière et immobile. Assez long pour qu'on la lise, assez
+ * court pour qu'on n'attende pas.
  */
-const REPOS_MS = 480;
+const REPOS_MS = 620;
 const FONDU_MS = 560;
 
 /** Taille de la marque à l'ouverture. */
@@ -54,7 +54,7 @@ interface Props {
  * couperait l'ouverture en plein milieu.
  */
 export function Ouverture({ prete, children }: Props) {
-  const { degrades } = useTheme();
+  const { degrades, mode } = useTheme();
   const [terminee, setTerminee] = useState(false);
   const [marqueFaite, setMarqueFaite] = useState(false);
 
@@ -159,7 +159,11 @@ export function Ouverture({ prete, children }: Props) {
             style={[styles.marque, { opacity: opaciteMarque }]}
           >
             <View style={styles.embleme}>
-              <MarqueAnimee taille={MARQUE_PX} onFini={surMarqueFaite} />
+              <MarqueAnimee
+                taille={MARQUE_PX}
+                surFondSombre={mode === 'sombre'}
+                onFini={surMarqueFaite}
+              />
             </View>
             <Animated.View
               style={{

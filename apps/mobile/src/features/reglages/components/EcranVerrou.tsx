@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import type { Theme } from '@lonlonbenu/shared';
 import { stylesDynamiques } from '@/design/stylesDynamiques';
+import { useTheme } from '@/design/ThemeProvider';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LONGUEUR_PIN_MIN } from '@lonlonbenu/shared';
 import { Bouton, Texte } from '@/components/ui';
 import { espacements } from '@/design/theme';
+import { Sceau } from '@/components/chrome/Marque';
 import { ClavierPin } from './ClavierPin';
 import { useVerrou } from '../stores/verrouStore';
 
@@ -19,6 +21,7 @@ import { useVerrou } from '../stores/verrouStore';
  */
 export function EcranVerrou() {
   const marges = useSafeAreaInsets();
+  const sombre = useTheme().mode === 'sombre';
   const biometrieActivee = useVerrou((e) => e.biometrie);
   const tenterBiometrie = useVerrou((e) => e.tenterBiometrie);
   const tenterPin = useVerrou((e) => e.tenterPin);
@@ -48,6 +51,12 @@ export function EcranVerrou() {
   return (
     <View style={[styles.fond, { paddingTop: marges.top + espacements.xl }]}>
       <View style={styles.entete}>
+        {/* Le sceau plutôt que le nom en capitales : sur une porte fermée, une
+            marque se reconnaît plus vite qu'elle ne se lit. Le nom reste juste
+            en dessous pour qui arrive ici sans la connaître. */}
+        <View style={styles.sceau}>
+          <Sceau taille={56} surFondSombre={sombre} />
+        </View>
         <Texte variante="surtitre">LONLONBENU</Texte>
         <Texte variante="affiche">Votre espace est fermé</Texte>
         <Texte variante="corpsDoux" style={styles.sousTitre}>
@@ -104,6 +113,7 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
     justifyContent: 'space-between',
   },
   entete: { alignItems: 'center', gap: espacements.xxs },
+  sceau: { marginBottom: espacements.sm },
   sousTitre: { textAlign: 'center' },
   pied: { alignSelf: 'stretch', alignItems: 'center', gap: espacements.md },
   message: { textAlign: 'center', minHeight: 20 },

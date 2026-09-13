@@ -60,7 +60,13 @@ python3 design/logo/creux.py --ts > apps/mobile/src/components/chrome/traces.ts
 ```
 
 `traces.ts` est engendré — ne pas le modifier à la main. Il porte les mêmes
-contours en SVG, pour l'ouverture animée (`MarqueAnimee.tsx`).
+contours en SVG : les deux moitiés, leurs versions monochromes, le creux et la
+jointure. `Marque.tsx` en tire les déclinaisons (couleur, monochrome, inversée
+et les assemblages), `MarqueAnimee.tsx` l'ouverture.
+
+La charte complète — construction, déclinaisons, air minimal, interdits, cas
+d'usage et spécification du mouvement — est publiée :
+<https://claude.ai/code/artifact/1ad1721b-524d-49c1-abd3-dcb294289622>
 
 Deux pièges rencontrés, à ne pas réintroduire :
 
@@ -72,6 +78,10 @@ Deux pièges rencontrés, à ne pas réintroduire :
   bien plus large que la bande, c'est le cœur entier qui se remplissait d'or.
   La soustraction est faite dans le générateur (`jointure_svg`), qui livre deux
   polygones disjoints.
+- **Alléger un contour se fait avant de le couper, jamais après.** La coupe
+  introduit les deux sommets qui tiennent le bord droit d'une moitié ; les
+  décimer ensuite en supprime un sur six, et le bord devient une diagonale qui
+  traverse le sceau.
 
 ## Les 6 pôles fonctionnels et priorités MVP
 

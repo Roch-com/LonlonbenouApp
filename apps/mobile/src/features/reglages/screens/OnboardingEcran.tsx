@@ -5,6 +5,8 @@ import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { controlerNomEspace, propositionsNomEspace } from '@lonlonbenu/shared';
 import { Bouton, Carte, Champ, Ecran, EnTete, Puce, Texte } from '@/components/ui';
 import { espacements, rayons } from '@/design/theme';
+import { Marque } from '@/components/chrome/Marque';
+import { useTheme } from '@/design/ThemeProvider';
 import { EtapeAppairage } from '../components/EtapeAppairage';
 import { EtapePartagesInitiaux } from '../components/EtapePartagesInitiaux';
 import { useSession } from '../stores/sessionStore';
@@ -22,6 +24,7 @@ const ORDRE: Etape[] = ['prenoms', 'invitation', 'espace', 'partages', 'fin'];
  * existe reviendrait à faire consentir dans le vide.
  */
 export function OnboardingEcran() {
+  const sombre = useTheme().mode === 'sombre';
   const couple = useSession((e) => e.couple);
   const definirPrenoms = useSession((e) => e.definirPrenoms);
   const definirNomEspace = useSession((e) => e.definirNomEspace);
@@ -63,11 +66,22 @@ export function OnboardingEcran() {
 
       {etape === 'prenoms' ? (
         <>
-          <EnTete
-            surtitre="Bienvenue"
-            titre="LONLONBENU"
-            sousTitre="Commençons par vos deux prénoms."
-          />
+          {/* La toute première chose que voit quelqu'un qui ouvre l'app. Le
+              nom seul ne lui dit rien : la marque empilée le présente — le
+              sceau, le nom, puis la devise qui traduit LONLONBENU. Elle
+              remplace l'en-tête au lieu de s'ajouter à lui, qui répéterait le
+              nom deux fois de suite. */}
+          <View style={styles.accueil}>
+            <Marque
+              taille={84}
+              disposition="empilee"
+              avecDevise
+              surFondSombre={sombre}
+            />
+            <Texte variante="corpsDoux" style={styles.accueilTexte}>
+              Commençons par vos deux prénoms.
+            </Texte>
+          </View>
           <Carte>
             <View style={styles.champs}>
               <Champ etiquette="Vous" value={prenomA} onChangeText={setPrenomA} />
@@ -184,6 +198,8 @@ function Progression({ etape }: { etape: Etape }) {
 }
 
 const styles = stylesDynamiques(({ colors }: Theme) => ({
+  accueil: { alignItems: 'center', gap: espacements.lg, paddingVertical: espacements.md },
+  accueilTexte: { textAlign: 'center' },
   progression: {
     flexDirection: 'row',
     gap: espacements.xs,

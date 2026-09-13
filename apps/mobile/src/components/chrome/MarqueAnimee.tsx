@@ -1,10 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { BLEU_DROITE, BLEU_GAUCHE, COEUR, JOINTURE, OR_JOINTURE, SCEAU } from './traces';
+import {
+  BLEU_DROITE,
+  BLEU_GAUCHE,
+  JOINTURE,
+  OR_JOINTURE,
+  OR_JOINTURE_SOMBRE,
+  SCEAU_DROITE,
+  SCEAU_GAUCHE,
+} from './traces';
 
 interface Props {
   taille?: number;
+  /** Vrai sur fond sombre : l'or s'éclaircit, sans quoi il vire au gris. */
+  surFondSombre?: boolean;
   /** Appelé une fois le mouvement terminé. */
   onFini?: () => void;
 }
@@ -12,14 +22,18 @@ interface Props {
 /**
  * Durées du rapprochement et de la venue de l'or.
  *
- * L'or démarre un peu avant que les moitiés se touchent : les deux phases se
- * recouvrent, et l'ouverture tient en huit dixièmes de seconde. Les enchaîner
- * bout à bout ajoutait un demi-écran d'attente à chaque lancement — cher payé
- * pour une animation qu'on verra des centaines de fois.
+ * Une première version tenait en huit dixièmes de seconde : trop vif, on n'avait
+ * pas le temps de voir les deux moitiés arriver — donc pas le temps de
+ * comprendre d'où vient le cœur, qui est tout le propos. Le mouvement dure
+ * maintenant près d'une seconde et demie.
+ *
+ * L'or démarre avant que les moitiés se touchent : les phases se recouvrent
+ * plutôt que de s'enchaîner bout à bout, ce qui garde l'ouverture sous deux
+ * secondes et demie malgré son nouveau tempo.
  */
-const RENCONTRE_MS = 520;
-const OR_MS = 380;
-const OR_AVANCE_MS = 120;
+const RENCONTRE_MS = 1180;
+const OR_MS = 700;
+const OR_AVANCE_MS = 240;
 
 /**
  * La marque qui se construit — l'ouverture de l'application.
@@ -50,7 +64,7 @@ const OR_AVANCE_MS = 120;
  * aurait fait passer chaque image par le fil JavaScript, au pire moment : le
  * démarrage, quand ce fil est déjà occupé à monter l'application.
  */
-export function MarqueAnimee({ taille = 108, onFini }: Props) {
+export function MarqueAnimee({ taille = 108, surFondSombre = false, onFini }: Props) {
   const [sansMouvement, setSansMouvement] = useState<boolean | null>(null);
 
   const ecart = taille * 0.34;
@@ -100,7 +114,7 @@ export function MarqueAnimee({ taille = 108, onFini }: Props) {
     const finition = Animated.parallel([
       Animated.timing(pose, {
         toValue: 1,
-        duration: RENCONTRE_MS + 140,
+        duration: RENCONTRE_MS + 260,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
@@ -135,12 +149,12 @@ export function MarqueAnimee({ taille = 108, onFini }: Props) {
   const largeur = taille + 2 * ecart;
   if (sansMouvement === null) return <View style={{ width: largeur, height: taille }} />;
 
-  const fenetre = {
-    width: taille / 2,
-    height: taille,
-    overflow: 'hidden' as const,
+  const couche = {
     position: 'absolute' as const,
+    left: ecart,
     top: 0,
+    width: taille,
+    height: taille,
   };
 
   return (
@@ -149,60 +163,42 @@ export function MarqueAnimee({ taille = 108, onFini }: Props) {
       accessibilityRole="image"
       accessibilityLabel="LONLONBENU"
     >
-      <Animated.View
-        style={[fenetre, { left: ecart, transform: [{ translateX: gauche }] }]}
-      >
+      <Animated.View style={[couche, { transform: [{ translateX: gauche }] }]}>
         <Moitie taille={taille} cote="gauche" />
       </Animated.View>
 
-      <Animated.View
-        style={[
-          fenetre,
-          { left: ecart + taille / 2, transform: [{ translateX: droite }] },
-        ]}
-      >
+      <Animated.View style={[couche, { transform: [{ translateX: droite }] }]}>
         <Moitie taille={taille} cote="droite" />
       </Animated.View>
 
-      <Animated.View
-        style={{
-          position: 'absolute',
-          left: ecart,
-          top: 0,
-          width: taille,
-          height: taille,
-          opacity: or,
-        }}
-        pointerEvents="none"
-      >
-        <Jointure taille={taille} />
+      <Animated.View style={[couche, { opacity: or }]} pointerEvents="none">
+        <Jointure taille={taille} surFondSombre={surFondSombre} />
       </Animated.View>
     </Animated.View>
   );
 }
 
 /**
- * Une moitié du sceau — le tracé entier, décalé, que la fenêtre parente recadre.
+ * Une moitié du sceau, sa part de creux déjà retirée.
  *
- * Découper la superellipse en deux aurait demandé de recalculer le contour ;
- * décaler puis rogner donne la même image sans toucher au dessin.
+ * Le tracé arrive découpé du générateur, dans le repère plein de 100 × 100 : il
+ * suffit de le déplacer. La première version dessinait le sceau entier dans une
+ * fenêtre qui le rognait — ce qui marchait, mais demandait un `overflow` caché
+ * par moitié, là où Android rogne déjà les enfants débordants de son propre
+ * chef. Moins de couches, moins de façons que cela tourne mal.
  *
- * Le cœur est retiré par `fillRule="evenodd"` : le même tracé sert de contour
- * et de creux, ce qui rend impossible qu'ils se désalignent. Un masque SVG
- * aurait fait la même chose, mais les masques sont ce que `react-native-svg`
- * rend le plus inégalement d'une version d'Android à l'autre.
+ * Le creux est retiré par « pair-impair » : le même tracé porte le contour et
+ * son vide, ils ne peuvent pas se désaligner.
  */
 function Moitie({ taille, cote }: { taille: number; cote: 'gauche' | 'droite' }) {
   return (
-    <View style={{ marginLeft: cote === 'gauche' ? 0 : -taille / 2 }}>
-      <Svg width={taille} height={taille} viewBox="0 0 100 100">
-        <Path
-          d={`${SCEAU} ${COEUR}`}
-          fillRule="evenodd"
-          fill={cote === 'gauche' ? BLEU_GAUCHE : BLEU_DROITE}
-        />
-      </Svg>
-    </View>
+    <Svg width={taille} height={taille} viewBox="0 0 100 100">
+      <Path
+        d={cote === 'gauche' ? SCEAU_GAUCHE : SCEAU_DROITE}
+        fillRule="evenodd"
+        fill={cote === 'gauche' ? BLEU_GAUCHE : BLEU_DROITE}
+      />
+    </Svg>
   );
 }
 
@@ -214,10 +210,16 @@ function Moitie({ taille, cote }: { taille: number; cote: 'gauche' | 'droite' })
  * le sceau — ce mode inverse ce qui est couvert deux fois, et le cœur étant
  * bien plus large que la bande, c'est le cœur entier qui se serait rempli d'or.
  */
-function Jointure({ taille }: { taille: number }) {
+function Jointure({
+  taille,
+  surFondSombre,
+}: {
+  taille: number;
+  surFondSombre: boolean;
+}) {
   return (
     <Svg width={taille} height={taille} viewBox="0 0 100 100">
-      <Path d={JOINTURE} fill={OR_JOINTURE} />
+      <Path d={JOINTURE} fill={surFondSombre ? OR_JOINTURE_SOMBRE : OR_JOINTURE} />
     </Svg>
   );
 }
