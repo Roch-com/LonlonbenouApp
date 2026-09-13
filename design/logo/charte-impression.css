@@ -197,17 +197,17 @@ body {
 
 .index a {
   grid-template-columns: var(--marge) minmax(0, 1fr);
-  padding: 7mm 0;
+  padding: 6mm 0;
   border-bottom: 1px solid var(--filet);
   color: var(--texte);
   font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: 22pt;
+  font-size: 20pt;
   /*
    * Interligne fixée, pour que la page se calcule au lieu de se tâtonner :
-   * 259 mm utiles, moins 38 mm d'en-tête, laissent 221 mm pour neuf entrées.
-   * Une entrée vaut 22 pt × 1,25 + 2 × 7 mm, soit 23,7 mm — les neuf tiennent
-   * en 213 mm. Sans cela, l'interligne du corps de texte les portait à 27 mm
-   * et la neuvième passait seule sur la page suivante.
+   * 259 mm utiles, moins 38 mm d'en-tête, laissent 221 mm pour dix entrées.
+   * Une entrée vaut 20 pt × 1,25 + 2 × 6 mm, soit 20,8 mm — les dix tiennent
+   * en 208 mm. Sans cela, l'interligne du corps de texte les portait à 27 mm
+   * et les dernières passaient seules sur la page suivante.
    */
   line-height: 1.25;
 }
@@ -385,4 +385,53 @@ td.valeur { font-size: 8.4pt; }
   margin-top: 8mm;
   padding-top: 4mm;
   break-inside: avoid;
+}
+
+/* ---- §7 En situation ----------------------------------------------------- */
+
+/*
+ * Les maquettes traversent la grille, et aucun appareil ne se coupe en deux.
+ * Trois téléphones sur la largeur utile font 52 mm chacun — assez pour qu'on
+ * lise l'icône dans sa grille, ce qui est tout l'objet de la planche.
+ */
+.scenes,
+.scene-tablette,
+.bandeau-notification { grid-column: 1 / -1; }
+
+.scenes {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12mm;
+  margin-top: 8mm;
+}
+
+.appareil { break-inside: avoid; }
+
+.appareil .chassis {
+  border-radius: 7mm;
+  padding: 1.6mm;
+  /* Une ombre portée s'imprime en aplat sale ; un filet la remplace. */
+  box-shadow: 0 0 0 0.3mm rgba(15, 29, 48, 0.22);
+}
+
+.appareil .ecran { border-radius: 5.6mm; }
+
+.appareil figcaption { padding-top: 4mm; }
+
+.scene-tablette { max-width: 108mm; margin-top: 7mm; break-inside: avoid; }
+.tablette .chassis { border-radius: 5mm; padding: 2.4mm; }
+.tablette .ecran { border-radius: 3mm; }
+
+.bandeau-notification { margin-top: 6mm; padding: 9mm 8mm; border-radius: 3px; }
+.notif { max-width: 104mm; }
+
+/* ---- Finitions ------------------------------------------------------------ */
+
+/*
+ * Une planche blanche sur une page blanche n'a pas de bord : le spécimen se
+ * dissout dans la marge et le dessin flotte. Un filet le pose.
+ */
+.specimen.sur-clair,
+.echelle {
+  box-shadow: inset 0 0 0 0.3mm var(--filet);
+  border-radius: 3px;
 }

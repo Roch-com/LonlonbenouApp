@@ -405,6 +405,16 @@ if __name__ == '__main__':
         ('android-icon-monochrome.png', marque(1024, SUR_ANDROID, mono=True)),
         ('splash-icon.png', marque(1024, 0.98)),
         ('favicon.png', marque(196, 0.98, fond=IVOIRE)),
+        # Un logo vide, pour l'écran natif de démarrage.
+        #
+        # Le plugin `expo-splash-screen` écrit toujours la référence
+        # `@drawable/splashscreen_logo` dans ses styles, mais n'engendre le
+        # fichier que si on lui fournit une image : le configurer sans image
+        # casse le build Android sur « resource not found ». Or on ne veut ici
+        # que la couleur de fond — l'ouverture animée se charge de la marque, et
+        # l'afficher assemblée avant qu'elle se construise dirait le contraire
+        # de ce qu'elle raconte. D'où cette image transparente.
+        ('splash-vide.png', Image.new('RGBA', (288, 288), (0, 0, 0, 0))),
     ]:
         chemin = os.path.join(dossier, nom)
         image.save(chemin, 'PNG', optimize=True)
