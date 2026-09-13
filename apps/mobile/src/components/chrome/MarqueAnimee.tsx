@@ -24,16 +24,18 @@ interface Props {
  *
  * Une première version tenait en huit dixièmes de seconde : trop vif, on n'avait
  * pas le temps de voir les deux moitiés arriver — donc pas le temps de
- * comprendre d'où vient le cœur, qui est tout le propos. Le mouvement dure
- * maintenant près d'une seconde et demie.
+ * comprendre d'où vient le cœur, qui est tout le propos. Une deuxième à une
+ * seconde et demie restait pressée. Le rapprochement prend maintenant 1,7 s,
+ * et l'or 0,9 s de plus : on voit les moitiés venir, se toucher, puis la
+ * jointure se sceller.
  *
  * L'or démarre avant que les moitiés se touchent : les phases se recouvrent
  * plutôt que de s'enchaîner bout à bout, ce qui garde l'ouverture sous deux
  * secondes et demie malgré son nouveau tempo.
  */
-const RENCONTRE_MS = 1180;
-const OR_MS = 700;
-const OR_AVANCE_MS = 240;
+const RENCONTRE_MS = 1700;
+const OR_MS = 900;
+const OR_AVANCE_MS = 300;
 
 /**
  * La marque qui se construit — l'ouverture de l'application.
@@ -114,7 +116,7 @@ export function MarqueAnimee({ taille = 108, surFondSombre = false, onFini }: Pr
     const finition = Animated.parallel([
       Animated.timing(pose, {
         toValue: 1,
-        duration: RENCONTRE_MS + 260,
+        duration: RENCONTRE_MS + 320,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),

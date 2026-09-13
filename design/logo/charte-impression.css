@@ -4,18 +4,34 @@
  * La page web et le PDF viennent du même fichier : ce qui change ici est ce
  * que le papier impose, rien d'autre.
  *
- * - Le thème clair est forcé. Un document composé sur fond sombre gaspille
- *   l'encre et ne se relit pas ; et la charte doit pouvoir partir chez un
- *   imprimeur.
- * - Chaque section commence une page. Une charte se consulte par renvoi
- *   (« voir §5 »), pas en continu.
- * - Le sommaire latéral collant n'a pas de sens sur du papier : il redevient
- *   une table des matières, en tête de document.
+ * ## Ce que la première version ratait
+ *
+ * Elle reprenait la colonne unique de l'écran et coupait une page à chaque
+ * section. Résultat : une couverture vide aux quatre cinquièmes, un sommaire
+ * qui occupait un cinquième de sa page, deux orphelines — deux lignes de
+ * tableau seules, trois vignettes seules — et un tiers de la largeur jamais
+ * employé. Trois corrections, dans cet ordre d'importance :
+ *
+ * 1. **Une grille à colonne de marge.** Les numéros de section et les
+ *    intertitres passent à gauche, hors du texte. La largeur sert, et la
+ *    hiérarchie se lit sans avoir à grossir quoi que ce soit.
+ * 2. **Les coupures sont placées, pas subies.** Là où une section déborde,
+ *    on décide où elle se coupe pour que les deux pages soient pleines.
+ * 3. **Les planches occupent ce qui reste.** Un spécimen qui remplit sa page
+ *    vaut mieux qu'un spécimen timide suivi de blanc.
+ *
+ * Le thème clair est forcé : un document composé sur fond sombre gaspille
+ * l'encre, et la charte doit pouvoir partir chez un imprimeur.
  */
 
 @page {
   size: A4;
-  margin: 16mm 15mm 18mm;
+  margin: 18mm 18mm 20mm;
+}
+
+/* La couverture saigne : elle se passe des marges de page. */
+@page :first {
+  margin: 0;
 }
 
 /*
@@ -23,8 +39,8 @@
  *
  * La page déclare ses jetons sombres sur `:root:not([data-theme="light"])`,
  * de spécificité (0,2,0) — un simple `:root` à (0,1,0) ne le bat pas. Sur une
- * machine réglée en sombre, l'impression sortait alors en texte clair sur le
- * fond blanc forcé plus bas : presque illisible, et rien ne le signalait.
+ * machine réglée en sombre, l'impression sortait en texte clair sur le fond
+ * blanc forcé plus bas : presque illisible, et rien ne le signalait.
  * À spécificité égale, c'est cette feuille qui gagne puisqu'elle vient après.
  */
 :root,
@@ -41,13 +57,18 @@
   --filet-fort: rgba(15, 29, 48, 0.34);
   --or-actif: #A98A4C;
   --accent: #1D4E89;
+
+  /* La grille : marge, gouttière, colonne principale. */
+  --marge: 42mm;
+  --gouttiere: 7mm;
+  --mesure: 112mm;
 }
 
 html,
 body {
   background: #FFFFFF !important;
-  font-size: 10.5pt;
-  line-height: 1.52;
+  font-size: 10pt;
+  line-height: 1.5;
 }
 
 /* Les aplats de couleur SONT le contenu : sans cela le navigateur les retire. */
@@ -64,18 +85,84 @@ body {
   padding-block: 0;
 }
 
-/* ---- Ouverture ------------------------------------------------------- */
+/* ---- Couverture ------------------------------------------------------ */
 
+/*
+ * La page devient la marque : deux champs de bleu séparés d'une couture d'or
+ * qui court d'un bord à l'autre, et le sceau posé à cheval sur la couture.
+ *
+ * Le sceau y est **inversé**, en ivoire. La première version l'avait mis en
+ * couleur : sa moitié gauche #1D4E89 était alors posée sur un champ #1D4E89 et
+ * disparaissait purement et simplement, ne laissant qu'une forme borgne. C'est
+ * le cas même que la §3 prescrit d'éviter, et la déclinaison qu'elle prévoit.
+ *
+ * La couture d'or passe derrière le sceau et ressort de l'autre côté — comme
+ * la jointure passe derrière le creux, à l'échelle du dessin.
+ */
 .bandeau {
-  padding-block: 0 14mm;
-  gap: 14mm;
+  display: block;
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  margin: 0;
+  padding: 0;
+  border-bottom: 0;
+  background: linear-gradient(90deg, #1D4E89 0%, #1D4E89 50%, #123661 50%, #123661 100%);
+  color: #F5F8FC;
   break-after: page;
-  align-items: end;
+  overflow: hidden;
 }
 
-h1 { font-size: 40pt; }
-.chapo { font-size: 14pt; }
-.eyebrow { font-size: 8pt; }
+.bandeau::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 2.4mm);
+  width: 4.8mm;
+  background: #A98A4C;
+}
+
+.bandeau > div:first-child {
+  position: absolute;
+  left: 24mm;
+  bottom: 32mm;
+  right: 24mm;
+}
+
+.bandeau .eyebrow {
+  color: rgba(245, 248, 252, 0.74);
+  font-size: 8pt;
+  margin-bottom: 7mm;
+}
+
+.bandeau h1 {
+  font-size: 54pt;
+  color: #F5F8FC;
+  margin-bottom: 7mm;
+}
+
+.bandeau h1 em { color: #C9A96A; }
+
+.bandeau .chapo {
+  color: rgba(245, 248, 252, 0.9);
+  font-size: 14.5pt;
+  max-width: 112mm;
+}
+
+/* À cheval sur la couture, donc centré sur la page. */
+.bandeau-marque {
+  position: absolute;
+  top: 52mm;
+  left: 50%;
+  transform: translateX(-50%);
+  display: block;
+}
+
+.bandeau-marque svg { width: 74mm !important; }
+
+/* L'inversée : une seule matière, et pas de jointure. */
+.bandeau-marque use { fill: #F5F8FC !important; }
 
 /* ---- Sommaire -------------------------------------------------------- */
 
@@ -87,57 +174,121 @@ h1 { font-size: 40pt; }
 .index {
   position: static;
   break-after: page;
-  font-size: 11pt;
+  font-size: 13pt;
+  padding-top: 8mm;
 }
 
 .index h2 {
   font-family: "Cormorant Garamond", Georgia, serif;
-  font-size: 22pt;
+  font-size: 32pt;
+  line-height: 1.15;
   font-weight: 500;
   letter-spacing: 0;
   text-transform: none;
   color: var(--texte);
-  margin: 0 0 8mm;
+  margin: 0 0 14mm;
 }
 
 .index ol {
   flex-direction: column;
   gap: 0;
-  max-width: 120mm;
+  max-width: none;
 }
 
 .index a {
-  grid-template-columns: 14mm minmax(0, 1fr);
-  padding: 3.4mm 0;
+  grid-template-columns: var(--marge) minmax(0, 1fr);
+  padding: 7mm 0;
   border-bottom: 1px solid var(--filet);
   color: var(--texte);
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 22pt;
+  /*
+   * Interligne fixée, pour que la page se calcule au lieu de se tâtonner :
+   * 259 mm utiles, moins 38 mm d'en-tête, laissent 221 mm pour neuf entrées.
+   * Une entrée vaut 22 pt × 1,25 + 2 × 7 mm, soit 23,7 mm — les neuf tiennent
+   * en 213 mm. Sans cela, l'interligne du corps de texte les portait à 27 mm
+   * et la neuvième passait seule sur la page suivante.
+   */
+  line-height: 1.25;
 }
 
-.index a::before { font-size: 9.5pt; color: var(--or-actif); }
+.index li:first-child a { border-top: 1px solid var(--filet-fort); }
 
-/* ---- Sections -------------------------------------------------------- */
+.index a::before {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10pt;
+  color: var(--or-actif);
+  align-self: center;
+}
 
-section + section {
-  break-before: page;
+/* ---- La grille des sections ------------------------------------------ */
+
+/*
+ * Colonne de marge à gauche pour les repères — numéro de section,
+ * intertitres —, colonne principale pour ce qui se lit. Tableaux et planches
+ * traversent les deux.
+ */
+/*
+ * Les sections coulent : forcer une page à chacune donnait seize pages dont
+ * plusieurs à moitié vides, et une qui ne portait qu'un paragraphe. Un filet
+ * et de l'air les séparent, ce qui suffit à les distinguer sans gaspiller le
+ * papier. Les blocs visuels, eux, refusent d'être coupés et se déplacent d'un
+ * bloc — ce sont eux qui décident des coupures, et ils le font bien.
+ */
+section {
+  display: grid;
+  grid-template-columns: var(--marge) minmax(0, 1fr);
+  column-gap: var(--gouttiere);
+  align-content: start;
+  break-before: auto;
+  margin-top: 11mm;
+  padding-top: 7mm;
+  border-top: 1px solid var(--filet-fort);
+}
+
+section:first-of-type {
   margin-top: 0;
   padding-top: 0;
   border-top: 0;
 }
 
+p { orphans: 3; widows: 3; }
+
+section > * { grid-column: 2; }
+
 h2.titre {
-  font-size: 26pt;
-  margin-bottom: 5mm;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: var(--marge) minmax(0, 1fr);
+  column-gap: var(--gouttiere);
+  align-items: baseline;
+  font-size: 28pt;
+  margin: 0 0 6mm;
   break-after: avoid;
+}
+
+h2.titre .num {
+  font-size: 10pt;
+  justify-self: start;
+  padding-top: 2mm;
 }
 
 h3 {
-  margin: 9mm 0 3mm;
+  grid-column: 1;
+  margin: 7mm 0 0;
   break-after: avoid;
-  font-size: 8.5pt;
+  font-size: 8pt;
+  line-height: 1.35;
+  text-align: left;
+  color: var(--texte-doux);
 }
 
-p { max-width: 155mm; }
-.intro { font-size: 11.5pt; }
+/* Le premier paragraphe qui suit un intertitre lui fait face. */
+h3 + p,
+h3 + .intro { margin-top: 7mm; }
+
+p { max-width: var(--mesure); }
+.intro { font-size: 11pt; max-width: var(--mesure); }
 
 /* Rien de ce qui se lit d'un bloc ne doit être coupé en deux. */
 .vignette,
@@ -149,29 +300,89 @@ p { max-width: 155mm; }
 tr,
 .piste { break-inside: avoid; }
 
-table { break-inside: auto; min-width: 0; }
+/* ---- Tableaux et planches : toute la largeur -------------------------- */
+
+.tableau-enveloppe,
+.specimen,
+.grille,
+.palette,
+.interdits,
+.echelle,
+.scene,
+.piste {
+  grid-column: 1 / -1;
+  overflow: visible;
+}
+
+table { break-inside: auto; min-width: 0; font-size: 9pt; }
 thead { display: table-header-group; }
-.tableau-enveloppe { overflow: visible; }
+th, td { padding: 2.9mm 6mm 2.9mm 0; }
+th { font-size: 7.5pt; }
+td.valeur { font-size: 8.4pt; }
 
-th, td { padding: 2.6mm 5mm 2.6mm 0; }
-td.valeur { font-size: 8.6pt; }
+.specimen { padding: 8mm; margin: 6mm 0 0; }
 
-.specimen { padding: 10mm 6mm; margin: 6mm 0; }
-.grille { gap: 5mm; margin-top: 6mm; }
-.palette { gap: 4mm; margin-top: 6mm; }
-.interdits { gap: 5mm; margin-top: 6mm; }
+/* ---- §2 Construction -------------------------------------------------- */
 
-/* ---- Mouvement ------------------------------------------------------- */
+/*
+ * La section tient sur deux pages. On choisit où : le dessin coté finit la
+ * première, le tableau des paramètres ouvre la seconde. Sans cela, le tableau
+ * se coupait de lui-même et laissait deux lignes seules sur une page vide.
+ */
+#construction .specimen svg { width: 96mm !important; }
+
+/* ---- §3 Déclinaisons --------------------------------------------------- */
+
+/*
+ * Cinq versions puis trois assemblages : deux planches pleines plutôt qu'une
+ * pleine et une orpheline.
+ */
+#declinaisons .grille { grid-template-columns: repeat(3, 1fr); gap: 6mm; }
+#declinaisons .plateau { min-height: 38mm; padding: 8mm 6mm; }
+#declinaisons .plateau svg { width: 28mm !important; }
+/*
+ * La planche des assemblages ouvre sa page.
+ *
+ * Sans cela, Chrome gardait la rangée de grille en bas de la page précédente
+ * et en posait le contenu sur la suivante : trois cadres vides, bien visibles.
+ * `break-inside: avoid` sur la grille n'y change rien — il est ignoré sur un
+ * conteneur de grille, et le PDF ressortait identique à l'octet près.
+ */
+#declinaisons h3 ~ .grille { break-before: page; }
+#declinaisons h3 ~ .grille .plateau { min-height: 46mm; }
+
+/* ---- §4 Couleurs ------------------------------------------------------- */
+
+.palette { grid-template-columns: repeat(3, 1fr); gap: 6mm; }
+.ton .aplat { height: 30mm; }
+
+/* ---- §5 Air et tailles -------------------------------------------------- */
+
+#air .specimen svg { width: 74mm !important; }
+.echelle { padding: 9mm; gap: 13mm; justify-content: center; }
+
+/* ---- §6 Ce qu'on ne fait pas -------------------------------------------- */
+
+/* Deux par deux : quatre vignettes plus grandes, et pas de rang dépareillé. */
+.interdits { grid-template-columns: repeat(2, 1fr); gap: 8mm; }
+.interdit .cadre { padding: 11mm; min-height: 46mm; }
+.interdit .cadre svg { width: 32mm !important; height: auto !important; }
+.interdit p { max-width: 105mm; margin-inline: auto; }
+
+/* ---- §8 Le mouvement ----------------------------------------------------- */
 
 /* Le bouton ne mène nulle part sur du papier ; la piste des durées, si. */
 #rejouer { display: none !important; }
 
-.scene { padding: 14mm 6mm; }
+.scene { padding: 11mm 8mm; }
+.scene svg { width: 102mm !important; }
+.piste { grid-template-columns: var(--marge) minmax(0, 1fr); column-gap: var(--gouttiere); margin-top: 8mm; }
 
-/* ---- Pied ------------------------------------------------------------ */
+/* ---- Pied ---------------------------------------------------------------- */
 
 .pied {
-  margin-top: 10mm;
-  padding-top: 5mm;
+  grid-column: 1 / -1;
+  margin-top: 8mm;
+  padding-top: 4mm;
   break-inside: avoid;
 }

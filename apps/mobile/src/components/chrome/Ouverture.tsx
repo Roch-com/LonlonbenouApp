@@ -15,7 +15,7 @@ import { espacements } from '@/design/theme';
  * où la marque est entière et immobile. Assez long pour qu'on la lise, assez
  * court pour qu'on n'attende pas.
  */
-const REPOS_MS = 620;
+const REPOS_MS = 700;
 const FONDU_MS = 560;
 
 /** Taille de la marque à l'ouverture. */
