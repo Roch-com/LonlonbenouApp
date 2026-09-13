@@ -35,3 +35,6 @@ cle-production.pem
 
 # Clé Firebase extraite pour recopie. Jamais versionnée.
 cle-firebase.pem
+
+# Python du générateur de logo
+__pycache__/

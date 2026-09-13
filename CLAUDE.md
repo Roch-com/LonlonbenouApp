@@ -31,9 +31,47 @@ Si une implémentation demandée contredit ces principes, le signaler avant de c
 
 ## Identité de marque (pour le design système)
 
-- Palette : or/champagne `#9C7A3C`, or foncé `#6E5424`, rose poudré `#B85C6B`, ivoire `#FBF6EC`, encre `#2B2420`
+**La source de vérité est `packages/shared/src/design/tokens.ts`**, jamais cette
+section : elle a décrit pendant un temps une palette dorée qui n'existait plus
+dans le code.
+
+- **Le bleu est la couleur principale** : `#1D4E89`, `#123661` en foncé.
+- **L'or (`#A98A4C`) est un accent secondaire**, réservé aux moments rares. Le
+  répandre le banalise et le fait virer « application bancaire ».
+- Rose `#A8455A`, ivoire `#F5F8FC`, encre `#0F1D30`.
 - Typographie : serif élégante pour les titres (ex. Cormorant Garamond), sans-serif lisible pour le contenu (ex. Manrope)
 - Ton : premium, glamour, fluide — jamais utilitaire ou froid
+
+### Le logo — « Le Creux »
+
+Deux moitiés qui se rejoignent ; le cœur n'est jamais dessiné, c'est le vide
+qu'elles laissent entre elles. Trois choix l'éloignent du carré bleu générique :
+une **superellipse** plutôt qu'un rectangle arrondi (elle se tient comme un
+sceau, pas comme une pastille d'interface), **deux bleus** plutôt qu'un (deux
+personnes, pas un bloc), et une **ligne d'or à la jointure, interrompue par le
+cœur**.
+
+`design/logo/creux.py` fait foi pour le dessin. Il produit deux choses, et les
+deux doivent être régénérées ensemble après toute retouche :
+
+```
+python3 design/logo/creux.py apps/mobile/assets          # les icônes
+python3 design/logo/creux.py --ts > apps/mobile/src/components/chrome/traces.ts
+```
+
+`traces.ts` est engendré — ne pas le modifier à la main. Il porte les mêmes
+contours en SVG, pour l'ouverture animée (`MarqueAnimee.tsx`).
+
+Deux pièges rencontrés, à ne pas réintroduire :
+
+- **Le rognage d'Android** ne suit pas la boîte englobante mais le **rayon
+  maximal depuis le centre**. Le premier avant-plan débordait du cercle alors
+  que sa boîte tenait. `SUR_ANDROID` le calcule.
+- **La ligne d'or ne peut pas être percée par « pair-impair »**, contrairement
+  au sceau : ce mode inverse ce qui est couvert deux fois, et le cœur étant
+  bien plus large que la bande, c'est le cœur entier qui se remplissait d'or.
+  La soustraction est faite dans le générateur (`jointure_svg`), qui livre deux
+  polygones disjoints.
 
 ## Les 6 pôles fonctionnels et priorités MVP
 
@@ -136,6 +174,12 @@ Légende : **P0** = MVP obligatoire · **P1** = V1.1 · **P2** = évolution ult�
 - [x] Notes vocales (§8.3) — audio scellé, rangé en base, durée plafonnée à
       deux minutes. **Version montée à 0.2.0** : `expo-audio` est un module
       natif, l'APK 0.1.0 ne recevra plus les mises à jour.
+
+- [x] Logo « Le Creux » et ouverture animée — les deux moitiés se rejoignent et
+      le cœur naît de leur rencontre. **Version montée à 0.4.0** :
+      `react-native-svg` est un module natif, et une mise à jour OTA portant ce
+      JavaScript atterrirait sur un binaire qui ne l'embarque pas. Il faut un
+      nouveau build, pas un `eas update`.
 
 ### Ce qui reste, et pourquoi
 

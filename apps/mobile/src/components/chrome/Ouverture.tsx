@@ -1,15 +1,25 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { Animated, Easing, Image, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Animated, Easing, View } from 'react-native';
 import type { Theme } from '@lonlonbenu/shared';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Texte } from '@/components/ui';
+import { MarqueAnimee } from './MarqueAnimee';
 import { stylesDynamiques } from '@/design/stylesDynamiques';
 import { useTheme } from '@/design/ThemeProvider';
 import { espacements } from '@/design/theme';
 
-/** Le temps que la marque reste seule à l'écran, une fois l'app prête. */
-const REPOS_MS = 780;
+/**
+ * Le temps que la marque reste seule à l'écran, une fois l'app prête.
+ *
+ * Plus court qu'avant : la marque ne se contente plus d'apparaître, elle se
+ * construit. Ce mouvement occupe déjà l'œil, et lui ajouter le repos d'origine
+ * aurait allongé chaque lancement sans rien donner de plus à voir.
+ */
+const REPOS_MS = 480;
 const FONDU_MS = 560;
+
+/** Taille de la marque à l'ouverture. */
+const MARQUE_PX = 108;
 
 interface Props {
   /** Vrai quand l'app peut prendre le relais — polices chargées, session lue. */
@@ -29,41 +39,70 @@ interface Props {
  * contenu est monté derrière dès le premier instant. Si l'app est prête avant
  * la fin, on ne rallonge pas ; si elle traîne, l'ouverture attend sans à-coup.
  *
- * L'échelle part de 1,08 et se resserre vers 1 plutôt que l'inverse : un motif
- * qui rétrécit légèrement donne l'impression de se poser, là où un motif qui
- * grandit semble sauter vers l'avant.
+ * L'échelle de la marque se resserre vers 1 plutôt que de partir en dessous :
+ * un motif qui rétrécit légèrement donne l'impression de se poser, là où un
+ * motif qui grandit semble sauter vers l'avant. C'est `MarqueAnimee` qui la
+ * porte désormais.
+ *
+ * La marque, elle, se construit — `MarqueAnimee` fait venir ses deux moitiés
+ * l'une vers l'autre. Le nom et la devise n'arrivent qu'ensuite : les faire
+ * monter pendant le rapprochement aurait mis deux mouvements en concurrence, et
+ * c'est la marque qu'on doit regarder.
+ *
+ * Le repos ne commence qu'une fois ce mouvement terminé. Sans quoi une
+ * application prête tout de suite — le cas ordinaire au deuxième lancement —
+ * couperait l'ouverture en plein milieu.
  */
 export function Ouverture({ prete, children }: Props) {
   const { degrades } = useTheme();
   const [terminee, setTerminee] = useState(false);
+  const [marqueFaite, setMarqueFaite] = useState(false);
 
   const opacite = useRef(new Animated.Value(1)).current;
-  const echelle = useRef(new Animated.Value(1.08)).current;
   const opaciteMarque = useRef(new Animated.Value(0)).current;
+  const opaciteNom = useRef(new Animated.Value(0)).current;
+  const monteeNom = useRef(new Animated.Value(10)).current;
   const monteeContenu = useRef(new Animated.Value(16)).current;
   const opaciteContenu = useRef(new Animated.Value(0)).current;
 
-  // Entrée de la marque : indépendante de l'état de chargement, elle démarre
-  // dès le premier rendu.
+  // Entrée du bloc : indépendante de l'état de chargement, elle démarre dès le
+  // premier rendu. L'opacité monte vite — c'est le rapprochement des moitiés
+  // qui doit se voir, pas l'apparition.
+  //
+  // Le bloc ne porte plus d'échelle : `MarqueAnimee` a la sienne, et les deux
+  // se multipliaient. Le 1,08 d'ici et le 0,94 de là partaient de 1,015 pour
+  // finir à 1 — un mouvement invisible, qui annulait l'effet de pose des deux.
   useEffect(() => {
+    Animated.timing(opaciteMarque, {
+      toValue: 1,
+      duration: 380,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver: true,
+    }).start();
+  }, [opaciteMarque]);
+
+  // Le nom vient après la marque, et de dessous : il la présente plutôt que de
+  // lui disputer l'attention.
+  const surMarqueFaite = useCallback(() => {
+    setMarqueFaite(true);
     Animated.parallel([
-      Animated.timing(opaciteMarque, {
+      Animated.timing(opaciteNom, {
         toValue: 1,
-        duration: 520,
+        duration: 420,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
-      Animated.timing(echelle, {
-        toValue: 1,
-        duration: 900,
+      Animated.timing(monteeNom, {
+        toValue: 0,
+        duration: 520,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start();
-  }, [opaciteMarque, echelle]);
+  }, [opaciteNom, monteeNom]);
 
   useEffect(() => {
-    if (!prete) return;
+    if (!prete || !marqueFaite) return;
 
     const minuterie = setTimeout(() => {
       Animated.parallel([
@@ -93,7 +132,7 @@ export function Ouverture({ prete, children }: Props) {
     }, REPOS_MS);
 
     return () => clearTimeout(minuterie);
-  }, [prete, opacite, opaciteContenu, monteeContenu]);
+  }, [prete, marqueFaite, opacite, opaciteContenu, monteeContenu]);
 
   return (
     <View style={styles.cadre}>
@@ -117,22 +156,26 @@ export function Ouverture({ prete, children }: Props) {
             style={styles.remplissage}
           />
           <Animated.View
-            style={[
-              styles.marque,
-              { opacity: opaciteMarque, transform: [{ scale: echelle }] },
-            ]}
+            style={[styles.marque, { opacity: opaciteMarque }]}
           >
-            <Image
-              source={require('../../../assets/splash-icon.png')}
-              style={styles.embleme}
-              resizeMode="contain"
-            />
-            <Texte variante="affiche" style={styles.nom}>
-              LONLONBENU
-            </Texte>
-            <Texte variante="petit" style={styles.devise}>
-              La chose de l’amour
-            </Texte>
+            <View style={styles.embleme}>
+              <MarqueAnimee taille={MARQUE_PX} onFini={surMarqueFaite} />
+            </View>
+            <Animated.View
+              style={{
+                alignItems: 'center',
+                gap: espacements.xs,
+                opacity: opaciteNom,
+                transform: [{ translateY: monteeNom }],
+              }}
+            >
+              <Texte variante="affiche" style={styles.nom}>
+                LONLONBENU
+              </Texte>
+              <Texte variante="petit" style={styles.devise}>
+                La chose de l’amour
+              </Texte>
+            </Animated.View>
           </Animated.View>
         </Animated.View>
       )}
@@ -160,7 +203,7 @@ const styles = stylesDynamiques(({ colors }: Theme) => ({
     bottom: 0,
   },
   marque: { alignItems: 'center', gap: espacements.xs },
-  embleme: { width: 96, height: 96, marginBottom: espacements.md },
+  embleme: { marginBottom: espacements.md },
   nom: { letterSpacing: 2, color: colors.accentFonce },
   devise: { color: colors.texteDoux, fontStyle: 'italic' },
 }));
