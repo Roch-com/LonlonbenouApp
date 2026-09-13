@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { AccessibilityInfo, Animated, Easing } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import {
   BLEU_DROITE,
@@ -15,7 +15,9 @@ interface Props {
   taille?: number;
   /** Vrai sur fond sombre : l'or s'éclaircit, sans quoi il vire au gris. */
   surFondSombre?: boolean;
-  /** Appelé une fois le mouvement terminé. */
+  /** Appelé quand les deux moitiés se touchent : la marque est lisible. */
+  onRencontre?: () => void;
+  /** Appelé quand tout est fini, l'or scellé compris. */
   onFini?: () => void;
 }
 
@@ -66,8 +68,12 @@ const OR_AVANCE_MS = 300;
  * aurait fait passer chaque image par le fil JavaScript, au pire moment : le
  * démarrage, quand ce fil est déjà occupé à monter l'application.
  */
-export function MarqueAnimee({ taille = 108, surFondSombre = false, onFini }: Props) {
-  const [sansMouvement, setSansMouvement] = useState<boolean | null>(null);
+export function MarqueAnimee({
+  taille = 108,
+  surFondSombre = false,
+  onRencontre,
+  onFini,
+}: Props) {
 
   const ecart = taille * 0.34;
   const gauche = useRef(new Animated.Value(-ecart)).current;
@@ -75,35 +81,7 @@ export function MarqueAnimee({ taille = 108, surFondSombre = false, onFini }: Pr
   const or = useRef(new Animated.Value(0)).current;
   const pose = useRef(new Animated.Value(0.94)).current;
 
-  // Certains utilisateurs désactivent les animations au niveau du système —
-  // par confort visuel ou par sensibilité au mouvement. On respecte le réglage
-  // plutôt que de le contourner : la marque s'affiche assemblée, tout de suite.
   useEffect(() => {
-    let vivant = true;
-    AccessibilityInfo.isReduceMotionEnabled()
-      .then((reduit) => {
-        if (vivant) setSansMouvement(reduit);
-      })
-      .catch(() => {
-        if (vivant) setSansMouvement(false);
-      });
-    return () => {
-      vivant = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (sansMouvement === null) return;
-
-    if (sansMouvement) {
-      gauche.setValue(0);
-      droite.setValue(0);
-      or.setValue(1);
-      pose.setValue(1);
-      onFini?.();
-      return;
-    }
-
     const rapprochement = (valeur: Animated.Value) =>
       Animated.timing(valeur, {
         toValue: 0,
@@ -129,27 +107,51 @@ export function MarqueAnimee({ taille = 108, surFondSombre = false, onFini }: Pr
       }),
     ]);
 
-    finition.start();
-    // On prévient dès que les moitiés se touchent : la marque est lisible à cet
-    // instant. L'or et le repos du cadre finissent après, sans rien retenir.
+    // Deux rendez-vous distincts : la rencontre, où la marque devient lisible
+    // et où le nom peut s'inscrire ; et la fin, l'or scellé, à partir de
+    // laquelle seulement il est temps de compter le repos. Les confondre
+    // faisait commencer le repos six dixièmes de seconde avant que l'or ait
+    // fini de venir — la marque entière ne tenait l'écran qu'un instant.
     rencontre.start(({ finished }) => {
+      if (finished) onRencontre?.();
+    });
+    finition.start(({ finished }) => {
       if (finished) onFini?.();
     });
+
+    // Certains désactivent les animations au niveau du système — par confort
+    // visuel ou par sensibilité au mouvement. On respecte le réglage, mais
+    // sans **attendre** sa réponse pour peindre : la version précédente ne
+    // rendait qu'une vue vide tant qu'elle n'était pas arrivée, et cette
+    // requête native est lente au démarrage à froid, précisément au moment où
+    // l'on regarde l'écran. C'était là le trou avant l'animation.
+    let vivant = true;
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((reduit) => {
+        if (!vivant || !reduit) return;
+        rencontre.stop();
+        finition.stop();
+        gauche.setValue(0);
+        droite.setValue(0);
+        or.setValue(1);
+        pose.setValue(1);
+        onRencontre?.();
+        onFini?.();
+      })
+      .catch(() => undefined);
+
     return () => {
+      vivant = false;
       rencontre.stop();
       finition.stop();
     };
-  }, [sansMouvement, gauche, droite, or, pose, onFini]);
+  }, [gauche, droite, or, pose, onRencontre, onFini]);
 
-  // Tant que le réglage système n'a pas répondu, rien n'est peint : une marque
-  // affichée assemblée puis redécoupée pour s'animer serait pire que l'attente
-  // d'une image.
   // Le cadre est assez large pour contenir tout le déplacement : les moitiés
   // partent de ses bords au lieu d'en déborder. Android rogne les enfants qui
   // dépassent de leur parent dans des cas mal définis, et une moitié tronquée
   // au premier écran de l'application se verrait tout de suite.
   const largeur = taille + 2 * ecart;
-  if (sansMouvement === null) return <View style={{ width: largeur, height: taille }} />;
 
   const couche = {
     position: 'absolute' as const,

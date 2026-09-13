@@ -9,13 +9,14 @@ import { useTheme } from '@/design/ThemeProvider';
 import { espacements } from '@/design/theme';
 
 /**
- * Le temps que la marque reste seule à l'écran, une fois l'app prête.
+ * Le temps que la marque entière reste immobile à l'écran, une fois l'app prête.
  *
- * Il commence après le rapprochement, et le nom s'y inscrit : c'est le moment
- * où la marque est entière et immobile. Assez long pour qu'on la lise, assez
- * court pour qu'on n'attende pas.
+ * Il se compte depuis la **fin** du mouvement, l'or scellé compris. Il partait
+ * auparavant de la rencontre des deux moitiés, six dixièmes de seconde avant
+ * que l'or ait fini de venir : le fondu s'enclenchait presque au moment où la
+ * marque devenait complète, et on n'avait pas le temps de la voir entière.
  */
-const REPOS_MS = 700;
+const REPOS_MS = 900;
 const FONDU_MS = 560;
 
 /** Taille de la marque à l'ouverture. */
@@ -49,9 +50,9 @@ interface Props {
  * monter pendant le rapprochement aurait mis deux mouvements en concurrence, et
  * c'est la marque qu'on doit regarder.
  *
- * Le repos ne commence qu'une fois ce mouvement terminé. Sans quoi une
- * application prête tout de suite — le cas ordinaire au deuxième lancement —
- * couperait l'ouverture en plein milieu.
+ * Le repos ne commence qu'une fois ce mouvement **entièrement** terminé, or
+ * compris. Sans quoi une application prête tout de suite — le cas ordinaire au
+ * deuxième lancement — couperait l'ouverture en plein milieu.
  */
 export function Ouverture({ prete, children }: Props) {
   const { degrades, mode } = useTheme();
@@ -83,8 +84,7 @@ export function Ouverture({ prete, children }: Props) {
 
   // Le nom vient après la marque, et de dessous : il la présente plutôt que de
   // lui disputer l'attention.
-  const surMarqueFaite = useCallback(() => {
-    setMarqueFaite(true);
+  const surRencontre = useCallback(() => {
     Animated.parallel([
       Animated.timing(opaciteNom, {
         toValue: 1,
@@ -100,6 +100,8 @@ export function Ouverture({ prete, children }: Props) {
       }),
     ]).start();
   }, [opaciteNom, monteeNom]);
+
+  const surMarqueFinie = useCallback(() => setMarqueFaite(true), []);
 
   useEffect(() => {
     if (!prete || !marqueFaite) return;
@@ -162,7 +164,8 @@ export function Ouverture({ prete, children }: Props) {
               <MarqueAnimee
                 taille={MARQUE_PX}
                 surFondSombre={mode === 'sombre'}
-                onFini={surMarqueFaite}
+                onRencontre={surRencontre}
+                onFini={surMarqueFinie}
               />
             </View>
             <Animated.View
