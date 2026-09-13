@@ -1,0 +1,177 @@
+/*
+ * Mise en page d'impression de la charte.
+ *
+ * La page web et le PDF viennent du même fichier : ce qui change ici est ce
+ * que le papier impose, rien d'autre.
+ *
+ * - Le thème clair est forcé. Un document composé sur fond sombre gaspille
+ *   l'encre et ne se relit pas ; et la charte doit pouvoir partir chez un
+ *   imprimeur.
+ * - Chaque section commence une page. Une charte se consulte par renvoi
+ *   (« voir §5 »), pas en continu.
+ * - Le sommaire latéral collant n'a pas de sens sur du papier : il redevient
+ *   une table des matières, en tête de document.
+ */
+
+@page {
+  size: A4;
+  margin: 16mm 15mm 18mm;
+}
+
+/*
+ * Les trois sélecteurs sont nécessaires, et le deuxième surtout.
+ *
+ * La page déclare ses jetons sombres sur `:root:not([data-theme="light"])`,
+ * de spécificité (0,2,0) — un simple `:root` à (0,1,0) ne le bat pas. Sur une
+ * machine réglée en sombre, l'impression sortait alors en texte clair sur le
+ * fond blanc forcé plus bas : presque illisible, et rien ne le signalait.
+ * À spécificité égale, c'est cette feuille qui gagne puisqu'elle vient après.
+ */
+:root,
+:root:not([data-theme="light"]),
+:root[data-theme="dark"] {
+  color-scheme: light;
+  --fond: #FFFFFF;
+  --fond-panneau: #FFFFFF;
+  --fond-creux: #EEF3F9;
+  --texte: #0F1D30;
+  --texte-doux: #3E4F66;
+  --texte-voile: #64748B;
+  --filet: rgba(15, 29, 48, 0.18);
+  --filet-fort: rgba(15, 29, 48, 0.34);
+  --or-actif: #A98A4C;
+  --accent: #1D4E89;
+}
+
+html,
+body {
+  background: #FFFFFF !important;
+  font-size: 10.5pt;
+  line-height: 1.52;
+}
+
+/* Les aplats de couleur SONT le contenu : sans cela le navigateur les retire. */
+*,
+*::before,
+*::after {
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+.page {
+  max-width: none;
+  padding-inline: 0;
+  padding-block: 0;
+}
+
+/* ---- Ouverture ------------------------------------------------------- */
+
+.bandeau {
+  padding-block: 0 14mm;
+  gap: 14mm;
+  break-after: page;
+  align-items: end;
+}
+
+h1 { font-size: 40pt; }
+.chapo { font-size: 14pt; }
+.eyebrow { font-size: 8pt; }
+
+/* ---- Sommaire -------------------------------------------------------- */
+
+.corps {
+  display: block;
+  padding-top: 0;
+}
+
+.index {
+  position: static;
+  break-after: page;
+  font-size: 11pt;
+}
+
+.index h2 {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 22pt;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--texte);
+  margin: 0 0 8mm;
+}
+
+.index ol {
+  flex-direction: column;
+  gap: 0;
+  max-width: 120mm;
+}
+
+.index a {
+  grid-template-columns: 14mm minmax(0, 1fr);
+  padding: 3.4mm 0;
+  border-bottom: 1px solid var(--filet);
+  color: var(--texte);
+}
+
+.index a::before { font-size: 9.5pt; color: var(--or-actif); }
+
+/* ---- Sections -------------------------------------------------------- */
+
+section + section {
+  break-before: page;
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+h2.titre {
+  font-size: 26pt;
+  margin-bottom: 5mm;
+  break-after: avoid;
+}
+
+h3 {
+  margin: 9mm 0 3mm;
+  break-after: avoid;
+  font-size: 8.5pt;
+}
+
+p { max-width: 155mm; }
+.intro { font-size: 11.5pt; }
+
+/* Rien de ce qui se lit d'un bloc ne doit être coupé en deux. */
+.vignette,
+.ton,
+.interdit,
+.echelle figure,
+.specimen,
+.scene,
+tr,
+.piste { break-inside: avoid; }
+
+table { break-inside: auto; min-width: 0; }
+thead { display: table-header-group; }
+.tableau-enveloppe { overflow: visible; }
+
+th, td { padding: 2.6mm 5mm 2.6mm 0; }
+td.valeur { font-size: 8.6pt; }
+
+.specimen { padding: 10mm 6mm; margin: 6mm 0; }
+.grille { gap: 5mm; margin-top: 6mm; }
+.palette { gap: 4mm; margin-top: 6mm; }
+.interdits { gap: 5mm; margin-top: 6mm; }
+
+/* ---- Mouvement ------------------------------------------------------- */
+
+/* Le bouton ne mène nulle part sur du papier ; la piste des durées, si. */
+#rejouer { display: none !important; }
+
+.scene { padding: 14mm 6mm; }
+
+/* ---- Pied ------------------------------------------------------------ */
+
+.pied {
+  margin-top: 10mm;
+  padding-top: 5mm;
+  break-inside: avoid;
+}

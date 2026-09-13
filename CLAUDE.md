@@ -68,6 +68,20 @@ La charte complète — construction, déclinaisons, air minimal, interdits, cas
 d'usage et spécification du mouvement — est publiée :
 <https://claude.ai/code/artifact/1ad1721b-524d-49c1-abd3-dcb294289622>
 
+Elle existe aussi en PDF, `docs/LONLONBENU_Charte_Marque_Le_Creux.pdf`, engendré
+de la **même** page — seule change la feuille d'impression :
+
+```
+python3 design/logo/charte_pdf.py <charte.html> docs/LONLONBENU_Charte_Marque_Le_Creux.pdf
+```
+
+Deux choses à savoir si on y retouche. La feuille d'impression doit redéclarer
+ses jetons clairs sur `:root:not([data-theme="light"])` et pas seulement sur
+`:root` : la page porte ses jetons sombres sur ce sélecteur-là, plus spécifique,
+et un aperçu sorti sur une machine en thème sombre donne du texte clair sur le
+fond blanc forcé. Et les polices viennent de Google Fonts au moment du rendu :
+sans `--virtual-time-budget`, le PDF sort en police de repli sans rien dire.
+
 Deux pièges rencontrés, à ne pas réintroduire :
 
 - **Le rognage d'Android** ne suit pas la boîte englobante mais le **rayon
