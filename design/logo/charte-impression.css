@@ -417,12 +417,30 @@ td.valeur { font-size: 8.4pt; }
 
 .appareil figcaption { padding-top: 4mm; }
 
-.scene-tablette { max-width: 108mm; margin-top: 7mm; break-inside: avoid; }
+.scene-tablette { max-width: 108mm; margin-top: 7mm; }
 .tablette .chassis { border-radius: 5mm; padding: 2.4mm; }
 .tablette .ecran { border-radius: 3mm; }
 
 .bandeau-notification { margin-top: 6mm; padding: 9mm 8mm; border-radius: 3px; }
 .notif { max-width: 104mm; }
+
+/*
+ * La tablette ouvre sa page, avec le texte qui l'annonce.
+ *
+ * `break-inside: avoid` ne la retenait pas : Chrome l'ignore sur les éléments
+ * de grille — le châssis restait dessiné en bas de la page précédente et son
+ * contenu passait sur la suivante. Même symptôme que la planche des
+ * assemblages, même remède.
+ */
+#situation h3:last-of-type { break-before: page; margin-top: 0; }
+
+/*
+ * La dernière section ouvre sa page.
+ *
+ * Sa queue débordait de deux lignes sur une quatorzième page qui ne portait
+ * qu'elles et le pied. Lui donner sa page en fait une clôture, pas un reste.
+ */
+#fichiers { break-before: page; }
 
 /* ---- Finitions ------------------------------------------------------------ */
 
