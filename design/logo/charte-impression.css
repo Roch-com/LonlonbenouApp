@@ -88,16 +88,20 @@ body {
 /* ---- Couverture ------------------------------------------------------ */
 
 /*
- * La page devient la marque : deux champs de bleu séparés d'une couture d'or
- * qui court d'un bord à l'autre, et le sceau posé à cheval sur la couture.
+ * La marque y est dans sa version **principale** : deux bleus, jointure d'or,
+ * creux ivoire — celle que tout le reste du document décrit.
  *
- * Le sceau y est **inversé**, en ivoire. La première version l'avait mis en
- * couleur : sa moitié gauche #1D4E89 était alors posée sur un champ #1D4E89 et
- * disparaissait purement et simplement, ne laissant qu'une forme borgne. C'est
- * le cas même que la §3 prescrit d'éviter, et la déclinaison qu'elle prévoit.
+ * Deux versions précédentes s'y sont cassé les dents, et pour la même raison :
+ * vouloir un fond bleu pleine page. Sur un champ #1D4E89, la moitié gauche
+ * #1D4E89 disparaît — il fallait donc la version inversée, qui donne une
+ * marque en négatif de celle de toutes les autres pages. Et la couture d'or
+ * courant d'un bord à l'autre traversait le creux, qui est un trou : le cœur
+ * s'en trouvait rempli de bleu et d'or, l'interdit même que la §6 énonce.
  *
- * La couture d'or passe derrière le sceau et ressort de l'autre côté — comme
- * la jointure passe derrière le creux, à l'échelle du dessin.
+ * D'où ce parti : le fond ivoire porte la marque telle qu'elle est, et c'est
+ * un bloc d'encre en pied de page qui donne son poids à la couverture et
+ * reçoit le titre. Le creux montre alors l'ivoire de la page, comme il montre
+ * le blanc des planches.
  */
 .bandeau {
   display: block;
@@ -107,62 +111,64 @@ body {
   margin: 0;
   padding: 0;
   border-bottom: 0;
-  background: linear-gradient(90deg, #1D4E89 0%, #1D4E89 50%, #123661 50%, #123661 100%);
-  color: #F5F8FC;
+  background: #F5F8FC;
   break-after: page;
   overflow: hidden;
+  --marque-taille: 88mm;
 }
 
-.bandeau::before {
+/* Le bloc d'encre, en pied : il assoit la page et porte le titre. */
+.bandeau > div:first-child {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 104mm;
+  padding: 26mm 24mm 0;
+  background: #123661;
+}
+
+/* Le seul or de la couverture, hors la jointure du sceau : le bord du bloc. */
+.bandeau > div:first-child::before {
   content: "";
   position: absolute;
   top: 0;
-  bottom: 0;
-  left: calc(50% - 2.4mm);
-  width: 4.8mm;
+  left: 0;
+  right: 0;
+  height: 0.9mm;
   background: #A98A4C;
 }
 
-.bandeau > div:first-child {
-  position: absolute;
-  left: 24mm;
-  bottom: 32mm;
-  right: 24mm;
-}
-
 .bandeau .eyebrow {
-  color: rgba(245, 248, 252, 0.74);
+  color: rgba(245, 248, 252, 0.72);
   font-size: 8pt;
   margin-bottom: 7mm;
 }
 
 .bandeau h1 {
-  font-size: 54pt;
+  font-size: 52pt;
   color: #F5F8FC;
-  margin-bottom: 7mm;
+  margin-bottom: 6mm;
 }
 
 .bandeau h1 em { color: #C9A96A; }
 
 .bandeau .chapo {
-  color: rgba(245, 248, 252, 0.9);
-  font-size: 14.5pt;
-  max-width: 112mm;
+  color: rgba(245, 248, 252, 0.88);
+  font-size: 14pt;
+  max-width: 118mm;
 }
 
-/* À cheval sur la couture, donc centré sur la page. */
+/* La marque, centrée dans l'ivoire au-dessus du bloc. */
 .bandeau-marque {
   position: absolute;
-  top: 52mm;
+  top: 62mm;
   left: 50%;
   transform: translateX(-50%);
   display: block;
 }
 
-.bandeau-marque svg { width: 74mm !important; }
-
-/* L'inversée : une seule matière, et pas de jointure. */
-.bandeau-marque use { fill: #F5F8FC !important; }
+.bandeau-marque svg { width: var(--marque-taille) !important; }
 
 /* ---- Sommaire -------------------------------------------------------- */
 
