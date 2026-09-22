@@ -12,7 +12,10 @@ import { normaliserPem } from './securite/pem.ts';
 import { creerDepotPostgres, creerPool } from './domaine/depotPostgres.ts';
 import { creerDepotOAuthPostgres } from './securite/oauth/depotOAuthPostgres.ts';
 import { appliquerLeSchema } from './db/migrations.ts';
-import { demarrerLePlanificateur } from './modules/rappels/planificateur.ts';
+import {
+  demarrerLePlanificateur,
+  intervalleDepuisEnv,
+} from './modules/rappels/planificateur.ts';
 import { creerTransportDepuisEnv } from './modules/notifications/transportDepuisEnv.ts';
 import { creerCourrierDepuisEnv } from './modules/courrier/courrier.ts';
 
@@ -98,7 +101,19 @@ const { app, depot, expediteur } = await creerServeur({
  * route. Deux instances qui balaient en parallèle ne dupliqueraient rien (les
  * clés d'idempotence sont en base), mais autant ne pas travailler pour rien.
  */
-const arreterLePlanificateur = demarrerLePlanificateur(depot, expediteur);
+const intervalleRappels = intervalleDepuisEnv();
+console.log(
+  intervalleRappels > 0
+    ? `Balayage des rappels toutes les ${intervalleRappels / 60_000} min, dans ce processus. ` +
+        'Il interroge la base à chaque passage : une cadence plus courte que la ' +
+        'mise en veille de la base la tient éveillée en permanence.'
+    : 'Balayage interne éteint : les rappels attendent un appel externe à /taches/rappels.',
+);
+const arreterLePlanificateur = demarrerLePlanificateur(
+  depot,
+  expediteur,
+  intervalleRappels,
+);
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {
   process.once(signal, () => {
     arreterLePlanificateur();

@@ -38,6 +38,16 @@ services:
         sync: false
       - key: LONLONBENU_OAUTH_EMETTEUR
         sync: false
+      # Cadence du balayage des rappels, en minutes. `0` l'éteint dans le
+      # processus et laisse la tâche planifiée externe appeler /taches/rappels.
+      #
+      # À régler, et pas seulement par économie : à cinq minutes, le balayage
+      # interroge la base plus souvent qu'elle ne s'endort. Neon ne suspend
+      # alors jamais son calcul, tourne jour et nuit, et le palier gratuit
+      # finit par refuser toute connexion — code 53000, « quota dépassé ».
+      # C'est arrivé, et l'application est restée inaccessible.
+      - key: LONLONBENU_RAPPELS_INTERVALLE_MIN
+        value: "0"
       - key: LONLONBENU_SECRET_TACHES
         # Render en fabrique un aléatoire et le garde : c'est le secret qui
         # protège le déclencheur externe de rappels.

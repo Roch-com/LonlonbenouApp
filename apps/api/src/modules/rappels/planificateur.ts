@@ -90,6 +90,36 @@ export async function executerLesRappels(
 export const INTERVALLE_RAPPELS_MS = 5 * 60_000;
 
 /**
+ * Cadence lue dans l'environnement, en minutes. `0` éteint le balayage interne.
+ *
+ * Ce réglage existe parce que sa valeur par défaut a mis la base à terre.
+ * Le balayage interroge PostgreSQL toutes les cinq minutes, et Neon suspend
+ * son calcul après cinq minutes d'inactivité : la base ne s'endormait donc
+ * jamais, et tournait vingt-quatre heures sur vingt-quatre. Le palier gratuit
+ * compte des heures de calcul ; il a fini par les refuser toutes, avec le code
+ * 53000 — « quota dépassé ». Plus personne ne pouvait se connecter.
+ *
+ * À zéro, c'est la tâche planifiée externe qui appelle `/taches/rappels` et
+ * décide seule de la cadence. La base peut alors dormir entre deux passages.
+ */
+export function intervalleDepuisEnv(
+  env: NodeJS.ProcessEnv = process.env,
+): number {
+  const brut = env['LONLONBENU_RAPPELS_INTERVALLE_MIN'];
+  if (brut === undefined || brut.trim() === '') return INTERVALLE_RAPPELS_MS;
+
+  const minutes = Number(brut);
+  if (!Number.isFinite(minutes) || minutes < 0) {
+    console.warn(
+      `[rappels] LONLONBENU_RAPPELS_INTERVALLE_MIN illisible (« ${brut} ») :`,
+      'on garde cinq minutes.',
+    );
+    return INTERVALLE_RAPPELS_MS;
+  }
+  return minutes * 60_000;
+}
+
+/**
  * Démarre le balayage périodique. Rend une fonction d'arrêt — un serveur qui
  * ne sait pas s'arrêter proprement laisse des minuteries derrière lui.
  */
@@ -98,6 +128,10 @@ export function demarrerLePlanificateur(
   expediteur: Expediteur,
   intervalleMs: number = INTERVALLE_RAPPELS_MS,
 ): () => void {
+  // Zéro n'est pas une cadence : c'est l'extinction. `setInterval(…, 0)`
+  // balaierait en boucle serrée — exactement le contraire de ce qu'on demande.
+  if (intervalleMs <= 0) return () => undefined;
+
   const minuterie = setInterval(() => {
     executerLesRappels(depot, expediteur).catch((erreur) => {
       console.error('[rappels] balayage en échec', erreur);

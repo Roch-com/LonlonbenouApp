@@ -103,6 +103,11 @@ function causeBase(erreur: unknown): string {
       return 'mot_de_passe_refuse';
     case '3D000':
       return 'base_inexistante';
+    case '53000':
+      // Le palier gratuit de Neon rend ce code, et non une erreur de réseau :
+      // la base est joignable, elle refuse de servir. C'est arrivé, et la
+      // distinction compte — on cherchait un mot de passe changé.
+      return 'quota_depasse';
     case 'ENOTFOUND':
     case 'EAI_AGAIN':
       return 'hote_introuvable';

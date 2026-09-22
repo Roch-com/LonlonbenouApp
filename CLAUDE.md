@@ -171,6 +171,24 @@ Légende : **P0** = MVP obligatoire · **P1** = V1.1 · **P2** = évolution ult�
   preview` doit montrer `EXPO_PUBLIC_API_URL`. Hors développement, l'absence
   d'adresse est désormais signalée à l'écran plutôt que déguisée en panne de
   réseau (`estConfigurationManquante` dans `lib/api/configuration.ts`).
+- **Ne jamais interroger la base plus souvent qu'elle ne s'endort.** Le
+  balayage des rappels tournait toutes les cinq minutes dans le processus du
+  serveur ; Neon suspend son calcul après cinq minutes d'inactivité. La base
+  ne dormait donc jamais, tournait jour et nuit, et le palier gratuit a fini
+  par refuser toute connexion — `53000`, « quota dépassé ». Plus personne ne
+  pouvait se connecter, et `/sante` répondait « ok », puisqu'elle ne regardait
+  que le processus.
+
+  `LONLONBENU_RAPPELS_INTERVALLE_MIN=0` éteint le balayage interne ; c'est la
+  tâche planifiée externe qui appelle `/taches/rappels` et fixe la cadence.
+  La sonde de maintien en éveil de Render doit viser `/sante`, qui ne touche
+  pas la base — jamais une route qui s'en sert.
+
+  `/sante/base` donne l'état réel et nomme la cause (`quota_depasse`,
+  `mot_de_passe_refuse`, `hote_introuvable`…) sans livrer la chaîne de
+  connexion. Elle est séparée de `/sante` à dessein : liée à la sonde de
+  l'hébergeur, une base tombée ferait redémarrer le service en boucle.
+
 - Les journaux de build EAS sont compressés en **Brotli** : `curl --compressed` pour les lire. Ils portent la vraie cause, là où `eas build:view` ne rend qu’un « Unknown error ».
 
 ## État actuel du projet
