@@ -64,7 +64,12 @@ export function entete(partenaireId: string) {
 export const SECRET_TACHES = 'secret-de-taches';
 
 export async function monterServeur(
-  options: { croissanceActive?: boolean; sansSecretTaches?: boolean } = {},
+  options: {
+    croissanceActive?: boolean;
+    sansSecretTaches?: boolean;
+    /** Passée telle quelle au serveur, pour les tests de la route de santé. */
+    verifierLaBase?: () => Promise<void>;
+  } = {},
 ) {
   const depot = await creerDepotDeTest();
   const transport = creerTransportFactice();
@@ -108,6 +113,7 @@ export async function monterServeur(
     transport,
     oauth: CONFIG_OAUTH,
     ...(options.sansSecretTaches ? {} : { secretTaches: SECRET_TACHES }),
+    ...(options.verifierLaBase ? { verifierLaBase: options.verifierLaBase } : {}),
   });
   return { ...serveur, depot, transport };
 }

@@ -74,6 +74,11 @@ export interface OptionsServeur {
   courrier?: Courrier;
   /** Secret du déclencheur de tâches planifiées. Sans lui, la route n'existe pas. */
   secretTaches?: string;
+  /**
+   * Interroge la base pour de vrai. Fournie par le démarrage ; absente en
+   * test, où le dépôt vit en mémoire.
+   */
+  verifierLaBase?: () => Promise<void>;
   oauth?: {
     emetteur: string;
     audience: string;
@@ -81,6 +86,33 @@ export interface OptionsServeur {
     clePrivee: KeyObject;
     clePublique: KeyObject;
   };
+}
+
+/**
+ * Traduit l'échec d'une connexion à PostgreSQL en une cause lisible.
+ *
+ * Les trois premières se règlent chacune autrement : refaire l'URL de
+ * connexion, réveiller ou recréer la base, ouvrir le réseau. Les distinguer
+ * évite de chercher au mauvais endroit.
+ */
+function causeBase(erreur: unknown): string {
+  const code = (erreur as { code?: string } | null)?.code;
+  switch (code) {
+    case '28P01':
+    case '28000':
+      return 'mot_de_passe_refuse';
+    case '3D000':
+      return 'base_inexistante';
+    case 'ENOTFOUND':
+    case 'EAI_AGAIN':
+      return 'hote_introuvable';
+    case 'ECONNREFUSED':
+      return 'connexion_refusee';
+    case 'ETIMEDOUT':
+      return 'delai_depasse';
+    default:
+      return code ? `code_${code}` : 'inconnue';
+  }
 }
 
 /** Correspondance entre motif de refus et code HTTP. */
@@ -715,7 +747,37 @@ export async function creerServeur(options: OptionsServeur = {}) {
     });
   }
 
+  /**
+   * Vivacité du processus, et rien d'autre. C'est la sonde de l'hébergeur :
+   * la faire dépendre de la base ferait redémarrer le service en boucle le
+   * jour où la base tombe, ce qui remplacerait une panne partielle par une
+   * panne totale.
+   */
   app.get('/sante', async () => ({ etat: 'ok' }));
+
+  /**
+   * État de la base, séparément.
+   *
+   * Sans cette route, une base injoignable ne se voyait nulle part : `/sante`
+   * répondait « ok », l'hébergeur croyait tout normal, et le seul symptôme
+   * était un 500 sur les routes qui s'en servent — que personne ne rapproche
+   * de la base. C'est arrivé, et il a fallu sonder route par route pour le
+   * comprendre.
+   *
+   * La cause est nommée mais jamais la chaîne de connexion : savoir que le mot
+   * de passe est refusé suffit à agir, et l'hôte n'a pas à sortir d'ici.
+   */
+  app.get('/sante/base', async (_requete, reponse) => {
+    if (!options.verifierLaBase) {
+      return { base: 'sans_objet', message: 'Dépôt en mémoire.' };
+    }
+    try {
+      await options.verifierLaBase();
+      return { base: 'ok' };
+    } catch (erreur) {
+      return reponse.code(503).send({ base: 'injoignable', cause: causeBase(erreur) });
+    }
+  });
 
   return {
     app,

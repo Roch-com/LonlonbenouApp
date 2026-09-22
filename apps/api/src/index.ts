@@ -77,6 +77,12 @@ if (plateformes.length === 0) {
 }
 
 const { app, depot, expediteur } = await creerServeur({
+  // `SELECT 1` emprunte le même pool que le reste : si la connexion est
+  // refusée, la route de santé le dit avec la même erreur que les vraies
+  // requêtes, et non une erreur de son cru.
+  verifierLaBase: async () => {
+    await pool.query('SELECT 1');
+  },
   depot: creerDepotPostgres(pool),
   depotOAuth: creerDepotOAuthPostgres(pool),
   oauth: { emetteur, audience, clientsAutorises: clients, clePrivee, clePublique },
