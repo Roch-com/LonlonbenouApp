@@ -11,7 +11,7 @@ import { chargerPaire } from './securite/oauth/cles.ts';
 import { normaliserPem } from './securite/pem.ts';
 import { creerDepotPostgres, creerPool } from './domaine/depotPostgres.ts';
 import { creerDepotOAuthPostgres } from './securite/oauth/depotOAuthPostgres.ts';
-import { appliquerLeSchema } from './db/migrations.ts';
+import { preparerLaBase } from './db/preparation.ts';
 import {
   demarrerLePlanificateur,
   intervalleDepuisEnv,
@@ -49,7 +49,16 @@ const modeSsl = (process.env['LONLONBENU_DB_SSL'] ?? 'auto') as
   'auto' | 'requis' | 'aucun';
 
 const pool: Pool = creerPool({ connectionString: urlBase, ssl: modeSsl });
-await appliquerLeSchema(pool);
+
+/**
+ * On n'attend plus la base pour démarrer.
+ *
+ * Elle est préparée en tâche de fond : si elle est injoignable, le serveur
+ * monte quand même, le dit sur /sante/base, et réessaie seul jusqu'à ce
+ * qu'elle revienne. Attendre ici faisait qu'une base absente emportait
+ * l'application entière — et avec elle tout moyen de savoir pourquoi.
+ */
+const { etat: etatBase } = preparerLaBase(pool);
 
 const { clePrivee, clePublique } = chargerPaire(normaliserPem(clePriveePem));
 
@@ -85,6 +94,13 @@ const { app, depot, expediteur } = await creerServeur({
   // requêtes, et non une erreur de son cru.
   verifierLaBase: async () => {
     await pool.query('SELECT 1');
+    // Répondre depuis le pool ne suffit pas : tant que le schéma n'est pas
+    // appliqué, les routes qui lisent la base échoueront quand même.
+    if (!etatBase.prete) {
+      throw Object.assign(new Error('schéma pas encore appliqué'), {
+        code: '57P03',
+      });
+    }
   },
   depot: creerDepotPostgres(pool),
   depotOAuth: creerDepotOAuthPostgres(pool),

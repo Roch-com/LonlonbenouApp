@@ -189,6 +189,19 @@ Légende : **P0** = MVP obligatoire · **P1** = V1.1 · **P2** = évolution ult�
   connexion. Elle est séparée de `/sante` à dessein : liée à la sonde de
   l'hébergeur, une base tombée ferait redémarrer le service en boucle.
 
+- **Le serveur démarre sans sa base, et se relève seul.** Le schéma
+  s'appliquait avant que quoi que ce soit ne réponde : une base injoignable
+  emportait donc l'application *et* tout moyen de savoir pourquoi — plus de
+  `/sante`, plus de journal, rien. `preparerLaBase` le fait désormais en tâche
+  de fond et réessaie (5 s, 15 s, 30 s, puis la minute) tant que l'erreur dit
+  l'indisponibilité. Quand la base revient, l'application repart d'elle-même,
+  sans redéploiement.
+
+  Une migration fautive, elle, tue toujours le processus : `causeIndisponibilite`
+  dans `db/disponibilite.ts` fait le tri, et ce n'est pas un état passager.
+  Ajouter un code à cette table le rend réessayable — à ne faire qu'en
+  connaissance de cause.
+
 - Les journaux de build EAS sont compressés en **Brotli** : `curl --compressed` pour les lire. Ils portent la vraie cause, là où `eas build:view` ne rend qu’un « Unknown error ».
 
 ## État actuel du projet

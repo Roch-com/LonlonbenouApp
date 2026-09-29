@@ -1,4 +1,5 @@
 import Fastify, { type FastifyInstance } from 'fastify';
+import { nommerLaCause } from './db/disponibilite.ts';
 import helmet from '@fastify/helmet';
 import limiteDebit from '@fastify/rate-limit';
 import type { KeyObject } from 'node:crypto';
@@ -86,38 +87,6 @@ export interface OptionsServeur {
     clePrivee: KeyObject;
     clePublique: KeyObject;
   };
-}
-
-/**
- * Traduit l'échec d'une connexion à PostgreSQL en une cause lisible.
- *
- * Les trois premières se règlent chacune autrement : refaire l'URL de
- * connexion, réveiller ou recréer la base, ouvrir le réseau. Les distinguer
- * évite de chercher au mauvais endroit.
- */
-function causeBase(erreur: unknown): string {
-  const code = (erreur as { code?: string } | null)?.code;
-  switch (code) {
-    case '28P01':
-    case '28000':
-      return 'mot_de_passe_refuse';
-    case '3D000':
-      return 'base_inexistante';
-    case '53000':
-      // Le palier gratuit de Neon rend ce code, et non une erreur de réseau :
-      // la base est joignable, elle refuse de servir. C'est arrivé, et la
-      // distinction compte — on cherchait un mot de passe changé.
-      return 'quota_depasse';
-    case 'ENOTFOUND':
-    case 'EAI_AGAIN':
-      return 'hote_introuvable';
-    case 'ECONNREFUSED':
-      return 'connexion_refusee';
-    case 'ETIMEDOUT':
-      return 'delai_depasse';
-    default:
-      return code ? `code_${code}` : 'inconnue';
-  }
 }
 
 /** Correspondance entre motif de refus et code HTTP. */
@@ -780,7 +749,9 @@ export async function creerServeur(options: OptionsServeur = {}) {
       await options.verifierLaBase();
       return { base: 'ok' };
     } catch (erreur) {
-      return reponse.code(503).send({ base: 'injoignable', cause: causeBase(erreur) });
+      return reponse
+        .code(503)
+        .send({ base: 'injoignable', cause: nommerLaCause(erreur) });
     }
   });
 
