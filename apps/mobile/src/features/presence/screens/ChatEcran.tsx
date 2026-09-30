@@ -82,10 +82,18 @@ function apercuDuMessage(message: MessageLisible): string {
 /**
  * Rythme du sondage de repli.
  *
- * Trente secondes : assez rare pour ne rien coûter, assez fréquent pour qu'une
- * panne de canal ne se remarque pas.
+ * Les messages arrivent par le canal temps réel ; ce sondage ne sert qu'à
+ * rattraper un canal mort. Il était à trente secondes, avec pour justification
+ * qu'il « ne coûtait rien » — vrai pour la charge du serveur, faux pour la
+ * base. Neon suspend son calcul après cinq minutes sans requête : sonder plus
+ * souvent la maintient éveillée en continu, et l'écran laissé ouvert sur une
+ * table consommait autant qu'une conversation.
+ *
+ * Dix minutes, donc : plus du double de la mise en veille, ce qui laisse la
+ * base dormir la moitié du temps. Un canal rompu se rattrape dans ce délai,
+ * et c'est tout ce qu'on demande à un filet.
  */
-const INTERVALLE_FILET_MS = 30_000;
+const INTERVALLE_FILET_MS = 10 * 60_000;
 
 const EMOJIS_REACTION = ['❤️', '😍', '😂', '😮', '🥺', '👍'] as const;
 

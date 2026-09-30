@@ -23,7 +23,6 @@ import { useCycle } from '../stores/cycleStore';
  * L'écran ne choisit pas ce qu'il montre : il rend ce qu'il a reçu.
  */
 /** Assez court pour que le partenaire suive, assez long pour la batterie. */
-const INTERVALLE_RELECTURE_MS = 20_000;
 
 export function CycleEcran() {
   const router = useRouter();
@@ -46,9 +45,7 @@ export function CycleEcran() {
   // phase avance, le niveau de partage se change depuis l’autre téléphone, et
   // rien ici ne l’apprendrait autrement.
   //
-  // Un cycle ne bouge pas à la seconde : un intervalle long suffit, et
-  // interroger le serveur plus souvent ne coûterait que de la batterie. La
-  // boucle s’arrête dès qu’on quitte l’écran ou que l’app passe derrière.
+  // Une lecture à chaque fois qu'on ouvre l'écran, et rien entre-temps.
   useFocusEffect(
     useCallback(() => {
       if (!connecte || !coupleId || !partenaireId) return;
@@ -60,11 +57,16 @@ export function CycleEcran() {
         }
       };
 
+      // Une seule lecture, à l'ouverture de l'écran.
+      //
+      // Un sondage toutes les vingt secondes tournait ici. Le cycle ne change
+      // pas pendant qu'on le regarde : une saisie de la partenaire arrive au
+      // rythme d'une par jour, pas de trois par minute. En face, chaque
+      // requête repoussait de cinq minutes la mise en veille de la base —
+      // l'écran laissé ouvert la tenait éveillée pour rien.
       relire();
-      const minuterie = setInterval(relire, INTERVALLE_RELECTURE_MS);
       return () => {
         vivant = false;
-        clearInterval(minuterie);
       };
     }, [connecte, coupleId, partenaireId, charger]),
   );
