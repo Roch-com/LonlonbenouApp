@@ -17,11 +17,11 @@
   "dependencies": {
     "@fastify/helmet": "^13.1.1",
     "@fastify/rate-limit": "^11.2.0",
-    "@fastify/websocket": "^11.3.0",
+    "@fastify/websocket": "^11.3.1",
     "@lonlonbenu/shared": "*",
     "@sentry/node": "^10.71.0",
-    "fastify": "^5.2.1",
-    "jose": "^6.2.8",
+    "fastify": "^5.12.5",
+    "jose": "^6.2.12",
     "pg": "^8.23.0",
     "tsx": "^4.23.12"
   },
